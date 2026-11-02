@@ -12,7 +12,8 @@
     "test:language-browser": "node --no-warnings=ExperimentalWarning scripts/verify-language.mjs",
     "test:public-session-browser": "node --no-warnings=ExperimentalWarning scripts/verify-public-session.mjs",
     "test:all-answers-browser": "node --no-warnings=ExperimentalWarning scripts/verify-all-answers.mjs",
-    "test:maintainer-browser": "node scripts/verify-maintainer.mjs"
+    "test:maintainer-browser": "node scripts/verify-maintainer.mjs",
+    "test:audit": "node --no-warnings=ExperimentalWarning scripts/tester-audit.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.39.0",
