@@ -164,26 +164,25 @@
     [].forEach.call($("mcbLg").children, function (b) { b.className = b.getAttribute("data-l") === LANG ? "on" : ""; });
   }
   function setLang(code, reset, auto) { LANG = code; LOCKED = auto ? 0 : 1; applyUI(); $("mcbLg").classList.remove("show"); if (reset) start(); }
-  /* ---------- translation: visitor language <-> English (MITRA is queried in English) ---------- */
-  function tr1(text, from, to) {
-    var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function () { if (ctl) ctl.abort(); }, 9000), sig = ctl ? ctl.signal : undefined;
-    var req = C.translateUrl
-      ? fetch(C.translateUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ q: text, source: from, target: to }), signal: sig }).then(function (r) { return r.json(); }).then(function (j) { return j.translatedText; })
-      : Promise.reject(new Error("external translation disabled"));
-    return req.then(function (x) { clearTimeout(t); if (!x) throw new Error("tr"); return x; }, function (e) { clearTimeout(t); throw e; });
-  }
-  function pack(t) {
-    var parts = t.match(/[^.!?।\n]+[.!?।\n]*/g) || [t], out = [], cur = "";
-    parts.forEach(function (p) { while (p.length > 450) { out.push(p.slice(0, 450)); p = p.slice(450); } if ((cur + p).length > 450) { out.push(cur); cur = ""; } cur += p; });
-    if (cur) out.push(cur); return out;
-  }
-  function tr(text, from, to) { var c = pack(text); if (c.length > 10) return Promise.reject(new Error("long")); return Promise.all(c.map(function (x) { return tr1(x, from, to); })).then(function (a) { return a.join(" "); }); }
   /* ---------- MITRA backend ---------- */
+  var activeConversationId = null;
+  var activeSessionToken = null;
   function post(url, q, lang) {
     var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
-    return fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q, language: lang }), signal: ctl ? ctl.signal : undefined })
+    var payload = { question: q, language: lang };
+    if (activeConversationId) payload.conversationId = activeConversationId;
+    if (activeSessionToken) payload.sessionToken = activeSessionToken;
+    var headers = { "Content-Type": "application/json" };
+    if (activeSessionToken) headers["X-Mitra-Session"] = activeSessionToken;
+    return fetch(url, { method: "POST", credentials: "include", headers: headers, body: JSON.stringify(payload), signal: ctl ? ctl.signal : undefined })
       .then(function (r) { clearTimeout(to); if (!r.ok) { var e = new Error("http"); e.status = r.status; throw e; } return r.json(); })
-      .then(function (res) { var d = res.data || res; if (!d || !d.answer) throw new Error("empty"); return d; }, function (e) { clearTimeout(to); throw e; });
+      .then(function (res) {
+        var d = res.data || res;
+        if (!d || !d.answer) throw new Error("empty");
+        if (d.conversationId) activeConversationId = d.conversationId;
+        if (d.sessionToken) activeSessionToken = d.sessionToken;
+        return d;
+      }, function (e) { clearTimeout(to); throw e; });
   }
   function ask(q, lang) {
     var eps = [C.proxy, C.api].filter(Boolean), i = 0, trail = [];
@@ -202,40 +201,21 @@
     return { a: a, l: l, note: n ? "⚠️ " + n : null, f: ["courses", "fees", "contact"] };
   }
   function queryMitra(q, fb) {
-    var foreign = LANG !== "en", src = detect(q);
-    var pre = foreign && src ? tr(q, src, "en").catch(function () { return null; }) : Promise.resolve(null);
-    return pre.then(function (qe) {
-      var useTr = foreign && !(src && !qe), lp = useTr ? "en" : (LOCKED ? LANG : "auto"), qq = qe || q;
-      return ask(qq, lp).catch(function (e) { if (lp !== "auto" && e && e.status >= 400 && e.status < 500) return ask(qq, "auto"); throw e; })
-        .then(function (d) {
-          if (!useTr) return view(d, fmt(d.answer), d.caution && fmt(d.caution));
-          return Promise.all([tr(d.answer, "en", LANG), d.caution ? tr(d.caution, "en", LANG) : ""]).then(function (v) {
-            return view(d, fmt(v[0]) + "<details><summary>" + T("orig") + "</summary>" + fmt(d.answer) + "</details>", v[1] && fmt(v[1]));
-          }, function () { return view(d, fmt(d.answer) + '<div class="nt">' + T("trFail") + "</div>", d.caution && fmt(d.caution)); });
-        });
-    }).catch(function (e) {
-      if (e && e.message === "empty") return desk(T("dNF"));
-      /* Prefer local knowledge fallback in ANY language (was restricted to en only — that caused
-         Marathi/Hindi chip clicks to always show the unreachable card when MITRA was down). */
-      if (fb && fb !== DESK) {
-        var r = Object.assign({}, fb);
-        if (C.debug && e && e.trail) r.note = "🛠 " + esc(e.trail.join(" | "));
-        /* If UI language is not English and the local answer is plain English text, try to translate it */
-        if (LANG !== "en" && r.a && !r.tk && typeof r.a === "string") {
-          var plain = r.a.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-          if (plain.length > 5 && plain.length < 500) {
-            return tr(plain, "en", LANG).then(function (ta) {
-              if (ta && ta.length > 3) r.a = ta;
-              return r;
-            }).catch(function () { return r; });
-          }
+    var lp = LOCKED ? LANG : (detect(q) || "auto");
+    return ask(q, lp).catch(function (e) { if (lp !== "auto" && e && e.status >= 400 && e.status < 500) return ask(q, "auto"); throw e; })
+      .then(function (d) {
+        return view(d, fmt(d.answer), d.caution && fmt(d.caution));
+      }).catch(function (e) {
+        if (e && e.message === "empty") return desk(T("dNF"));
+        if (fb && fb !== DESK) {
+          var r = Object.assign({}, fb);
+          if (C.debug && e && e.trail) r.note = "🛠 " + esc(e.trail.join(" | "));
+          return r;
         }
+        var r = desk(T("dFail"));
+        if (C.debug && e && e.trail) r.note = "🛠 " + esc(e.trail.join(" | "));
         return r;
-      }
-      var r = desk(T("dFail"));
-      if (C.debug && e && e.trail) r.note = "🛠 " + esc(e.trail.join(" | "));
-      return r;
-    });
+      });
   }
   /* Fixed English questions for topic buttons and Marathi/Hindi keywords (these wordings are known to work with MITRA) */
   var QT = { courses:"Which programs are available?", docs:"What documents are required for admission?", adm:"What is the admission process?", place:"Placements", infra:"Facilities", about:"About MIT CORER", why:"Why choose MIT CORER?", schol:"Scholarships", cut:"Cutoffs", brochure:"Brochure", fyfees:"What are the first-year B.Tech fees?", dsyfees:"What are the Direct Second Year fees?", hmfees:"What are the hostel and mess fees?", conc:"What are the category fee concessions?", hostel:"What hostel and mess facilities does MITCORER provide?" };
@@ -280,6 +260,7 @@
     botMsg(queryMitra(id ? (QT[id] || M[id] || text) : (tid ? QT[tid] : text), tid ? byId[tid] : loc));
   }
   function start() {
+    activeConversationId = null;
     body.innerHTML = '<a class="hero" href="' + C.enq + '" target="_blank" rel="noopener"><small>' + T('heroS') + '</small><b>' + T('heroH') + '</b><u>' + T('heroC') + '</u></a>'; started = 1;
     botMsg({ a: T("welcome"), f: LANGS.concat(MAIN), nm: 1 });
   }

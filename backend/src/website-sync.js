@@ -10,7 +10,7 @@ export const monitoredWebsiteSources = [
   },
   {
     title: 'MITCORER Direct Second Year Admissions',
-    url: 'https://mitcorer.edu.in/dse.php',
+    url: 'https://mitcorer.edu.in/d-sy-btech.php',
     documentType: 'Direct Second Year',
     academicYear: '2026-27',
     sourceAuthority: 'MITCORER Admissions Office',

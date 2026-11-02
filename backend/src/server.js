@@ -102,7 +102,7 @@ function audit(action, resourceType, resourceId, user, details = '') {
     createdAt: nowIso(),
   });
   db.auditLogs = db.auditLogs.slice(0, 500);
-  saveDb();
+  if (action !== 'assistant.asked') saveDb();
 }
 
 function enforceRateLimit(bucket, key, maxRequests, windowMs) {
@@ -225,7 +225,7 @@ function attachCors(req, res) {
     : config.corsOrigins[0];
   res.setHeader('Access-Control-Allow-Origin', allowOrigin);
   res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Mitra-Session');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -1047,6 +1047,7 @@ function buildCollegeProfileAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (/\b(?:sports grounds?|sports facilit\w*|box cricket|cricket ground|volleyball (?:court|ground)|badminton court|campus gym|gymnasium|cultural events?|cultural gathering|annual gathering|cultural fest|shiv jayanti|ganesh (?:utsav|festival)|traditional day)\b/.test(normalized) && !/nss|rail-mit|technical event|world cup|icc/.test(normalized)) {
     return {
+      recordId: 'KB-48',
       source: 'MITCORER Sports and Cultural Events official portals',
       sourceUrl: 'https://mitcorer.edu.in/sports.php',
       answer: "MITCORER Sports Infrastructure & Campus Cultural Life:\n\n- Sports Facilities: Dedicated outdoor campus grounds for cricket, box cricket, and volleyball, alongside badminton facilities, indoor recreation (chess, carrom), and a campus gymnasium for student fitness.\n- Sports Tournaments: Annual inter-departmental sports meet and participation in university/zonal athletic competitions.\n- Cultural Festivities: Annual Cultural Gathering showcasing student music, drama, and dance performances, alongside grand celebrations of Chhatrapati Shivaji Maharaj Jayanti (Shiv Jayanti), Ganesh Utsav, National Engineer's Day, and Teachers' Day.\n- Holistic Development: Encourages extracurricular excellence, cultural vitality, and physical wellness alongside technical railway engineering studies.",
@@ -1055,6 +1056,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:professional diplomas?|railway diplomas?|railway track technology|railway signaling|railway signalling|rolling stocks?(?: and operations)?|software technology in railway|railway specializations?|railway modules?)\b/.test(normalized)) {
     return {
+      recordId: 'KB-47',
       source: 'MITCORER Professional Railway Diploma portal and syllabus records',
       sourceUrl: 'https://mitcorer.edu.in/about-professional-diploma-railway.php',
       answer: 'MITCORER Specialized Professional Railway Diplomas:\n\n- Railway Signaling & Telecommunication: Professional Diploma covering railway signaling fundamentals, train detection, electronic interlocking, and telecommunication networks (for E&TC/Electrical/allied branches).\n- Railway Track Technology: Professional Diploma covering permanent way alignment, ballastless high-speed track design, track maintenance, and geometric safety (for Civil Engineering).\n- Rolling Stocks and Operations: Professional Diploma covering locomotive mechanics, coach/wagon dynamic design, braking systems, and train operations (for Mechanical/Automobile Engineering).\n- Software Technology in Railway Sector: Professional Diploma covering automated train control systems, signaling software safety, and smart railway analytics (for Computer Science/IT).\n\nThese value-added professional diplomas are offered concurrently to bridge academia and railway industry requirements.',
@@ -1063,6 +1065,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:polytechnic|msbte|post[- ]?ssc diploma|diploma in engineering|diploma courses?|diploma programs?|diploma intake|diploma branches?|polytechnic courses?|polytechnic branches?|polytechnic intake|polytechnic eligibility)\b/.test(normalized) && !/\b(?:professional diploma|railway diploma|railway track|railway signaling|rolling stocks?|software technology in railway|direct second|dse|lateral|fees?|cost|charges?)\b/.test(normalized)) {
     return {
+      recordId: 'KB-12',
       source: 'MITCORER Polytechnic admissions page',
       sourceUrl: 'https://mitcorer.edu.in/fy-polytechnic.php',
       answer: 'MITCORER Polytechnic (Diploma in Engineering) Programs under MSBTE:\n\n- Affiliation & Approvals: Affiliated to Maharashtra State Board of Technical Education (MSBTE), Mumbai; approved by AICTE, New Delhi and DTE Maharashtra (Institute Code: 06901).\n- Branches Offered & Intake (Sanctioned Intake: 60 each, Total 240 seats):\n  1. Computer Science & Engineering (Intake: 60)\n  2. Civil Engineering (Intake: 60)\n  3. Mechanical Engineering (Intake: 60)\n  4. Electronic & Telecom Engineering (Intake: 60)\n- Program Duration: 3-Year Full-Time Diploma program (6 Semesters under MSBTE curriculum).\n- First Year (Post-SSC) Eligibility: Candidate must have passed 10th Standard (SSC) examination from Maharashtra State Board or equivalent with at least 35% aggregate marks.\n- Direct Second Year (Lateral Entry): Available for candidates who have passed 12th Science / HSC Vocational / Technical or 2-year ITI as per DTE/MSBTE norms.\n- Separate Process: Polytechnic admission cycles, CAP seat allotment, fees, and documentation are administered separately from degree B.Tech admissions.',
@@ -1071,6 +1074,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:office hours?|office timings?|working hours?|visiting hours?|admission desk|enquiry desk|college timings?|working days?|visiting the college|visiting schedule|office open|office close|open on saturday|admission helpline|helpline number|campus visit|visit booking)\b/.test(normalized)) {
     return {
+      recordId: 'KB-46',
       source: 'MITCORER Contact Us and Admissions Office portal',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
       answer: 'MITCORER Administrative Office & Admission Enquiry Desk Hours:\n\n- Working Days: Monday to Saturday (closed on Sundays and public holidays).\n- Operating Timings: 9:30 AM to 5:30 PM.\n- Admission Enquiry Desk: Open during working hours in the Administrative Building for admission counseling, document verification checks, campus visits, and seat enquiry.\n- Contact Lines: +91 84599 67882 / +91 86696 62106; Email: info.mitcorer@mitpune.edu.in.',
@@ -1079,6 +1083,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:nep(?: 2020)?|national education policy|outcome[- ]based education|obe|medium of instruction|english medium|curriculum pattern|evaluation pattern)\b/.test(normalized)) {
     return {
+      recordId: 'KB-45',
       source: 'PAH Solapur University academic regulations and MITCORER academic portal',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER Academic Framework, NEP 2020 & Medium of Instruction:\n\n- NEP 2020 & OBE Framework: MITCORER delivers degree engineering under the PAH Solapur University (PAHSU) curriculum aligned with National Education Policy (NEP 2020) and Outcome-Based Education (OBE) principles, incorporating credit frameworks, honors degrees, and multidisciplinary minors.\n- Medium of Instruction: The official medium of instruction for all lectures, laboratory practicals, project reports, and semester examinations is English.\n- Continuous Evaluation: Combines semester credit examinations with continuous internal evaluation, technical seminar presentations, and industry internships.',
@@ -1087,6 +1092,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:anti[- ]?ragging|ragging|ragging[- ]free|campus safety|emergency vehicle|ambulance|medical emergenc\w*|medical facilit\w*|student welfare|internal complaints committee|grievance cell)\b/.test(normalized)) {
     return {
+      recordId: 'KB-44',
       source: 'MITCORER Anti-Ragging Committee notifications and Student Welfare portal',
       sourceUrl: 'https://mitcorer.edu.in/pdf/Anti-Ragging-2025-26.pdf',
       answer: "MITCORER Campus Safety, Anti-Ragging Policy & Medical Services:\n\n- Zero-Tolerance Anti-Ragging: Ragging is strictly banned across campus and hostel premises under AICTE and UGC statutory regulations.\n- Anti-Ragging Squad & Committee: A high-level committee chaired by the Principal with faculty, local police, civil authorities, parents, and student members conducts continuous monitoring.\n- Emergency Medical Support: A dedicated 24/7 campus emergency vehicle / ambulance is available on site for immediate medical transit, supported by campus first-aid facilities.\n- Welfare Bodies: Statutory committees including the Internal Complaints Committee (Women's Safety), SC/ST Committee, and Student Grievance Redressal Committee ensure a secure, respectful campus environment.",
@@ -1095,6 +1101,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:mous?|industry mou|industry mous|corporate readiness|collaborations?|industry partners?|industry tie-?ups?|aptitude training|soft skills training|mock interviews?|bvg india|aptron)\b/.test(normalized)) {
     return {
+      recordId: 'KB-43',
       source: 'MITCORER Training & Placement Cell and Official MoU Portal',
       sourceUrl: 'https://mitcorer.edu.in/our-mou.php',
       answer: 'MITCORER Industry MoUs & Corporate Readiness Program:\n\n- Active Industry MoUs: Formal memorandums of understanding (MoUs) signed with organizations including APTRON Solutions, Bulls Eye, Earth Solutions Pvt. Ltd., Increpe Technologies, E-Construct, Khambe Sangli, DTL, E-Kida, and BVG India.\n- Practical Industry Exposure: MoUs facilitate student internships, sponsored live projects, guest lecture series, industrial visits, and hands-on technical workshops.\n- Corporate Readiness Program (CRP): Dedicated training organized by the Training & Placement Cell covering quantitative aptitude, logical reasoning, verbal ability, resume preparation, and domain technical skills.\n- Professional Grooming: Personality development workshops, soft skills training, group discussion rounds, and mock interviews by industry HR specialists to ensure campus placement readiness.',
@@ -1103,6 +1110,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:student clubs?|technical clubs?|coding club|robotics club|student associations?|technical chapters?|space|mesa|cesa|eesa|asimit|co[- ]?curricular)\b/.test(normalized)) {
     return {
+      recordId: 'KB-50',
       source: 'MITCORER Student Affairs and Co-Curricular Activities portal',
       sourceUrl: 'https://mitcorer.edu.in/campus-life.php',
       answer: 'MITCORER Student Clubs, Departmental Bodies, and Co-Curricular Associations:\n\n- Departmental Student Associations: Active student-led technical associations including SPACE (Students\' Association of Computer Engineering), MESA (Mechanical Engineering), and CESA (Civil Engineering). These bodies organize expert guest lectures, hands-on software workshops, coding bootcamps, and technical site visits.\n- Technical & Innovation Clubs: Robotics & Automation Club, Coding & Algorithm Club, and Railway Innovation Cell, where students build practical prototypes, participate in smart hackathons, and compete in national technical symposiums.\n- Rail-MIT Technical Symposium: Annual flagship national-level technical event hosted on campus featuring technical paper presentations, CAD modeling competitions, coding battles, and project exhibitions.\n- NSS & Community Outreach: Active National Service Scheme (NSS) unit affiliated to PAH Solapur University driving blood donation drives, tree plantation campaigns, and rural technology awareness initiatives.',
@@ -1111,6 +1119,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:industrial visits?|railway visits?|railway workshop visit|field visits?|field training|summer internships?|practical internships?)\b/.test(normalized)) {
     return {
+      recordId: 'KB-51',
       source: 'MITCORER Training and Placement Cell & IIIC records',
       sourceUrl: 'https://mitcorer.edu.in/training-placement.php',
       answer: 'MITCORER Industrial Visits, Railway Field Training, and Practical Internships:\n\n- Railway Field Exposure: Proximity to Central Railway hubs enables guided technical visits to the historic Kurduwadi Railway Workshop, Solapur Railway Divisional Headquarters, diesel/electric loco sheds, and signaling interlock installations for practical railway systems understanding.\n- Multi-Industry Site Visits: Regular industrial visits to manufacturing units, structural construction sites, thermal power stations, and IT software companies across Barshi, Solapur, Pune, and surrounding industrial belts.\n- Mandatory Internships: In alignment with AICTE and PAH Solapur University curriculum, all B.Tech students undergo 4-to-8-week industrial internships with leading infrastructure, manufacturing, and software organizations before final-year graduation.\n- Practical Application: Field training bridges classroom engineering theory with operational railway maintenance, safety standards, and modern corporate engineering practices.',
@@ -1119,6 +1128,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:same as mit pune|mitcorer (?:barshi )?(?:and|or) mit pune|connection (?:with|between) mit pune|relationship (?:with|to) mit pune|part of mit pune|branch of mit pune|under mit pune|mit wpu|maeer('s)? mit pune|parent trust|difference between mitcorer and mit pune)\b/.test(normalized)) {
     return {
+      recordId: 'KB-41',
       source: 'MITCORER Admissions FAQ and official website',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: "MITCORER Barshi and MAEER's MIT Pune Relationship:\n\n- Parent Organization: Both MITCORER Barshi and MIT Pune operate under the same parent trust, Maharashtra Academy of Engineering and Educational Research (MAEER's MIT Group of Institutions, Pune), founded by Prof. Dr. Vishwanath D. Karad.\n- Establishment Mission: The Barshi campus was established under the MAEER group to deliver quality technical and railway engineering education to rural and regional students.\n- Operational Structure: While sharing common parent trust governance, MITCORER functions as an independent institution with its own campus facilities, courses, and affiliation to PAH Solapur University (PAHSU) and MSBTE under DTE Code 06901.",
@@ -1127,6 +1137,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:nearest railway station|nearest station|which railway station|station to college|barshi town station|kurduwadi junction|nearest bus (?:stop|stand)|barshi bus stand|how to reach (?:mitcorer|the college|barshi college)|distance from (?:station|bus stand)|reach (?:by train|by bus))\b/.test(normalized)) {
     return {
+      recordId: 'KB-40',
       source: 'MITCORER Contact Us portal and campus transit directions',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
       answer: 'MITCORER Transit Directions & Commuting Access:\n\n- Campus Location: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.\n- Nearest Railway Station: Barshi Town Station is 4.7 km from campus (via Bhosale Chowk – Cancer Chowk – Industrial Road). Major long-distance train connectivity is accessible at Kurduwadi Junction (~38 km).\n- Nearest Bus Stand: MSRTC Bus Stand Barshi is 5.7 km away (Route-I: via Cancer Chowk & Industrial Road; Route-II: via Bypass Agalgaon Chowk – Shukla Automobile – Industrial Road).\n- Daily College Bus Network: The college operates dedicated daily bus routes across Barshi, Kurduwadi, and Solapur for commuting students and staff.',
@@ -1135,6 +1146,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:who is the principal|principal name|name of the principal|principal of mitcorer|college principal)\b/.test(normalized) && !/\b(?:affiliation|affiliated|dte|aicte|university|code)\b/.test(normalized)) {
     return {
+      recordId: 'KB-37',
       source: 'MITCORER official leadership portal',
       sourceUrl: 'https://mitcorer.edu.in/',
       answer: 'The Principal of MIT College of Railway Engineering and Research (MITCORER), Barshi is Dr. Madhukar J. Lengare.',
@@ -1143,6 +1155,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:affiliation|affiliated|which university|what university|solapur university|pahsu|aicte approval|approved by aicte|aicte approved|dte code|institute code|code 06901|principal of|college principal)\b/.test(normalized)) {
     return {
+      recordId: 'KB-37',
       source: 'MITCORER official portal and AICTE Mandatory Disclosure',
       sourceUrl: 'https://mitcorer.edu.in/',
       answer: 'MIT College of Railway Engineering and Research (MITCORER), Barshi:\n\n- Parent Trust: Under the aegis of MAEER\'s MIT Pune\n- Affiliation: Affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAHSU) for degree engineering and MSBTE for polytechnic diplomas\n- Approvals: Approved by AICTE, New Delhi, and recognized by Govt. of Maharashtra & DTE Mumbai\n- DTE Institute Code: 06901\n- Principal: Dr. Madhukar J. Lengare',
@@ -1162,6 +1175,7 @@ function buildCollegeProfileAnswer(question) {
     if (asksMech && !asksCivil && !asksCse) {
       if (asksHod && !asksLabs && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Mechanical & Rail Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/mechanical-engineering.php',
           answer: 'The Head of Department (HOD) of Mechanical & Rail Engineering at MITCORER is Dr. Sanjay Pandurang Mane.',
@@ -1170,6 +1184,7 @@ function buildCollegeProfileAnswer(question) {
       }
       if (asksLabs && !asksHod && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Mechanical & Rail Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/mechanical-engineering.php',
           answer: 'MITCORER Department of Mechanical & Rail Engineering Laboratories:\n\n- CAD/CAM Lab\n- Robotics Lab\n- Heat Transfer Lab\n- Dynamics of Machinery Lab\n- Central Workshop fabrication facilities',
@@ -1177,6 +1192,7 @@ function buildCollegeProfileAnswer(question) {
         };
       }
       return {
+        recordId: 'KB-38',
         source: 'MITCORER Mechanical & Rail Engineering department portal',
         sourceUrl: 'https://mitcorer.edu.in/mechanical-engineering.php',
         answer: 'MITCORER Department of Mechanical & Rail Engineering:\n\n- Head of Department (HOD): Dr. Sanjay Pandurang Mane.\n- Academic Focus: Railway technology, rolling stocks, robotics, thermal engineering, and automotive mechanics.\n- Departmental Facilities & Labs: Equipped with advanced CAD/CAM Lab, Robotics Lab, Heat Transfer Lab, Dynamics of Machinery Lab, and Central Workshop fabrication facilities.\n- Student Association: Mechanical Engineering Students Association (MESA).\n- Specialized Diploma: Professional Diploma in Rolling Stocks and Operations.',
@@ -1186,6 +1202,7 @@ function buildCollegeProfileAnswer(question) {
     if (asksCivil && !asksMech && !asksCse) {
       if (asksHod && !asksLabs && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Civil Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/civil-engineering.php',
           answer: 'The Head of Department (HOD) of Civil Engineering at MITCORER is Prof. Amit Raosaheb Shinde.',
@@ -1194,6 +1211,7 @@ function buildCollegeProfileAnswer(question) {
       }
       if (asksLabs && !asksHod && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Civil Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/civil-engineering.php',
           answer: 'MITCORER Department of Civil Engineering Laboratories:\n\n- Strength of Materials Lab\n- Surveying Lab\n- Concrete Technology Lab\n- Environmental Engineering Lab\n- Computer-Aided Civil Design (CAD) Lab',
@@ -1201,6 +1219,7 @@ function buildCollegeProfileAnswer(question) {
         };
       }
       return {
+        recordId: 'KB-38',
         source: 'MITCORER Civil Engineering department portal',
         sourceUrl: 'https://mitcorer.edu.in/civil-engineering.php',
         answer: 'MITCORER Department of Civil Engineering (Established 2017):\n\n- Head of Department (HOD): Prof. Amit Raosaheb Shinde.\n- Academic Offerings: 4-Year B.Tech with Minor Degrees in AI & Data Science and Software Engineering.\n- Departmental Laboratories: Strength of Materials Lab, Surveying Lab, Concrete Technology Lab, Environmental Engineering Lab, and Computer-Aided Civil Design (CAD) Lab.\n- Student Association: Civil Engineering Students Association (CESA).\n- Specialized Diploma: Professional Diploma in Railway Track Technology.',
@@ -1210,6 +1229,7 @@ function buildCollegeProfileAnswer(question) {
     if (asksCse && !asksMech && !asksCivil) {
       if (asksHod && !asksLabs && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Computer Science & Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
           answer: 'The Head of Department (HOD) of Computer Science & Engineering (CSE) at MITCORER is Prof. Somnath Mule.',
@@ -1218,6 +1238,7 @@ function buildCollegeProfileAnswer(question) {
       }
       if (asksLabs && !asksHod && !asksSyllabus) {
         return {
+          recordId: 'KB-38',
           source: 'MITCORER Computer Science & Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
           answer: 'MITCORER Department of Computer Science & Engineering Laboratories:\n\n- High-Performance Computing Lab\n- AI/ML & Deep Learning Lab\n- Database Systems Lab\n- Software Engineering Lab\n- Programming Computational Center',
@@ -1225,6 +1246,7 @@ function buildCollegeProfileAnswer(question) {
         };
       }
       return {
+        recordId: 'KB-38',
         source: 'MITCORER Computer Science & Engineering department portal',
         sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
         answer: 'MITCORER Department of Computer Science & Engineering (CSE):\n\n- Head of Department (HOD): Prof. Somnath Mule.\n- Academic Offerings: 4-Year B.Tech with Honor Degrees in Artificial Intelligence (AI), Machine Learning (ML), and Cybersecurity.\n- Departmental Laboratories: High-Performance Computing Lab, AI/ML & Deep Learning Lab, Database Systems Lab, Software Engineering Lab, and Programming Computational Center.\n- Student Association: Students Association of Computer Engineering (SPACE).\n- Specialized Diploma: Professional Diploma in Software Technology in Railway Sector.',
@@ -1232,6 +1254,7 @@ function buildCollegeProfileAnswer(question) {
       };
     }
     return {
+      recordId: 'KB-38',
       source: 'MITCORER official department portals and brochure',
       sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
       answer: 'MITCORER Department Leadership & Academic Specializations:\n\n- Computer Science & Engineering (CSE): Head of Department is Prof. Somnath Mule. Offers B.Tech with Honor Degrees in Artificial Intelligence (AI), Machine Learning (ML), and Cybersecurity, backed by high-performance programming, AI/ML, and computational laboratories.\n- Civil Engineering: Head of Department is Prof. Amit Raosaheb Shinde (established 2017). Offers B.Tech with Minor Degrees in AI & Data Science and Software Engineering, featuring Strength of Materials, Surveying, Concrete Technology, Environmental, and CAD laboratories.\n- Mechanical & Rail Engineering: Head of Department is Dr. Sanjay Pandurang Mane. Focuses on railway technology, robotics, and automotive engineering, equipped with CAD/CAM, Robotics, Heat Transfer, and Central Workshop fabrication facilities.',
@@ -1240,6 +1263,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/nss|national service scheme|rail-mit|rail mit|technical event|asimit|space|student association/.test(normalized)) {
     return {
+      recordId: 'KB-39',
       source: 'MITCORER Campus Life portal and official brochure',
       sourceUrl: 'https://mitcorer.edu.in/technical-events-rail-mit.php',
       answer: 'MITCORER Co-curricular and Campus Life:\n\n- National Service Scheme (NSS): Active NSS unit affiliated with PAH Solapur University organizing community service, blood donation camps, environmental initiatives, and youth leadership projects.\n- Rail-MIT Technical Symposium: Annual flagship national-level technical event featuring technical paper presentations, working model competitions, coding contests, and robotics.\n- Student Associations: Departmental bodies (SPACE for Computer Engineering, CESA for Civil, MESA for Mechanical) conducting coding bootcamps, technical workshops, and expert industrial sessions.\n- Sports & Culture: Campus grounds and facilities for student sports, alongside a campus gymnasium and annual cultural festivities.',
@@ -1248,6 +1272,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:faculty|teacher|professor|teaching staff)\b/.test(normalized) && !/\b(?:hiring|recruitment|vacancy|vacancies|job|jobs|career|careers|opening|openings|employment|apply for job|work with us)\b/.test(normalized)) {
     return {
+      recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER features 60+ experienced faculty members across engineering and polytechnic disciplines, supporting students with interactive classes, practical assignments, and industry-oriented railway engineering projects.\n\nFor the complete department-wise roster of faculty names, designations, and qualifications, refer to the official AICTE Mandatory Disclosure on the college website.',
@@ -1256,6 +1281,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/alumni|alumnus/.test(normalized)) {
     return {
+      recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER has an alumni network of 900+ graduates working in railway engineering, core engineering, and technology domains across India.',
@@ -1264,6 +1290,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/why should i choose mitcorer|why mitcorer|why choose mitcorer/.test(normalized)) {
     return {
+      recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
       answer: 'What sets MITCORER apart?\n\n- Railway-oriented engineering courses based on practical railway work\n- Projects, interactive classes, and industry engagement\n- 60+ faculty and 900+ alumni listed on the college website\n- Dedicated placement support; 100+ companies visiting and 300+ students placed in the published highlights\n- Highest published package: 21 LPA\n- Laboratories, railway model room, library, workshops, and computer labs\n- Separate hostels for boys and girls, sports, and other campus facilities',
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
@@ -1271,6 +1298,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:b\.?tech admission(?: process)?|engineering admission(?: process)?|admission process|how to apply|apply for (?:engineering|b\.?tech)|apply to mitcorer|admission 2026|admission eligibility criteria)\b/.test(normalized) && !/\b(?:exam|exams|entrance|test|cet|jee|polytechnic|diploma|dse|direct second|fee|fees|cost|document|documents|hostel|mess|accommodation)\b/.test(normalized)) {
     return {
+      recordId: 'KB-29',
       source: 'Maharashtra CET Cell and MITCORER Admissions Office',
       sourceUrl: 'https://mitcorer.edu.in/acap-institute-level-admission.php',
       answer: 'MITCORER B.Tech Engineering Admission Process (AY 2026-27):\n\n- Centralized Admission Process (CAP): Conducted by Maharashtra State CET Cell (fe2026.mahacet.org). Candidates register online, complete document e-verification, and submit option forms listing MITCORER (DTE Code: 06901) and preferred branch choice codes.\n- Entrance Exam Accepted: Valid non-zero score in MHT-CET 2026 or JEE Main Paper-I.\n- Institute-Level / Against-CAP (ACAP) Seats: Direct admission against institute quota and vacant seats following CAP rounds, conducted as per published merit lists and schedules on the college website.\n- Reporting & Document Verification: Allotted students report to the campus Admission Desk with original marksheets, scorecards, domicile, and category proofs to confirm enrollment.',
@@ -1279,6 +1307,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:education loan|bank loan|loan assistance)\b/.test(normalized)) {
     return {
+      recordId: 'KB-1',
       source: 'MITCORER Admissions Office and Accounts Section',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER Education Loan Support:\n\n- Bank Loan Support: The college administrative office assists admitted students with official documentation required for education loans across nationalized, private, and cooperative banks.\n- Documentation Provided: Official Bonafide Certificate, itemized Fee Estimate on institute letterhead, and AICTE Approval Letter copies needed by banks for loan processing.\n- Assistance Desk: Students can visit the college Admission Enquiry Desk or contact the Administrative Office (Mon-Sat, 9:30 AM to 5:30 PM) for loan documentation assistance.',
@@ -1287,6 +1316,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:campus interview|placement interview process|campus recruitment process|student recruitment process|placement selection process)\b/.test(normalized) || (/\b(?:recruitment process|interview process|selection process)\b/.test(normalized) && !/\b(?:faculty|teacher|professor|staff|employee)\b/.test(normalized))) {
     return {
+      recordId: 'KB-43',
       source: 'MITCORER Training and Placement Cell',
       sourceUrl: 'https://mitcorer.edu.in/placement-cell.php',
       answer: 'MITCORER Campus Interview & Recruitment Process:\n\n- Corporate Readiness Program (CRP): Pre-placement grooming covering quantitative aptitude, logical reasoning, verbal communication, resume optimization, and domain technical preparation.\n- Company Presentations: Visiting recruiters deliver Pre-Placement Talks (PPT) detailing job profiles, career progression, and CTC packages.\n- Multi-Stage Evaluation: Standard recruitment rounds include online coding/aptitude assessments, Group Discussions (GD), technical panel interviews, and HR rounds.\n- Dedicated Infrastructure: Placement cell hosts on-campus, virtual, and pooled recruitment drives supported by the computing center and conference facilities.',
@@ -1295,6 +1325,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:official website|college website|website link)\b/.test(normalized)) {
     return {
+      recordId: 'KB-34',
       source: 'MITCORER official website',
       sourceUrl: 'https://mitcorer.edu.in/',
       answer: 'The official website of MIT College of Railway Engineering and Research (MITCORER), Barshi is:\n\nhttps://mitcorer.edu.in/\n\nVisit the portal for official announcements, online enquiry, admission portals, syllabus, academic calendar, and mandatory disclosures.',
@@ -1303,6 +1334,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:chatbot|virtual assistant|mitra chatbot|chatbot support)\b/.test(normalized)) {
     return {
+      recordId: 'KB-34',
       source: 'MITCORER Virtual Assistant Mitra',
       sourceUrl: 'https://mitcorer.edu.in/',
       answer: 'Mitra is the official Virtual Assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi.\n\nMitra provides 24/7 verified guidance on B.Tech and Polytechnic admissions, eligibility criteria, choice codes, fee structures, government scholarships, hostel amenities, campus facilities, and placement records based directly on official college records.',
@@ -1311,6 +1343,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:college reviews?|student reviews?|ratings?)\b/.test(normalized)) {
     return {
+      recordId: 'KB-35',
       source: 'MITCORER institutional records and AICTE disclosure',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER Barshi institutional facts and verified benchmarks:\n\n- Legacy: Established under MAEER\'s MIT Pune Group (founded by Prof. Dr. Vishwanath D. Karad)\n- Approvals: Approved by AICTE, New Delhi; recognized by Govt. of Maharashtra & DTE Mumbai (Code: 06901); affiliated to PAH Solapur University (PAHSU) & MSBTE\n- Placements: 100+ visiting recruiters, 300+ students placed, highest published package of 21 LPA\n- Faculty & Alumni: 60+ qualified faculty members and an alumni network of 900+ graduates across core engineering and railway industries\n- Practical Infrastructure: Dedicated Railway Model Room, advanced departmental laboratories, central fabrication workshop, air-conditioned computing center, and separate student hostels.',
@@ -1319,6 +1352,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:barshi to solapur|solapur to barshi|distance (?:from|to) solapur|solapur distance)\b/.test(normalized)) {
     return {
+      recordId: 'KB-40',
       source: 'MITCORER Contact Us portal and campus transit directions',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
       answer: 'MITCORER Barshi to Solapur Transit & Commute:\n\n- Road Distance: Approximately 70 km from Solapur city to MITCORER campus in Barshi (about 1.5 to 2 hours via NH-52 / state highway).\n- College Bus Network: The college runs dedicated daily bus routes between Barshi, Kurduwadi, and Solapur for commuting day scholars and staff.\n- Rail Transit: Barshi Town railway station is 4.7 km from campus, while Kurduwadi Junction (~38 km) offers extensive rail connections across Solapur and Maharashtra.',
@@ -1327,6 +1361,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
     return {
+      recordId: 'KB-17',
       source: 'MITCORER Contact Us page',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
       answer: 'MITCORER, Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra 413401.\n\nEmail: info.mitcorer@mitpune.edu.in.\n\nPhone: +91 84599 67882, +91 86696 62106.\n\nWebsite: https://mitcorer.edu.in/.',
@@ -1335,6 +1370,7 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/^(?:mitcorer|mit college|mitcorer barshi|mit college barshi|engineering college barshi|railway engineering college)$|tell me about mitcorer|about mitcorer|about us|about the college/.test(normalized)) {
     return {
+      recordId: 'KB-34',
       source: 'MITCORER About Us page',
       answer: 'MIT College of Railway Engineering and Research (MITCORER) is an MIT Group college in Barshi, Solapur district, created with a focus on railway technology. Its railway-oriented curriculum draws on real railway practices and aims to prepare students for technological and social challenges.\n\nStudents learn through practical assignments, projects, interactive classes, campus facilities, and industry engagement.',
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
@@ -1417,6 +1453,7 @@ function buildFacilityAnswer(question) {
   if (/hostel/.test(normalized) && !/fee|cost|charge|payment/.test(normalized)) {
     const isAllotmentOrProcess = /\b(?:admission|process|allotment|apply|procedure|rules|joining|room)\b/.test(normalized);
     return {
+      recordId: 'KB-23',
       source: 'MITCORER Admissions FAQ and official brochure',
       sourceUrl: 'https://www.mitcorer.edu.in/hostel-amenities.php',
       answer: isAllotmentOrProcess
@@ -1428,6 +1465,7 @@ function buildFacilityAnswer(question) {
   }
   if ((/\b(?:sports grounds?|sports facilit\w*|box cricket|cricket ground|volleyball court|volleyball ground|badminton court|campus gym|college gym|gymnasium|physical fitness)\b/.test(normalized) || /\b(?:sports|gym)\b/.test(normalized)) && !/\b(?:world cup|icc|olympics?)\b/.test(normalized)) {
     return {
+      recordId: 'KB-48',
       source: 'MITCORER Sports and Cultural Events official portals',
       sourceUrl: 'https://mitcorer.edu.in/sports.php',
       answer: "MITCORER Sports Infrastructure & Campus Cultural Life:\n\n- Sports Facilities: Dedicated outdoor campus grounds for cricket, box cricket, and volleyball, alongside badminton facilities, indoor recreation (chess, carrom), and a campus gymnasium for student fitness.\n- Sports Tournaments: Annual inter-departmental sports meet and participation in university/zonal athletic competitions.\n- Cultural Festivities: Annual Cultural Gathering showcasing student music, drama, and dance performances, alongside grand celebrations of Chhatrapati Shivaji Maharaj Jayanti (Shiv Jayanti), Ganesh Utsav, National Engineer's Day, and Teachers' Day.\n- Holistic Development: Encourages extracurricular excellence, cultural vitality, and physical wellness alongside technical railway engineering studies.",
@@ -1436,6 +1474,7 @@ function buildFacilityAnswer(question) {
   }
   if (/\b(?:central workshop|machine shop|fitting shop|welding shop|carpentry shop|smithy|sheet metal|computer center|computing center|seminar halls?|audiovisual hall)\b/.test(normalized)) {
     return {
+      recordId: 'KB-49',
       source: 'MITCORER Facilities portals and workshop documentation',
       sourceUrl: 'https://mitcorer.edu.in/workshops.php',
       answer: 'MITCORER Central Workshop, Computing Center, and Seminar Halls:\n\n- Central Workshop: Fully equipped fabrication and practical training facility featuring specialized sections: Machine Shop (lathes, shapers, drilling, and milling equipment), Fitting Shop, Welding Shop (electric arc & oxy-acetylene gas welding), Carpentry Shop, and Sheet Metal/Smithy for hands-on fabrication and railway prototype modeling.\n- Central Computing Center: Air-conditioned facility equipped with 100+ high-performance networked desktop systems, dedicated high-speed optical fiber internet connectivity, and licensed engineering software suites for CAD/CAM, numerical computation, and programming.\n- Seminar Halls: Acoustically treated halls with ergonomic seating, multimedia audio-visual projection equipment, and high-fidelity sound systems hosting guest lectures, academic symposia, corporate seminars, and placement sessions.',
@@ -1445,6 +1484,7 @@ function buildFacilityAnswer(question) {
   const hasBranchLabIntent = /\b(?:cse|computer|civil|mechanical|mech|railway|rail|aids|entc)\b/i.test(normalized);
   if (/labs|laborator|workshop/.test(normalized) && !hasBranchLabIntent && !/\b(?:industrial visits?|field visits?|railway visits?|workshop visit)\b/.test(normalized)) {
     return {
+      recordId: 'KB-22',
       source: 'MITCORER Admissions FAQ and official workshop page',
       sourceUrl: 'https://mitcorer.edu.in/workshops.php',
       answer: 'MITCORER provides departmental laboratories and workshops for practical learning:\n\n- Specialized departmental laboratories for hands-on experiments\n- Computer labs equipped with modern systems and software\n- Mechanical and engineering workshops for practical training',
@@ -1453,6 +1493,7 @@ function buildFacilityAnswer(question) {
   }
   if ((/\bbus\b|transport facility|bus facility|bus route|bus stop|bus fee|bus timing/.test(normalized)) && !/\b(?:nearest|distance|how far|bus stand|railway station|barshi town|kurduwadi)\b/.test(normalized)) {
     return {
+      recordId: 'KB-19',
       source: 'MITCORER Bus Facility page',
       sourceUrl: 'https://mitcorer.edu.in/bus-facility.php',
       answer: 'MITCORER lists a bus facility under campus infrastructure:\n\n- College bus transportation is provided for student and staff commute\n- The published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee\n- Route details and transport fees must be confirmed from the current transport notice or admission staff before travel',
@@ -1463,6 +1504,7 @@ function buildFacilityAnswer(question) {
   }
   if (/\blibrary\b|digital resources|journal/.test(normalized)) {
     return {
+      recordId: 'KB-20',
       source: 'MITCORER Admissions FAQ',
       sourceUrl: 'https://mitcorer.edu.in/about-lib-details.php',
       answer: 'The MITCORER central library provides learning and research resources:\n\n- Extensive collection of reference books and engineering textbooks\n- Well-equipped library with digital resources and journals\n- Dedicated quiet reading hall for students and faculty\n- Note: The public FAQ does not publish borrowing rules, timings, or access eligibility; confirm operational details with the library',
@@ -1485,6 +1527,7 @@ function buildFacilityAnswer(question) {
       'cafeteria': 'MITCORER provides a campus cafeteria:\n\n- Clean and hygienic dining environment for students and staff\n- Daily snacks, refreshments, and meal options',
     };
     return {
+      recordId: facility === 'railway model room' ? 'KB-42' : 'KB-36',
       source: facility === 'railway model room' ? 'MITCORER Railway Model Room portal and official brochure' : 'MITCORER Admissions FAQ and infrastructure pages',
       ...(facility === 'railway model room' ? { sourceUrl: 'https://www.mitcorer.edu.in/railway-model-room.php' } : {}),
       answer: pointsMap[facility] || `MITCORER lists a ${facility} among its campus facilities.`,
@@ -1553,12 +1596,16 @@ export function retrieveKnowledge(question, vectorScores = null) {
   }
   if (['deadline', 'last date', 'admission date', 'reporting date', 'admission schedule'].some((term) => rawQuestion.includes(term)) || normalizedQuestion.includes('deadline')) targetedRecordIds.add('KB-30');
   if (/attendance|present|absen|detain|condonation|biometric|\bxx\b/.test(normalizedQuestion)) {
-    targetedRecordIds.add('KB-31');
-    primaryRecordIds.add('KB-31');
-    if (normalizedQuestion.includes('biometric')) targetedRecordIds.add('KB-32');
+    if (normalizedQuestion.includes('biometric')) {
+      targetedRecordIds.add('KB-32');
+      primaryRecordIds.add('KB-32');
+    } else {
+      targetedRecordIds.add('KB-31');
+      primaryRecordIds.add('KB-31');
+    }
   }
   if (['scholarship', 'financial aid', 'mahadbt'].some((term) => rawQuestion.includes(term)) && !rawQuestion.includes('fee')) targetedRecordIds.add('KB-18');
-  if (rawQuestion.includes('pragati')) {
+  if (rawQuestion.includes('pragati') || normalizedQuestion.includes('pragati')) {
     targetedRecordIds.add('KB-33');
     primaryRecordIds.add('KB-33');
   }
@@ -1664,12 +1711,18 @@ export function retrieveKnowledge(question, vectorScores = null) {
   if (normalizedQuestion.includes('scholarship')) primaryRecordIds.add('KB-18');
   if (normalizedQuestion.includes('seat matrix')) primaryRecordIds.add('KB-6');
   if (normalizedQuestion.includes('program') && rawQuestion.includes('b.tech')) primaryRecordIds.add('KB-10');
-  const asksAccommodationFee = ['hostel', 'mess'].some((term) => rawQuestion.includes(term)) && ['fee', 'fees', 'payment', 'amount', 'charges', 'cost'].some((term) => rawQuestion.includes(term));
+  const hasAccommodation = ['hostel', 'mess', 'accommodation', 'stay'].some((term) => matchesIntent(rawQuestion, term) || matchesIntent(normalizedQuestion, term));
+  const hasFee = ['fee', 'fees', 'payment', 'amount', 'charges', 'cost', 'deposit', 'price'].some((term) => matchesIntent(rawQuestion, term) || matchesIntent(normalizedQuestion, term));
+  const asksAccommodationFee = hasAccommodation && hasFee;
   if (asksAccommodationFee) {
     targetedRecordIds.add('KB-3');
     primaryRecordIds.add('KB-3');
   }
-  if (['fee', 'fees', 'payment', 'amount', 'semester'].some((term) => matchesIntent(rawQuestion, term) || matchesIntent(normalizedQuestion, term))) {
+  if (hasAccommodation && !hasFee) {
+    targetedRecordIds.add('KB-23');
+    primaryRecordIds.add('KB-23');
+  }
+  if (hasFee) {
     targetedRecordIds.add('KB-2');
     if (!asksAccommodationFee && !isReadinessQuestion) primaryRecordIds.add('KB-2');
   }
@@ -2055,7 +2108,9 @@ export async function answerAdmissionQuestion(body, user) {
   const records = getDb().knowledge;
   const guard = (result, id, anchor = true) => {
     if (!result) return null;
-    const required = Array.isArray(id) ? id : [id];
+    const targetId = result.recordId || id;
+    if (!targetId) return result;
+    const required = Array.isArray(targetId) ? targetId : [targetId];
     const unavailable = required.find(key => { const record = records.find(item => item.id === key); return !record || !usableKnowledge(record); });
     return !unavailable ? anchor ? { ...result, anchored: true, evidence: required.map(key => ({ ...records.find(item => item.id === key), score: 200 })) } : result : { managedRecordId: unavailable, source: 'No verified record', evidence: [],
       answer: 'I could not find a published official record for that information. Please check with the college for verified details.', next: '' };
@@ -2105,7 +2160,7 @@ export async function answerAdmissionQuestion(body, user) {
     // Gemini failed verification or returned null — fall through to deterministic chain below.
   }
 
-  const answer = (user && (buildAdmissionReadinessAnswer(question, user) || buildDocumentStatusAnswer(question, user))) || buildCompoundAnswer(question, normalized, records) || buildClarificationAnswer(normalized) || buildReviewedPassage(normalized, language, records) || buildContextualPassage(normalized, records) || guard(buildFacilityAnswer(question), /hostel/.test(normalized) ? 'KB-23' : ((/\b(?:sports grounds?|sports facilit\w*|box cricket|cricket ground|volleyball court|volleyball ground|badminton court|campus gym|college gym|gymnasium|physical fitness)\b/.test(normalized) || /\b(?:sports|gym)\b/.test(normalized)) && !/\b(?:world cup|icc|olympics?)\b/.test(normalized)) ? 'KB-48' : /\b(?:central workshop|machine shop|fitting shop|welding shop|carpentry shop|smithy|sheet metal|computer center|computing center|seminar halls?|audiovisual hall)\b/.test(normalized) ? 'KB-49' : /labs|laborator|workshop/.test(normalized) ? 'KB-22' : /bus|transport/.test(normalized) ? 'KB-19' : /library/.test(normalized) ? 'KB-20' : /railway model/.test(normalized) ? 'KB-42' : 'KB-36') || guard(buildCollegeProfileAnswer(question), /\b(?:student clubs?|technical clubs?|coding club|robotics club|student associations?|technical chapters?|space|mesa|cesa|eesa|co[- ]?curricular)\b/.test(normalized) ? 'KB-50' : /\b(?:industrial visits?|railway visits?|railway workshop visit|field visits?|field training|summer internships?)\b/.test(normalized) ? 'KB-51' : (/\b(?:sports grounds?|sports facilit\w*|box cricket|cricket ground|volleyball (?:court|ground)|badminton court|campus gym|gymnasium|cultural events?|cultural gathering|annual gathering|cultural fest|shiv jayanti|ganesh (?:utsav|festival))\b/.test(normalized) && !/\b(?:world cup|icc|olympics?)\b/.test(normalized)) ? 'KB-48' : /\b(?:professional diplomas?|railway diplomas?|railway track technology|railway signaling|railway signalling|rolling stocks?(?: and operations)?|software technology in railway|railway specializations?|railway modules?)\b/.test(normalized) ? 'KB-47' : (/\b(?:polytechnic|msbte|diploma)\b/.test(normalized) && !/\b(?:professional diploma|railway diploma|direct second|dse|lateral|fees?|cost|charges?)\b/.test(normalized)) ? 'KB-12' : /\b(?:office hours?|office timings?|working hours?|visiting hours?|admission desk|enquiry desk|college timings?|open on saturday|admission helpline|helpline number|campus visit|visit booking)\b/.test(normalized) ? 'KB-46' : /\b(?:nep(?: 2020)?|national education policy|outcome[- ]based education|obe|medium of instruction|english medium|curriculum pattern)\b/.test(normalized) ? 'KB-45' : /\b(?:anti[- ]?ragging|ragging|campus safety|emergency vehicle|ambulance|medical emergenc\w*|student welfare)\b/.test(normalized) ? 'KB-44' : /\b(?:mous?|corporate readiness|industry partner|aptitude training|soft skills training|campus interview|interview process|recruitment process)\b/.test(normalized) ? 'KB-43' : /\b(?:is mitcorer (?:the )?same as mit pune|mit pune|maeer|parent trust|mit wpu)\b/.test(normalized) ? 'KB-41' : /\b(?:nearest railway station|nearest station|which railway station|station to college|barshi town station|kurduwadi junction|nearest bus|barshi bus stand|how to reach|reach by train|reach by bus|barshi to solapur|solapur to barshi|solapur distance)\b/.test(normalized) ? 'KB-40' : /\b(?:affiliation|affiliated|which university|what university|solapur university|pahsu|aicte|dte code|institute code|06901|principal|madhukar lengare)\b/.test(normalized) ? 'KB-37' : /\b(?:hod|head of department|somnath mule|amit shinde|sanjay mane|honor|minor degree)\b/.test(normalized) || (/\blabs?\b/.test(normalized) && /\b(?:cse|computer|civil|mechanical)\b/.test(normalized)) || /^(?:mechanical engineering|computer engineering|civil engineering)$/.test(normalized) || /\b(?:computer engineering syllabus|mechanical engineering syllabus)\b/.test(normalized) ? 'KB-38' : /\b(?:nss|rail-mit|rail mit|technical event|asimit)\b/.test(normalized) ? 'KB-39' : /\b(?:why|faculty|teacher|professor|staff|alumni|reviews?|ratings?)\b/.test(normalized) && !/\b(?:hiring|recruitment|vacancy|vacancies|job|jobs|career|careers|opening|openings|employment|apply for job|work with us)\b/.test(normalized) ? 'KB-35' : /\b(?:b\.?tech admission|engineering admission|admission process|how to apply|admission 2026)\b/.test(normalized) ? 'KB-29' : /\b(?:education loan|bank loan|loan assistance)\b/.test(normalized) ? 'KB-1' : /\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized)) ? 'KB-17' : 'KB-34') || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
+  const answer = (user && (buildAdmissionReadinessAnswer(question, user) || buildDocumentStatusAnswer(question, user))) || buildCompoundAnswer(question, normalized, records) || buildClarificationAnswer(normalized) || buildReviewedPassage(normalized, language, records) || buildContextualPassage(normalized, records) || guard(buildFacilityAnswer(question)) || guard(buildCollegeProfileAnswer(question)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
     source: 'No verified record',
     answer: 'I could not find an official answer for that question. Please ask about a specific programme, fee, scholarship, admission step, or campus facility.',
     next: '',
@@ -2659,12 +2714,12 @@ async function handleApi(req) {
   if (req.method === 'POST' && url.pathname === '/api/public-assistant/ask') {
     const clientKey = getClientIp(req);
     enforceRateLimit(publicAssistantAttempts, clientKey, config.publicAssistantRateLimitMax, 60_000);
-    const session = readPublicSession(req) || createPublicSession();
+    const session = readPublicSession(req, body) || createPublicSession();
     const result = await askPublicWithHistory(body, answerAdmissionQuestion, session);
-    return { ...result, __publicSessionCookie: publicSessionCookie(session) };
+    return { ...result, sessionToken: session, __publicSessionCookie: publicSessionCookie(session) };
   }
   if (req.method === 'DELETE' && url.pathname === '/api/public-assistant/conversation') {
-    const session = readPublicSession(req);
+    const session = readPublicSession(req, body);
     if (!session) throw notFound('Conversation not found or expired.');
     if (typeof body.conversationId !== 'string') throw badRequest('A conversation ID is required.');
     return resetPublicConversation(body.conversationId, session);

@@ -151,8 +151,8 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(mous.answer, /Industry MoUs/);
     assert.match(mous.answer, /Corporate Readiness Program/);
     assert.match(mous.answer, /APTRON/);
-    assert.ok(mous.officialLinks.some(link => link.url.includes('our-mou.php')));
-    assert.ok(mous.officialLinks.some(link => link.url.includes('training-and-placement-cell.php')));
+    assert.ok(mous.officialLinks.some(link => link.url.includes('mou.php') || link.url.includes('our-mou.php')));
+    assert.ok(mous.officialLinks.some(link => link.url.includes('placement-cell.php') || link.url.includes('training-and-placement-cell.php')));
 
     const ragging = await ask('Is the campus ragging free and what anti-ragging measures are taken?');
     assert.equal(ragging.evidence[0]?.id, 'KB-44');
