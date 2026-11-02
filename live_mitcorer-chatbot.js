@@ -37,7 +37,19 @@
     return { id: id, k: re, a: "<b>" + name + "</b>" + (seats === "see page" ? "" : " · Intake: <b>" + seats + "</b>"), l: [[name + " – Department", path], ["Admission Process", "admissions"], ["Apply / Enquire", "contact-us"]], f: ["courses", "fees", "place"] };
   };
   var esc = function (t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
-  var fmt = function (t) { return esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>"); };
+  var fmt = function (t) {
+    if (!t) return "";
+    var s = esc(t);
+    s = s.replace(/^###\s+(.+)$/gm, "<div style='font-weight:700;font-size:1.05em;margin:8px 0 4px;color:#1e293b;'>$1</div>");
+    s = s.replace(/^##\s+(.+)$/gm, "<div style='font-weight:700;font-size:1.1em;margin:10px 0 4px;color:#1e293b;'>$1</div>");
+    s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    s = s.replace(/(^|[^\*])\*([^\*\n]+)\*([^\*]|$)/g, "$1<i>$2</i>$3");
+    s = s.replace(/^[•\*\-]\s+(.+)$/gm, "<div style='display:flex;align-items:flex-start;margin:3px 0;'><span style='margin-right:6px;color:#ae2e30;'>•</span><span>$1</span></div>");
+    s = s.replace(/^(\d+)\.\s+(.+)$/gm, "<div style='display:flex;align-items:flex-start;margin:3px 0;'><span style='margin-right:6px;font-weight:600;color:#ae2e30;'>$1.</span><span>$2</span></div>");
+    s = s.replace(/\n\n+/g, "<div style='height:8px;'></div>");
+    s = s.replace(/\n/g, "<br>");
+    return s;
+  };
   var desk = function (pre) { return { a: (pre ? pre + "<br><br>" : "") + "<b>" + T("dTitle") + "</b><br>📞 +91 84599 67882 / +91 86696 11211<br>✉️ info.mitcorer@mitpune.edu.in<br>🕘 " + T("dHours"), l: [[T("site"),C.site],[T("call") + " +91 84599 67882","tel:+918459967882"],[T("call") + " +91 86696 11211","tel:+918669611211"],[T("dEmail"),"mailto:info.mitcorer@mitpune.edu.in"],[T("dForm"),C.enq]], f: ["courses","fees","menu"] }; };
   var DESK = desk();
   var D = [
