@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { requestGeneration } from './generation-client.js';
+import { requestGeneration, requestGroqGeneration } from './generation-client.js';
 import { askWithHistory, askPublicWithHistory, getConversation, listConversations, resetPublicConversation, extractConversationContext, prunePublicConversations } from './conversations.js';
 import { readPublicSession, createPublicSession, publicSessionCookie } from './public-session.js';
 import { validateKnowledgeFields, buildMaintainedAnswer, academicFeeSelection, parseLegacyFactText, extractPublicFacts } from './knowledge.js';
@@ -1896,14 +1896,9 @@ function buildNoAnswerSuggestions(normalized) {
 
 
 async function generateWithGemini(question, routedAnswer, evidence) {
-  if (!config.geminiApiKey || evidence.length === 0) return null;
+  if ((!config.geminiApiKey && !config.groqApiKey) || evidence.length === 0) return null;
   const evidenceText = evidence.map((item, index) => `[${index + 1}] ${item.title} (${item.source}): ${item.text}`).join('\n\n');
-  return requestGeneration({ apiKey: config.geminiApiKey, primaryModel: config.geminiModel,
-    fallbackModel: config.geminiFallbackModel, body: {
-        // FIX #1 — Rich system prompt with college identity, tone, citation rules, and language guidance.
-        systemInstruction: {
-          parts: [{
-            text: `You are Mitra, the friendly and knowledgeable admission assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi, Solapur District, Maharashtra, India.
+  const systemInstructionText = `You are Mitra, the friendly and knowledgeable admission assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi, Solapur District, Maharashtra, India.
 
 Your role: Help students, parents, and aspirants understand MITCORER — its admissions, courses, fees, hostel, campus life, placements, and facilities — using only the verified evidence provided.
 
@@ -1919,15 +1914,41 @@ STRICT RULES you must follow at all times:
 9. Format for clear readability: lead with a direct summary sentence, use Markdown bullet points (• or -) with bold lead-ins for multiple items or criteria, and separate paragraphs cleanly.
 
 College context for tone only (do not use as factual source):
-MITCORER is an MIT Group college with a unique focus on railway engineering alongside Computer Science, Mechanical, Civil, Electronics, and AI & Data Science programmes. It is affiliated to PAHSU (Pune) and approved by AICTE, with DTE institute code 06901.`,
-          }],
-        },
-        contents: [{
-          role: 'user',
-          parts: [{ text: `Student question: ${question}\n\nVerified official evidence:\n${evidenceText}\n\nAnswer the student's question warmly and accurately using only the evidence above.` }],
-        }],
+MITCORER is an MIT Group college with a unique focus on railway engineering alongside Computer Science, Mechanical, Civil, Electronics, and AI & Data Science programmes. It is affiliated to PAHSU (Pune) and approved by AICTE, with DTE institute code 06901.`;
+
+  const userPromptText = `Student question: ${question}\n\nVerified official evidence:\n${evidenceText}\n\nAnswer the student's question warmly and accurately using only the evidence above.`;
+
+  // 1. Try Groq first if configured (ultra-fast inference)
+  if (config.groqApiKey) {
+    try {
+      const groqDraft = await requestGroqGeneration({
+        apiKey: config.groqApiKey,
+        primaryModel: config.groqModel,
+        fallbackModel: config.groqFallbackModel,
+        systemInstruction: systemInstructionText,
+        messages: [{ role: 'user', content: userPromptText }],
+      });
+      if (groqDraft?.text) return groqDraft;
+    } catch {
+      // Fall through to Gemini
+    }
+  }
+
+  // 2. Fallback to Gemini if configured
+  if (config.geminiApiKey) {
+    return requestGeneration({
+      apiKey: config.geminiApiKey,
+      primaryModel: config.geminiModel,
+      fallbackModel: config.geminiFallbackModel,
+      body: {
+        systemInstruction: { parts: [{ text: systemInstructionText }] },
+        contents: [{ role: 'user', parts: [{ text: userPromptText }] }],
         generationConfig: { temperature: 0.2, maxOutputTokens: 420 },
-      } });
+      },
+    });
+  }
+
+  return null;
 }
 
 export function generateQuerySuggestions(question, normalized) {
