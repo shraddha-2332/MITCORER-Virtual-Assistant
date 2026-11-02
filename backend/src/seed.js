@@ -518,16 +518,16 @@ export const seedKnowledge = [
   },
   {
     id: 'KB-45',
-    title: 'MITCORER curriculum framework, NEP 2020 alignment, OBE, and medium of instruction',
+    title: 'MITCORER academic calendar, term schedule, curriculum framework, NEP 2020 alignment, and OBE',
     category: 'About MITCORER',
     source: 'PAH Solapur University academic regulations and MITCORER academic portal',
     sourceUrl: 'https://mitcorer.edu.in/faq.php',
     tags: [
-      'nep 2020', 'nep pattern', 'national education policy', 'outcome based education',
+      'academic calendar', 'academic calender', 'calendar', 'calender', 'term schedule', 'semester schedule', 'nep 2020', 'nep pattern', 'national education policy', 'outcome based education',
       'obe', 'curriculum', 'medium of instruction', 'english medium', 'credit system',
       'course outcomes', 'evaluation pattern', 'academic framework',
     ],
-    text: 'MITCORER academic framework, NEP 2020 compliance, and medium of instruction:\n\n- NEP 2020 Alignment: Academic curriculum is structured in accordance with the National Education Policy (NEP 2020) and PAH Solapur University (PAHSU) credit framework, facilitating multidisciplinary learning, minor degrees, and honors specializations.\n- Outcome-Based Education (OBE): Instruction follows the OBE model, systematically mapping Program Outcomes (POs), Program Specific Outcomes (PSOs), and Course Outcomes (COs) through continuous internal evaluation and university end-semester examinations.\n- Medium of Instruction: The approved medium of instruction, classroom lectures, laboratory coursework, and university examinations across all B.Tech degree programs is English.\n- Practical Credit Structure: Blends theoretical credits with extensive departmental laboratory practicals, industry internships, and minor/major engineering projects.',
+    text: 'MITCORER academic calendar, term schedule, academic framework, and NEP 2020 compliance:\n\n- Academic Calendar & Term Schedule: As an affiliated institution of Punyashlok Ahilyadevi Holkar Solapur University (PAHSU), MITCORER follows the official PAHSU engineering academic schedule for semester start dates, teaching periods, mid-term evaluations, semester examinations, and vacations.\n- First-Year & DSE Commencement: The academic term for First-Year B.Tech and Direct Second Year (Lateral Entry) begins immediately after the completion of Centralized Admission Process (CAP) rounds conducted by the Maharashtra State CET Cell.\n- Institute Notices & Departmental Calendars: Detailed semester calendars, student activity schedules, and orientation dates are published on the college notice board and official portals (www.mitcorer.edu.in and www.sus.ac.in).\n- NEP 2020 Alignment: Academic curriculum is structured in accordance with the National Education Policy (NEP 2020) and PAH Solapur University (PAHSU) credit framework, facilitating multidisciplinary learning, minor degrees, and honors specializations.\n- Outcome-Based Education (OBE): Instruction follows the OBE model, systematically mapping Program Outcomes (POs), Program Specific Outcomes (PSOs), and Course Outcomes (COs) through continuous internal evaluation and university end-semester examinations.\n- Medium of Instruction: The approved medium of instruction, classroom lectures, laboratory coursework, and university examinations across all B.Tech degree programs is English.',
     status: 'Published',
   },
   {

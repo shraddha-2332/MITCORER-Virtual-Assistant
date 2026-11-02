@@ -925,7 +925,7 @@ function getOfficialAdmissionLinks(question) {
     add('MITCORER College Brochure', 'https://mitcorer.edu.in/pdf/MITCORER_Brochure-26-27.pdf');
     add('Official AICTE Mandatory Disclosure', 'https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf');
   }
-  if (/academic calendar|calendar|semester dates?|term schedule/.test(normalized)) {
+  if (/\b(?:academic\s+)?cal[ea]nd[ae]r\b|semester dates?|term schedule/.test(normalized)) {
     add('PAH Solapur University Portal', 'https://www.sus.ac.in/');
     add('MITCORER Official Notices & Website', 'https://mitcorer.edu.in/');
   }
@@ -1391,7 +1391,7 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'placements', actionLabel: 'Explore placement cell',
     };
   }
-  if (/\b(?:academic calendar|academic schedule|term calendar|calendar|semester dates?|term dates?|commencement of (?:classes|term)|induction program(?:me)?|when (?:do|does) (?:classes|college|college start|terms? start))\b/.test(normalized)) {
+  if (/\b(?:academic\s+schedule|term\s+schedule|semester\s+dates?|term\s+dates?|commencement of (?:classes|term)|induction program(?:me)?|when (?:do|does) (?:classes|college|college start|terms? start)|(?:academic\s+)?cal[ea]nd[ae]r(?:s)?)\b/.test(normalized)) {
     return {
       recordId: 'KB-45',
       source: 'PAH Solapur University & MITCORER Academic Affairs',
@@ -1769,7 +1769,7 @@ export function retrieveKnowledge(question, vectorScores = null) {
     targetedRecordIds.add('KB-44');
     primaryRecordIds.add('KB-44');
   }
-  if (['nep', 'nep 2020', 'national education policy', 'outcome based education', 'obe', 'medium of instruction', 'english medium', 'curriculum pattern'].some((term) => rawQuestion.includes(term) || normalizedQuestion.includes(term))) {
+  if (['nep', 'nep 2020', 'national education policy', 'outcome based education', 'obe', 'medium of instruction', 'english medium', 'curriculum pattern', 'academic calendar', 'academic calender', 'calendar', 'calender', 'term schedule', 'semester schedule'].some((term) => rawQuestion.includes(term) || normalizedQuestion.includes(term))) {
     targetedRecordIds.add('KB-45');
     primaryRecordIds.add('KB-45');
   }
@@ -2114,7 +2114,7 @@ export function generateQuerySuggestions(question, normalized) {
       { label: 'B.Tech Program Details', question: 'Which B.Tech courses are offered at MITCORER?' },
     ];
   }
-  if (/\b(?:academic calendar|calendar|semester dates?|term schedule)\b/.test(norm)) {
+  if (/\b(?:(?:academic\s+)?cal[ea]nd[ae]r|semester dates?|term schedule)\b/.test(norm)) {
     return [
       { label: 'B.Tech Admission Process', question: 'What is the B.Tech admission process?' },
       { label: 'B.Tech Programmes & Intake', question: 'Which B.Tech programmes are available at MITCORER?' },

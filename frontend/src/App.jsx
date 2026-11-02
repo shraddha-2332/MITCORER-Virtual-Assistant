@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Cpu, FileText,
   HandCoins, LockKeyhole, LogOut, Menu, Phone,
@@ -418,19 +418,18 @@ function PublicAssistantWidget({ onAdminLogin }) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const textareaRef = useRef(null);
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      if (input) {
-        const nextH = Math.min(textareaRef.current.scrollHeight, 120);
-        textareaRef.current.style.height = `${nextH}px`;
-        textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 120 ? 'auto' : 'hidden';
-        if (textareaRef.current.scrollHeight <= 120) {
-          textareaRef.current.scrollTop = 0;
-        }
-      } else {
-        textareaRef.current.style.overflowY = 'hidden';
-      }
+  useLayoutEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = '38px';
+    if (input) {
+      const scrollH = el.scrollHeight;
+      const targetH = Math.max(38, Math.min(scrollH, 130));
+      el.style.height = `${targetH}px`;
+      el.style.overflowY = scrollH > 130 ? 'auto' : 'hidden';
+      if (scrollH <= 130) el.scrollTop = 0;
+    } else {
+      el.style.overflowY = 'hidden';
     }
   }, [input]);
   const [busy, setBusy] = useState(false);

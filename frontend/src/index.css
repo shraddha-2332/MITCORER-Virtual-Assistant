@@ -204,8 +204,12 @@ button { border: 0; }
   color: #4b5563;
   border: 1px solid #d1d5db;
 }
-.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 45px; gap: 8px; align-items: flex-end; padding: 10px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
-.publicComposer textarea { width: 100%; min-height: 24px; max-height: 120px; resize: none; border: 0; outline: 0; color: var(--ink); font-size: 15px; line-height: 1.45; box-sizing: border-box; padding: 4px 2px; overflow-y: hidden; font-family: inherit; }
+.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: flex-end; padding: 8px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
+.publicComposer textarea { width: 100%; min-height: 38px; max-height: 130px; resize: none; border: 1px solid #d9e2dc; border-radius: 8px; outline: 0; color: var(--ink); font-size: 14px; line-height: 1.4; box-sizing: border-box; padding: 8px 10px; overflow-y: hidden; font-family: inherit; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; transition: border-color .15s ease; }
+.publicComposer textarea:focus { border-color: #146548; }
+.publicComposer textarea::-webkit-scrollbar { width: 4px; }
+.publicComposer textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.publicComposer textarea::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .publicComposer button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: #0d2639; color: #fff; cursor: pointer; flex-shrink: 0; }.publicComposer button:disabled { opacity: .45; cursor: default; }
 .publicAssistantPanel > footer { padding: 8px 12px; border-top: 1px solid #edf0ee; background: #fff; color: #71807e; font-size: 10px; line-height: 1.35; text-align: center; }.publicAssistantPanel > footer a { color: #176c50; font-weight: 800; }
 
