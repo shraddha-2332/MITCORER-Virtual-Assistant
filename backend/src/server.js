@@ -925,6 +925,10 @@ function getOfficialAdmissionLinks(question) {
     add('MITCORER College Brochure', 'https://mitcorer.edu.in/pdf/MITCORER_Brochure-26-27.pdf');
     add('Official AICTE Mandatory Disclosure', 'https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf');
   }
+  if (/academic calendar|calendar|semester dates?|term schedule/.test(normalized)) {
+    add('PAH Solapur University Portal', 'https://www.sus.ac.in/');
+    add('MITCORER Official Notices & Website', 'https://mitcorer.edu.in/');
+  }
   return links;
 }
 
@@ -1331,6 +1335,15 @@ function buildCollegeProfileAnswer(question) {
       sourceUrl: 'https://mitcorer.edu.in/placement-cell.php',
       answer: 'MITCORER Campus Interview & Recruitment Process:\n\n- Corporate Readiness Program (CRP): Pre-placement grooming covering quantitative aptitude, logical reasoning, verbal communication, resume optimization, and domain technical preparation.\n- Company Presentations: Visiting recruiters deliver Pre-Placement Talks (PPT) detailing job profiles, career progression, and CTC packages.\n- Multi-Stage Evaluation: Standard recruitment rounds include online coding/aptitude assessments, Group Discussions (GD), technical panel interviews, and HR rounds.\n- Dedicated Infrastructure: Placement cell hosts on-campus, virtual, and pooled recruitment drives supported by the computing center and conference facilities.',
       next: '', actionView: 'placements', actionLabel: 'Explore placement cell',
+    };
+  }
+  if (/\b(?:academic calendar|academic schedule|term calendar|calendar|semester dates?|term dates?|commencement of (?:classes|term)|induction program(?:me)?|when (?:do|does) (?:classes|college|college start|terms? start))\b/.test(normalized)) {
+    return {
+      recordId: 'KB-45',
+      source: 'PAH Solapur University & MITCORER Academic Affairs',
+      sourceUrl: 'https://mitcorer.edu.in/faq.php',
+      answer: 'MITCORER Academic Calendar & Term Schedule (AY 2026-27):\n\n- University Academic Calendar: As an affiliated institution of Punyashlok Ahilyadevi Holkar Solapur University (PAHSU), MITCORER follows the official PAHSU engineering academic schedule for semester start dates, teaching periods, mid-term evaluations, semester examinations, and vacations.\n- First-Year & DSE Commencement: The academic term for First-Year B.Tech and Direct Second Year (Lateral Entry) begins immediately after the completion of Centralized Admission Process (CAP) rounds conducted by the Maharashtra State CET Cell.\n- Institute Notices & Departmental Calendars: Detailed semester calendars, student activity schedules, and orientation dates are published on the college notice board and official portals.\n- Where to Check: Access university circulars via the PAHSU portal (www.sus.ac.in) and college announcements via the MITCORER portal (www.mitcorer.edu.in). Admitted students receive the term schedule directly at the reporting desk.',
+      next: '', actionView: 'programs', actionLabel: 'View academic details',
     };
   }
   if (/\b(?:official website|college website|website link)\b/.test(normalized)) {
@@ -2044,6 +2057,14 @@ export function generateQuerySuggestions(question, normalized) {
       { label: 'Career Scope after AI & DS', question: 'What is the career after AI and Data Science engineering?' },
       { label: 'AI & Data Science Labs', question: 'What computing facilities support AI and Data Science?' },
       { label: 'B.Tech Program Details', question: 'Which B.Tech courses are offered at MITCORER?' },
+    ];
+  }
+  if (/\b(?:academic calendar|calendar|semester dates?|term schedule)\b/.test(norm)) {
+    return [
+      { label: 'B.Tech Admission Process', question: 'What is the B.Tech admission process?' },
+      { label: 'B.Tech Programmes & Intake', question: 'Which B.Tech programmes are available at MITCORER?' },
+      { label: 'Required Documents', question: 'What documents are required for admission?' },
+      { label: 'Contact Admissions Office', question: 'What are the MITCORER admission contact details?' },
     ];
   }
   if (/\b(?:civil engineering)\b/.test(norm)) {
