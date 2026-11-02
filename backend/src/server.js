@@ -1176,16 +1176,25 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
     };
   }
+  if (/\b(?:backlog|backlogs|fail(?:ed)? in (?:a |one )?subject|atkt|allowed to keep term|clear backlog)\b/.test(normalized)) {
+    return {
+      recordId: 'KB-31',
+      source: 'PAH Solapur University CBCS UG Engineering Rules & Examination Guidelines',
+      sourceUrl: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf',
+      answer: 'PAH Solapur University (PAHSU) Rules on Backlogs & ATKT:\n\n- Allowed to Keep Term (ATKT): Under university CBCS regulations, a student having backlogs in subjects is eligible for ATKT subject to fulfilling the minimum credit/passing requirements for term progression.\n- Clearing Backlog Papers: Students can appear for backlog subject examinations during the immediate next winter or summer university examination cycle alongside regular semester subjects.\n- Continuous Internal Evaluation: Term-work, practical assessments, and continuous internal evaluations must also satisfy the passing criteria stipulated by university regulations.\n- Guidance: Students with backlogs should consult their respective Department Head (HOD) and the College Examination Officer (CEO) for re-registration and exam form schedules.',
+      next: '', actionView: 'programs', actionLabel: 'View academic rules',
+    };
+  }
   const asksMech = /\b(?:mechanical|mech|railway|rail|sanjay mane|mesa)\b/i.test(normalized);
   const asksCivil = /\b(?:civil|amit shinde|cesa)\b/i.test(normalized);
   const asksCse = /\b(?:cse|computer|somnath mule|space|ai ml honors|cybersecurity honors)\b/i.test(normalized);
   const asksHod = /\b(?:hod|head of department|department head)\b/i.test(normalized);
   const asksLabs = /\b(?:labs?|laborator(?:y|ies))\b/i.test(normalized);
   const asksSyllabus = /\b(?:syllabus|curriculum|subjects)\b/i.test(normalized);
-  const asksHodOrDept = /\b(?:hod|head of department|department head|labs?|laborator(?:y|ies)|syllabus|specializations?|honor degrees?|minor degrees?)\b/i.test(normalized);
+  const asksHodOrDept = /\b(?:hod|head of department|department head|labs?|laborator(?:y|ies)|syllabus|curriculum|subjects?|taught|programming languages?|coding languages?|specializations?|honor degrees?|minor degrees?)\b/i.test(normalized);
   const isExcludedFromProfile = /\b(?:eligible|eligibility|percentile|cutoff|cut-off|fee|fees|scholarship)\b/i.test(normalized);
 
-  if (!isExcludedFromProfile && (asksHodOrDept || /\b(?:about\s+civil|civil\s+branch|civil\s+department|about\s+mechanical|mechanical\s+branch|mechanical\s+department|about\s+computer|computer\s+branch|computer\s+department)\b/i.test(normalized) || /^(?:mechanical engineering|computer engineering|civil engineering)$/.test(normalized) || /\b(?:computer engineering syllabus|mechanical engineering syllabus)\b/.test(normalized))) {
+  if (!isExcludedFromProfile && (asksHodOrDept || (asksCivil && /\bcontact\b/i.test(normalized)) || /\b(?:about\s+civil|civil\s+branch|civil\s+department|about\s+mechanical|mechanical\s+branch|mechanical\s+department|about\s+computer|computer\s+branch|computer\s+department)\b/i.test(normalized) || /^(?:mechanical engineering|computer engineering|civil engineering)$/.test(normalized) || /\b(?:computer engineering syllabus|mechanical engineering syllabus)\b/.test(normalized))) {
     if (asksMech && !asksCivil && !asksCse) {
       if (asksHod && !asksLabs && !asksSyllabus) {
         return {
@@ -1223,6 +1232,15 @@ function buildCollegeProfileAnswer(question) {
           next: '', actionView: 'programs', actionLabel: 'Explore Civil Engineering',
         };
       }
+      if (/\b(?:contact|phone|email|address|how to reach|contact details?)\b/i.test(normalized)) {
+        return {
+          recordId: 'KB-38',
+          source: 'MITCORER Civil Engineering department portal',
+          sourceUrl: 'https://mitcorer.edu.in/civil-engineering.php',
+          answer: 'MITCORER Department of Civil Engineering Contact Details:\n\n- Head of Department (HOD): Prof. Amit Raosaheb Shinde\n- Department Office: Civil Engineering Wing, Main Academic Building, MITCORER Barshi\n- General Admission & Office Helpline: +91 84599 67882 / +91 86696 62106\n- Email: info.mitcorer@mitpune.edu.in\n- Department Webpage: https://mitcorer.edu.in/civil-engineering.php',
+          next: '', actionView: 'visit', actionLabel: 'Contact Civil Department',
+        };
+      }
       if (asksLabs && !asksHod && !asksSyllabus) {
         return {
           recordId: 'KB-38',
@@ -1247,6 +1265,15 @@ function buildCollegeProfileAnswer(question) {
           source: 'MITCORER Computer Science & Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
           answer: 'The Head of Department (HOD) of Computer Science & Engineering (CSE) at MITCORER is Prof. Somnath Mule.',
+          next: '', actionView: 'programs', actionLabel: 'Explore Computer Science & Engineering',
+        };
+      }
+      if (asksSyllabus || /\b(?:subjects?|taught|programming languages?|coding|tech stack)\b/i.test(normalized)) {
+        return {
+          recordId: 'KB-38',
+          source: 'MITCORER Computer Science & Engineering department portal',
+          sourceUrl: 'https://mitcorer.edu.in/computer-science-engineering.php',
+          answer: 'MITCORER Department of Computer Science & Engineering (CSE) Curriculum & Subjects:\n\n- Third Year (TE) & Core Subjects (PAHSU CBCS Pattern): Operating Systems, Database Management Systems (DBMS), Advanced Java Programming, Software Engineering, Theory of Computation, Computer Networks, and Artificial Intelligence.\n- Programming Languages Taught: Hands-on training in C, C++, Core Java, Advanced Java, Python, SQL, Web Technologies (HTML5, CSS3, JavaScript), and Cloud/AI frameworks.\n- Honors & Specializations: Specialized honor degrees in Artificial Intelligence (AI), Machine Learning (ML), and Cybersecurity.\n- Practical Laboratories: Supported by High-Performance Computing Lab, AI/ML & Deep Learning Lab, Database Systems Lab, Software Engineering Lab, and Programming Computational Center.',
           next: '', actionView: 'programs', actionLabel: 'Explore Computer Science & Engineering',
         };
       }
@@ -1291,6 +1318,33 @@ function buildCollegeProfileAnswer(question) {
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
       answer: 'MITCORER features 60+ experienced faculty members across engineering and polytechnic disciplines, supporting students with interactive classes, practical assignments, and industry-oriented railway engineering projects.\n\nFor the complete department-wise roster of faculty names, designations, and qualifications, refer to the official AICTE Mandatory Disclosure on the college website.',
       next: '', actionView: 'inquiry', actionLabel: 'View official disclosure',
+    };
+  }
+  if (/\b(?:autonomous|autonomy|is (?:the |it an? )?autonomous|autonomous status)\b/i.test(normalized)) {
+    return {
+      recordId: 'KB-37',
+      source: 'MITCORER Affiliations and Statutory Approvals',
+      sourceUrl: 'https://mitcorer.edu.in/',
+      answer: 'MITCORER Autonomy & Affiliation Status:\n\n- Non-Autonomous College: MITCORER is a non-autonomous, private-unaided engineering institution affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAHSU), Solapur.\n- University Curriculum & Exams: All academic curricula, continuous internal assessments, and semester examinations strictly follow PAHSU regulations and syllabus.\n- Statutory Approvals: Approved by AICTE, New Delhi, recognized by the Directorate of Technical Education (DTE), Maharashtra (DTE Code: 06901), and accredited NAAC Grade A.\n- Degrees Awarded: Degrees are conferred directly by Punyashlok Ahilyadevi Holkar Solapur University.',
+      next: '', actionView: 'programs', actionLabel: 'View affiliations',
+    };
+  }
+  if (/\b(?:famous for|known for|what is the college famous for|what is mitcorer famous for|specialty|uniqueness|usp)\b/i.test(normalized)) {
+    return {
+      recordId: 'KB-35',
+      source: 'MITCORER Admissions FAQ and official website',
+      sourceUrl: 'https://mitcorer.edu.in/faq.php',
+      answer: "What MITCORER is Famous For & Key Highlights:\n\n- India's Railway Engineering Pioneer: MITCORER is renowned as India's specialized institute for railway engineering education under MAEER's MIT Pune Group, featuring an exclusive state-of-the-art Railway Model Room and railway-oriented specializations.\n- High Placement Track Record: 94% placement rate in AY 2024-25, 100+ visiting recruiters, and highest package of 21 LPA.\n- MAEER's MIT Legacy: Backed by the 35+ year legacy of MAEER's MIT Pune Group founded by Prof. Dr. Vishwanath D. Karad.\n- Industry Exposure: 25+ corporate MoUs, proximity to Central Railway workshops, Corporate Readiness Program (CRP), and high-demand internships.\n- Complete Campus Infrastructure: Advanced departmental laboratories, AI/ML computing centers, central workshop, sports grounds, gym, and separate student hostels.",
+      next: '', actionView: 'visit', actionLabel: 'Explore why MITCORER',
+    };
+  }
+  if (/\b(?:separate department for ai|separate department for artificial|ai and data science department|department for ai and data science)\b/i.test(normalized) || (/\b(?:separate department)\b/i.test(normalized) && /\b(?:ai|data science|aids)\b/i.test(normalized))) {
+    return {
+      recordId: 'KB-38',
+      source: 'MITCORER B.Tech Programs and Department Listings',
+      sourceUrl: 'https://mitcorer.edu.in/fy-btech.php',
+      answer: 'MITCORER Department of Artificial Intelligence & Data Science (AI&DS):\n\n- Separate Degree Programme & Intake: MITCORER runs a dedicated full-time 4-Year B.Tech program in Artificial Intelligence & Data Science with an approved intake of 60 seats (DTE Choice Code: 0690126310).\n- Departmental Facilities: Equipped with dedicated AI & Data Science computing laboratories, GPU-accelerated computing nodes, and advanced data analytics toolsets.\n- Curriculum Focus: Deep Learning, Machine Learning algorithms, Big Data Analytics, Natural Language Processing (NLP), and Python/R computational modeling under specialized faculty.',
+      next: '', actionView: 'programs', actionLabel: 'Explore AI & DS Programme',
     };
   }
   if (/alumni|alumnus/.test(normalized)) {
@@ -1382,7 +1436,7 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
-  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
+  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact|where (?:exactly )?(?:is )?mitcorer (?:is )?located|where is the college located|college location|campus location|how to reach the campus|exact location)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address|located|location)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
     return {
       recordId: 'KB-17',
       source: 'MITCORER Contact Us page',
@@ -1400,7 +1454,7 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
     };
   }
-  if (/why (?:choose )?mit ?corer|why should i choose mit ?corer|why us|highlights? of mit ?corer/.test(normalized)) {
+  if (/why (?:choose )?mit ?corer|why should i choose mit ?corer|why us|highlights? of mit ?corer|what is the college famous for|what is the college known for|what is mitcorer famous for/.test(normalized)) {
     return {
       recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
@@ -1423,10 +1477,11 @@ function buildCollegeProfileAnswer(question) {
 
 function buildCampusFacilitiesAnswer(question) {
   const normalized = normalizeIntentText(question);
-  if (!/\b(?:campus facilit|college facilit|facilities available|campus infrastructure|facilities|infrastructure|amenities)\b/.test(normalized)) return null;
+  if (/\b(?:today'?s|daily|what is (?:today'?s|the daily))\b/i.test(normalized) && /\bmenu\b/i.test(normalized)) return null;
+  if (!/\b(?:campus facilit|college facilit|facilities available|campus infrastructure|facilities|infrastructure|amenities|canteen|cafeteria|campus mess)\b/.test(normalized)) return null;
   return {
     source: 'MITCORER official brochure and Admissions FAQ',
-    answer: 'MITCORER campus facilities include:\n\n- Learning: classrooms, laboratories, computer labs, workshops, railway model room, library, and seminar halls\n- Student life: separate hostels, mess/canteen, sports, and gym\n- Services: transport, Wi-Fi, RO drinking water, solar water heating, parking, security, and guest houses',
+    answer: 'MITCORER campus facilities include:\n\n- Learning: classrooms, laboratories, computer labs, workshops, railway model room, library, and seminar halls\n- Student life: separate hostels, campus mess/canteen providing hygienic meals and snacks, sports, and gym\n- Services: transport, Wi-Fi, RO drinking water, solar water heating, parking, security, and guest houses',
     next: '', actionView: 'visit', actionLabel: 'Explore facilities',
   };
 }

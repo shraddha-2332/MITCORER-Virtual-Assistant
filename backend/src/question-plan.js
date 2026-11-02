@@ -75,7 +75,8 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (parts.every((part) => /\b(?:hostel|mess)\b/.test(part)) && /fee|charges|cost|amount/.test(normalized)) return null;
   const planned = parts.filter((part) => !/^(?:i am|i'm|my category is|my diploma is complete|i will join|i (?:passed|completed|finished) class 12)\b/.test(part)
     && !/^apart from (?:academic|tuition) fee$/i.test(part)
-    && !(/^(?:i am|i'm|my category is)\b/.test(normalized) && /^want\b/.test(part))).map((part) => {
+    && !(/^(?:i am|i'm|my category is)\b/.test(normalized) && /^want\b/.test(part))
+    && !/^(?:i don't want|do not (?:give|show|tell|include)|only\b|exclude\b)/i.test(part)).map((part) => {
     let topic = facet(part);
     if (topic === 'academicFees' && /\b(?:bus|transport)\b/.test(normalized)
       && !/b\.?tech|engineering|academic|tuition|first.year|direct.second|\bdse\b|hostel|mess/.test(normalized)) topic = 'transport';
