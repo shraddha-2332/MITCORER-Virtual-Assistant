@@ -18,7 +18,7 @@
   };
 
   /* ---------- KNOWLEDGE (only facts published on mitcorer.edu.in) ---------- */
-  var M = { menu:"Main menu", adm:"Admissions", fees:"Fees & Concessions", courses:"Programmes", docs:"Required Documents", place:"Placements", infra:"Facilities", brochure:"Brochures", contact:"Contact us", camp:"Campus Life", poly:"Diploma Programmes", about:"About MITCORER", cut:"Cutoffs", schol:"Scholarships", why:"Why MITCORER?", enq:"Admission enquiry →", fyfees:"B.Tech First-Year Fees", dsyfees:"Direct Second Year Fees", hmfees:"Hostel & Mess Fees", conc:"Concessions", hostel:"Hostel Facilities", lang_en:"English", lang_mr:"मराठी", lang_hi:"हिन्दी" };
+  var M = { menu:"Main menu", adm:"Admissions", fees:"Fees & Concessions", courses:"Programmes", docs:"Required Documents", place:"Placements", infra:"Facilities", brochure:"Brochures", contact:"Contact us", camp:"Campus Life", poly:"Diploma Programmes", about:"About MITCORER", cut:"Cutoffs", schol:"What scholarships and financial aid schemes are available at MITCORER?", why:"Why MITCORER?", enq:"Admission enquiry →", fyfees:"B.Tech First-Year Fees", dsyfees:"Direct Second Year Fees", hmfees:"Hostel & Mess Fees", conc:"Concessions", hostel:"Hostel Facilities", lang_en:"English", lang_mr:"मराठी", lang_hi:"हिन्दी" };
   var MAIN = ["courses","fees","cut","docs","schol","place","infra","about","why","enq","contact"], LC = { enq: C.enq };
 
   /* ---------- LANGUAGES (UI text; answers come from MITRA in the selected / detected language) ---------- */
@@ -57,6 +57,7 @@
     { id:"thanks", tk:"thanks", k:/\b(thanks|thank you|thx|ok thanks)\b|धन्यवाद|आभार/, a:"You're welcome! 😊 Anything else I can help with?", f:["adm","contact","menu"] },
     { id:"menu", tk:"menu", k:/\b(menu|main menu|start over)\b/, a:"What would you like to know?", f:MAIN },
     { id:"why", k:/\bwhy\b|choose|best|reason|benefit|special/, a:"<b>Why MIT CORER?</b> Part of MAEER's MIT Group — 35+ years of excellence.", stats:[["94%","Placement rate 2024-25"],["100+","Companies visited"],["NAAC A","Accredited grade"],["25+","MOUs signed"]], l:[["About Overview","about"],["Placement Record","placement/record"]], f:["courses","place","adm"] },
+        { id:"schol", k:/scholarship|pragati|mahadbt|freeship|financial aid|छात्रवृत्ति|शिष्यवृत्ती/, a:"<b>Scholarship & Financial Aid Schemes</b><br>MITCORER facilitates major government scholarship and concession schemes:<br>• <b>MahaDBT (Maharashtra Government)</b>: Rajarshi Chhatrapati Shahu Maharaj EBC fee concession (50% tuition/exam fee concession for Open/EWS), Dr. Panjabrao Deshmukh hostel maintenance allowance, and Government of India Post-Matric scholarships for SC/ST/OBC/VJNT/SBC.<br>• <b>OBC Girls Scheme</b>: Tuition and examination fee waiver for eligible OBC girls in technical courses.<br>• <b>Central Government (NSP)</b>: AICTE Pragati Scholarship for girls (₹50,000/year) and AICTE Saksham for differently-abled students.<br>• <b>Application Portals</b>: Apply online via MahaDBT or National Scholarship Portal with income, caste, validity, and CAP allotment documents.", l:[["MITCORER Scholarships Page","https://www.mitcorer.edu.in/scholarship.php"],["MahaDBT Scholarship Portal","https://mahadbt.maharashtra.gov.in/login/login"],["National Scholarship Portal","https://scholarships.gov.in/All-Scholarships"]], f:["fees","adm","contact"] },
     { id:"fees", tk:"feesnav", k:/fee|payment|pay\b|cost|tuition|fra\b|shulk|kiti/, a:"Which fees would you like to know about? Please choose:", f:["fyfees","dsyfees","conc","hmfees","schol"], nav:1 },
     { id:"brochure", k:/brochure|prospectus|download/, a:"Download brochures:", l:[["B.Tech Brochure","admissions/brochure"],["DSY Brochure","admissions/dsy-brochure"],["Complete College Brochure","admissions/college-brochure"]], f:["adm","fees","courses"] },
     dept("fy", /first year|\bfy\b|\bfe\b/, "First Year Engineering", "see page", "department/fy-engineering"),
@@ -209,7 +210,20 @@
     return go();
   }
   function view(d, a, n) {
-    var l = (d.evidence || []).filter(function (e) { return e && e.url && /^https?:\/\//i.test(e.url); }).map(function (e) { return [esc(e.title || "Official source"), e.url]; });
+    var l = [];
+    var seen = {};
+    function addLink(title, u) {
+      if (!u || !/^https?:\/\//i.test(u) || seen[u]) return;
+      seen[u] = true;
+      l.push([esc(title || "Official source"), u]);
+    }
+    if (d.officialLinks && d.officialLinks.length) {
+      d.officialLinks.forEach(function (x) { if (x && x.url) addLink(x.label || "Official link", x.url); });
+    }
+    if (d.sourceUrl) addLink(d.source || "Official source", d.sourceUrl);
+    (d.evidence || []).forEach(function (e) {
+      if (e) addLink(e.title || e.source || "Official source", e.sourceUrl || e.url);
+    });
     return { a: a, l: l, note: n ? "⚠️ " + n : null, f: ["courses", "fees", "contact"] };
   }
   function queryMitra(q, fb) {
