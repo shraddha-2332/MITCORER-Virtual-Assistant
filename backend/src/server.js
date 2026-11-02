@@ -919,7 +919,12 @@ function getOfficialAdmissionLinks(question) {
   else if (currentYear && asksPolytechnic) add('Official Polytechnic admission portal 2026-27', 'https://poly26.dtemaharashtra.gov.in/poly_26/home');
   else if (currentYear && asksCap) add('Official B.Tech CAP portal 2026-27', 'https://fe2026.mahacet.org/StaticPages/HomePage');
   if (asksAcap) add('MITCORER ACAP and institute-level notices', 'https://mitcorer.edu.in/acap-institute-level-admission.php');
-  if (asksCap || asksAcap) add('Maharashtra CET Cell notices', 'https://cetcell.mahacet.org/notices/');
+  if (asksCap || asksAcap || /cutoff|cut-off|merit/.test(normalized)) add('Maharashtra CET Cell notices', 'https://cetcell.mahacet.org/notices/');
+  if (/cutoff|cut-off|merit/.test(normalized)) add('Official Maharashtra CET Cell CAP Cutoff portal', 'https://fe2024.mahacet.org/StaticPages/HomePage');
+  if (/brochure|prospectus/.test(normalized)) {
+    add('MITCORER College Brochure', 'https://mitcorer.edu.in/pdf/MITCORER_Brochure-26-27.pdf');
+    add('Official AICTE Mandatory Disclosure', 'https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf');
+  }
   return links;
 }
 
@@ -941,8 +946,9 @@ function getOfficialExperienceLinks(question) {
     links.push({ label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' });
     links.push({ label: 'MITCORER published recruiters', url: 'https://mitcorer.edu.in/our-recruiters.php' });
   }
-  if (/about mitcorer|about us|why mitcorer|why choose mitcorer/.test(normalized)) {
+  if (/about mit ?corer|about us|why mit ?corer|why choose mit ?corer|chatbot|virtual assistant|capabilities|what (?:can|else can) (?:we|i|you)|how can you help/i.test(normalized) || (/\bwhat else\b/.test(normalized) && /\bask\b/.test(normalized))) {
     links.push({ label: 'About MITCORER', url: 'https://www.mitcorer.edu.in/mit-corer.php' });
+    links.push({ label: 'MITCORER Official Admission Portal 2026-27', url: 'https://www.mitcorer.edu.in/Admissions-Open-2026-27.html' });
   }
   if (/faculty|teacher|professor|staff|mandatory disclosure|brochure/.test(normalized)) {
     links.push({ label: 'Official AICTE Mandatory Disclosure (Complete Faculty Roster)', url: 'https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf' });
@@ -1038,9 +1044,13 @@ function getContactMapLink(question) {
 }
 
 function getOfficialFeeLinks(question) {
-  if (!/\bfees?\b|fee structure/i.test(question) || !/2025-26|previous.year|historical|\bfra\b/i.test(question)) return [];
-  if (/hostel|mess|bus|transport|polytechnic|diploma/i.test(question)) return [];
-  return [{ label: 'Official FRA fee PDF (AY 2025-26; previous-year reference)', url: 'https://mitcorer.edu.in/pdf/FRA_Fee_Structure.pdf' }];
+  const normalized = normalizeIntentText(question);
+  if (!/\bfees?\b|fee structure/i.test(question)) return [];
+  if (/hostel|mess|bus|transport|polytechnic|diploma/i.test(normalized)) return [];
+  if (/2025-26|previous.year|historical|\bfra\b/i.test(question)) {
+    return [{ label: 'Official FRA fee PDF (AY 2025-26; previous-year reference)', url: 'https://mitcorer.edu.in/pdf/FRA_Fee_Structure.pdf' }];
+  }
+  return [{ label: 'MITCORER Official Admission & Fee Structure 2026-27', url: 'https://www.mitcorer.edu.in/Admissions-Open-2026-27.html' }];
 }
 
 function buildCollegeProfileAnswer(question) {
@@ -1332,12 +1342,12 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'inquiry', actionLabel: 'Visit website',
     };
   }
-  if (/\b(?:chatbot|virtual assistant|mitra chatbot|chatbot support)\b/.test(normalized)) {
+  if (/\b(?:chatbot|virtual assistant|mitra chatbot|chatbot support|what (?:can|else can) (?:we|i|you) (?:ask|answer|help|do)|what questions? (?:can|to) (?:ask|answer)|how can you help|what topics?|topics you know|what do you know|help me|need help|help|main menu|menu options?|ask mitra|can you help)\b/i.test(normalized) || (/\bwhat else\b/.test(normalized) && /\bask\b/.test(normalized))) {
     return {
       recordId: 'KB-34',
       source: 'MITCORER Virtual Assistant Mitra',
       sourceUrl: 'https://mitcorer.edu.in/',
-      answer: 'Mitra is the official Virtual Assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi.\n\nMitra provides 24/7 verified guidance on B.Tech and Polytechnic admissions, eligibility criteria, choice codes, fee structures, government scholarships, hostel amenities, campus facilities, and placement records based directly on official college records.',
+      answer: "I am Mitra, your verified virtual admission assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi!\n\nHere are the key admission topics you can ask me about:\n\n1. B.Tech Programmes & Intake: 6 engineering branches (CSE, AI&DS, E&TC, Mechanical, Civil, and CSE-AI; 360 seats total) plus Polytechnic Diploma.\n2. Fees & Category Concessions: First Year & Direct Second Year approved fees, and category concessions (SC/ST, OBC, VJ/NT, EBC/EWS).\n3. Cutoffs & Eligibility: MHT-CET and JEE Main cutoffs, eligibility criteria, and CAP seat process (DTE Code: 6901).\n4. Scholarships & Financial Aid: MahaDBT government schemes (EBC, post-matric), AICTE Pragati for girls, and bank loan assistance.\n5. Placements & Recruiters: 94% placement rate, ₹21 LPA highest package, and 100+ visiting recruiters.\n6. Hostels & Campus Facilities: Boys and girls hostels, mess, wifi campus, railway labs, library OPAC, and sports facilities.\n7. Required Documents: Original documents required for CAP document verification and Institute-Level reporting.\n8. Admission Desk & Helpline: Office timings (Mon–Sat 9:30 AM–5:30 PM), helpline phone numbers, and official enquiry forms.\n\nTap any suggested topic below or type your specific question!",
       next: '', actionView: 'programs', actionLabel: 'Explore with Mitra',
     };
   }
@@ -1368,12 +1378,31 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'visit', actionLabel: 'View contact details',
     };
   }
-  if (/^(?:mitcorer|mit college|mitcorer barshi|mit college barshi|engineering college barshi|railway engineering college)$|tell me about mitcorer|about mitcorer|about us|about the college/.test(normalized)) {
+  if (/^(?:mit ?corer|mit college|mit ?corer barshi|mit college barshi|engineering college barshi|railway engineering college)$|tell me about mit ?corer|about mit ?corer|about us|about the college/.test(normalized)) {
     return {
       recordId: 'KB-34',
       source: 'MITCORER About Us page',
+      sourceUrl: 'https://mitcorer.edu.in/mit-corer.php',
       answer: 'MIT College of Railway Engineering and Research (MITCORER) is an MIT Group college in Barshi, Solapur district, created with a focus on railway technology. Its railway-oriented curriculum draws on real railway practices and aims to prepare students for technological and social challenges.\n\nStudents learn through practical assignments, projects, interactive classes, campus facilities, and industry engagement.',
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
+    };
+  }
+  if (/why (?:choose )?mit ?corer|why should i choose mit ?corer|why us|highlights? of mit ?corer/.test(normalized)) {
+    return {
+      recordId: 'KB-35',
+      source: 'MITCORER Admissions FAQ and official website',
+      sourceUrl: 'https://mitcorer.edu.in/faq.php',
+      answer: "Why Choose MITCORER Barshi:\n\n- MAEER's MIT Group Legacy: Part of the renowned MAEER's MIT Pune Group with 35+ years of educational excellence.\n- Specialized Railway Curriculum: High-demand railway technology modules in Signaling, Track Tech, Rolling Stocks, and Operations.\n- High Placement Record: 94% placement rate (2024-25), 100+ recruiters visiting campus, and highest package of 21 LPA.\n- Industrial Linkages: 25+ corporate MoUs, proximity to Kurduwadi Railway Workshop, hands-on internships, and corporate readiness training.\n- Complete Campus Infrastructure: Smart classrooms, specialized railway model room, advanced labs, Wi-Fi campus, gym, and separate boys & girls hostels.",
+      next: '', actionView: 'visit', actionLabel: 'Explore why MITCORER',
+    };
+  }
+  if (/\b(?:brochure|prospectus|information brochure|college brochure|download brochure)\b/.test(normalized)) {
+    return {
+      recordId: 'KB-36',
+      source: 'MITCORER official brochure portal',
+      sourceUrl: 'https://www.mitcorer.edu.in/pdf/MITCORER-Brochure.pdf',
+      answer: 'You can download official MITCORER admission brochures and mandatory disclosures:\n\n- MITCORER College Brochure (2026-27): Complete overview of B.Tech programmes, intake, eligibility, campus infrastructure, and placement highlights.\n- AICTE Mandatory Disclosure: Official faculty roster, laboratory details, and statutory governance information.\n\nUse the official links below to view or download the PDF brochures directly.',
+      next: '', actionView: 'programs', actionLabel: 'View brochures',
     };
   }
   return null;
@@ -1381,7 +1410,7 @@ function buildCollegeProfileAnswer(question) {
 
 function buildCampusFacilitiesAnswer(question) {
   const normalized = normalizeIntentText(question);
-  if (!/campus facilit|college facilit|facilities available|campus infrastructure/.test(normalized)) return null;
+  if (!/\b(?:campus facilit|college facilit|facilities available|campus infrastructure|facilities|infrastructure|amenities)\b/.test(normalized)) return null;
   return {
     source: 'MITCORER official brochure and Admissions FAQ',
     answer: 'MITCORER campus facilities include:\n\n- Learning: classrooms, laboratories, computer labs, workshops, railway model room, library, and seminar halls\n- Student life: separate hostels, mess/canteen, sports, and gym\n- Services: transport, Wi-Fi, RO drinking water, solar water heating, parking, security, and guest houses',
@@ -2031,6 +2060,16 @@ export function generateQuerySuggestions(question, normalized) {
       { label: 'College Address & Map', question: 'Where is MITCORER located and what is the address?' },
       { label: 'Solapur to Barshi Distance', question: 'What is the distance from Solapur to MITCORER Barshi?' },
       { label: 'Official Website & Email', question: 'What is the official website and email address?' },
+    ];
+  }
+  if (/\b(?:chatbot|virtual assistant|mitra|capabilities|what (?:can|else can) (?:we|i|you)|how can you help|help|menu)\b/i.test(norm) || (/\bwhat else\b/.test(norm) && /\bask\b/.test(norm))) {
+    return [
+      { label: 'B.Tech Programmes', question: 'Which B.Tech programmes are available at MITCORER?' },
+      { label: 'Fee Structure & Concessions', question: 'What is the fee structure for B.Tech?' },
+      { label: 'Government Scholarships', question: 'What scholarships and financial aid schemes are available at MITCORER?' },
+      { label: 'Cutoffs & Eligibility', question: 'What are the cutoffs and eligibility criteria?' },
+      { label: 'Hostel & Mess Facilities', question: 'What hostel and mess facilities are available?' },
+      { label: 'Placement Records', question: 'What are the placement highlights and top recruiters?' },
     ];
   }
   if (/\b(?:scholarship|pragati|mahadbt|concession)\b/.test(norm)) {

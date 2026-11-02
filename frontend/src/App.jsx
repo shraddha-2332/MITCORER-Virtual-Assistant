@@ -425,6 +425,9 @@ function PublicAssistantWidget({ onAdminLogin }) {
         const nextH = Math.min(textareaRef.current.scrollHeight, 120);
         textareaRef.current.style.height = `${nextH}px`;
         textareaRef.current.style.overflowY = textareaRef.current.scrollHeight > 120 ? 'auto' : 'hidden';
+        if (textareaRef.current.scrollHeight <= 120) {
+          textareaRef.current.scrollTop = 0;
+        }
       } else {
         textareaRef.current.style.overflowY = 'hidden';
       }
