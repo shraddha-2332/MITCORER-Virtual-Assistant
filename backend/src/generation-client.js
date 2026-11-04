@@ -77,6 +77,7 @@ export async function requestGroqGeneration({
           model: models[index],
           messages: payloadMessages,
           temperature: 0.2,
+          top_p: 0.85,
           max_tokens: 420
         })
       });

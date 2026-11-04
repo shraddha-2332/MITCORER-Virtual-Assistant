@@ -22,6 +22,10 @@ import { generateId, jsonResponse, nowIso, pick, requireString } from './utils.j
 import { verifyGeneratedAnswer, classifyAnswerOutcome, verifySlotGrounding } from './grounding.js';
 import { syncMonitoredWebsiteSources } from './website-sync.js';
 import { computeConceptScore, getSemanticVectorScores, syncKnowledgeVectorIndex } from './semantic.js';
+import { semanticResponseCache } from './semantic-cache.js';
+import { inspectPromptSafety } from './safety-guard.js';
+import { slotAwareRerank } from './rag-enhancer.js';
+import { verifySpeculativeFigures } from './speculative-verifier.js';
 
 const publicRoutes = new Set([
   'GET /api/health',
@@ -32,6 +36,7 @@ const publicRoutes = new Set([
   'POST /api/auth/refresh',
   'POST /api/auth/logout',
   'POST /api/public-assistant/ask',
+  'POST /api/public-assistant/stream',
   'DELETE /api/public-assistant/conversation',
   'POST /api/public/inquiries',
   'POST /api/public/escalate',
@@ -69,6 +74,7 @@ export function resetRuntimeStateForTests() {
   signupIpAttempts.clear();
   assistantAttempts.clear();
   publicAssistantAttempts.clear();
+  semanticResponseCache.clear();
 }
 const assistantRules = [
   { match: ['direct admission', 'management quota', 'acap', 'institute level', 'institute-level', 'vacancy'], source: 'Institute-level admission notices', answer: 'Institute-level and ACAP admission follow the published schedule, merit list, vacancy notice, and applicable rules. They are separate from a CAP allotment and cannot guarantee a seat before the current notice is checked.', next: 'Open the ACAP notice and check the current schedule, merit list, and vacancy record.', actionView: 'cap', actionLabel: 'Check ACAP notices' },
@@ -2209,10 +2215,19 @@ export async function answerAdmissionQuestion(body, user) {
     throw badRequest('Enter a question of up to 1000 characters.');
   }
   const question = body.question.trim();
+  const safetyCheck = inspectPromptSafety(question);
+  if (!safetyCheck.safe && safetyCheck.response) {
+    audit('assistant.asked', 'assistant', generateId('ASK'), user, safetyCheck.response.source);
+    return safetyCheck.response;
+  }
   const context = extractConversationContext(question, body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : {});
   const queryScope = understandQuery(question);
   const language = selectLanguage(question, body.language);
   const normalized = normalizeIntentText(question);
+  const cachedResponse = semanticResponseCache.get(normalized, language, context);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
   if (isEmploymentQuery(question) || isEmploymentQuery(normalized)) {
     const unverifiedAnswer = {
       source: 'No verified record',
@@ -2261,8 +2276,9 @@ export async function answerAdmissionQuestion(body, user) {
     ? await getSemanticVectorScores(question, records)
     : new Map();
   const retrievedEvidence = retrieveKnowledge(question, vectorScores);
+  const rerankedEvidence = slotAwareRerank(retrievedEvidence, queryScope);
   // Do not attach a loosely matched MITCORER record to an unrelated question.
-  let evidence = retrievedEvidence[0]?.score >= 15 ? retrievedEvidence : [];
+  let evidence = rerankedEvidence[0]?.score >= 15 ? rerankedEvidence : [];
 
   // FIX #2 — Advisory routing: for open-ended / synthesis questions (e.g. "why should I choose
   // MITCORER?", "explain the learning environment", "what makes MITCORER unique?"), skip the flat
@@ -2275,7 +2291,8 @@ export async function answerAdmissionQuestion(body, user) {
     const advisoryDraft = await generateWithGemini(question, null, advisoryEvidence);
     const rawAdvisory = advisoryDraft?.text;
     if (rawAdvisory) {
-      const advisoryVerification = verifySlotGrounding(rawAdvisory, context, advisoryEvidence);
+      const speculativeAdvisory = verifySpeculativeFigures(rawAdvisory, advisoryEvidence);
+      const advisoryVerification = speculativeAdvisory.verified ? verifySlotGrounding(rawAdvisory, context, advisoryEvidence) : { verified: false };
       if (advisoryVerification.verified) {
         const advisoryOfficialLinks = [
           ...getOfficialAdmissionLinks(question),
@@ -2316,7 +2333,8 @@ export async function answerAdmissionQuestion(body, user) {
     const generationDraft = await generateWithGemini(question, answer, evidence.slice(0, 2));
     const rawGenerated = generationDraft?.text;
     if (rawGenerated) {
-      const verification = verifySlotGrounding(rawGenerated, context, evidence.slice(0, 2));
+      const speculativeGen = verifySpeculativeFigures(rawGenerated, evidence.slice(0, 2));
+      const verification = speculativeGen.verified ? verifySlotGrounding(rawGenerated, context, evidence.slice(0, 2)) : { verified: false };
       if (verification.verified) {
         generated = rawGenerated;
         generatedModel = generationDraft.model;
@@ -2411,7 +2429,9 @@ export async function answerAdmissionQuestion(body, user) {
     groundedAnswer.suggestions = buildNoAnswerSuggestions(normalized);
   }
   groundedAnswer.answer = validateBranchRelevance(groundedAnswer.answer, question, context);
-  return localizeResponse(groundedAnswer, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  const localized = localizeResponse(groundedAnswer, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  semanticResponseCache.set(normalized, localized, language, context);
+  return localized;
 }
 
 function createKnowledge(body, user) {
@@ -2429,6 +2449,7 @@ function createKnowledge(body, user) {
   db.knowledge.unshift(record);
   saveDb();
   audit('knowledge.created', 'knowledge', record.id, user, record.title);
+  semanticResponseCache.clear();
   return record;
 }
 
@@ -2447,6 +2468,7 @@ function updateKnowledge(id, body, user) {
   db.knowledge[index] = updated;
   saveDb();
   audit('knowledge.updated', 'knowledge', id, user, `${updated.title}: revision ${updated.revision}, ${updated.status}`);
+  semanticResponseCache.clear();
   return updated;
 }
 
@@ -2586,6 +2608,7 @@ function publishOfficialSource(id, body, user) {
   source.linkedKnowledgeCount = chunks.length;
   source.updatedAt = now;
   saveDb();
+  semanticResponseCache.clear();
   audit('official_source.published', 'official_source', source.id, user, `${source.title}: ${chunks.length} retrieval records`);
   return source;
 }
@@ -2627,6 +2650,7 @@ function createOfficialSourceFromUpload(fields, file, user) {
   db.officialSources.unshift(record);
   saveDb();
   audit('official_source.uploaded', 'official_source', id, user, record.title);
+  semanticResponseCache.clear();
   return verifiedText ? publishOfficialSource(id, { verifiedText }, user) : record;
 }
 
@@ -2848,6 +2872,12 @@ async function handleApi(req) {
     enforceRateLimit(assistantAttempts, user.id, config.assistantRateLimitMax, 60_000);
     return answerAdmissionQuestion(body, user);
   }
+  if (req.method === 'POST' && url.pathname === '/api/public-assistant/stream') {
+    const clientKey = getClientIp(req);
+    enforceRateLimit(publicAssistantAttempts, clientKey, config.publicAssistantRateLimitMax, 60_000);
+    const session = readPublicSession(req, body) || createPublicSession();
+    return { __stream: true, body, session };
+  }
   if (req.method === 'POST' && url.pathname === '/api/public-assistant/ask') {
     const clientKey = getClientIp(req);
     enforceRateLimit(publicAssistantAttempts, clientKey, config.publicAssistantRateLimitMax, 60_000);
@@ -2972,6 +3002,32 @@ export function createServer() {
     }
     try {
       const payload = await handleApi(req);
+      if (payload?.__stream) {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+          'Set-Cookie': publicSessionCookie(payload.session),
+        });
+        try {
+          const result = await askPublicWithHistory(payload.body, answerAdmissionQuestion, payload.session);
+          const fullResult = { ...result, sessionToken: payload.session };
+          res.write('event: meta\ndata: ' + JSON.stringify({ model: result.model, outcomeStatus: result.outcomeStatus, source: result.source }) + '\n\n');
+          if (result.officialLinks?.length) {
+            res.write('event: links\ndata: ' + JSON.stringify(result.officialLinks) + '\n\n');
+          }
+          const words = (result.answer || '').split(/(\s+)/);
+          for (const word of words) {
+            res.write('event: token\ndata: ' + JSON.stringify({ delta: word }) + '\n\n');
+          }
+          res.write('event: done\ndata: ' + JSON.stringify(fullResult) + '\n\n');
+        } catch (err) {
+          res.write('event: error\ndata: ' + JSON.stringify({ message: err?.message || 'Streaming failed' }) + '\n\n');
+        } finally {
+          res.end();
+        }
+        return;
+      }
       if (payload?.__file) {
         res.writeHead(200, {
           'Content-Type': payload.mimeType,

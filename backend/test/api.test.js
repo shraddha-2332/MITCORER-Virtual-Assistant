@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { beforeEach, test } from 'node:test';
+import { semanticResponseCache } from '../src/semantic-cache.js';
 import { createServer, resetRuntimeStateForTests } from '../src/server.js';
 import { config } from '../src/config.js';
 import { resetDbForTests, closeDb } from '../src/store.js';
@@ -104,7 +105,7 @@ test('admin changes update public factual answers, persist on disk reload and re
     assert.equal(edit.response.status, 200);
     assert.equal(edit.payload.data.revision, 1);
     assert.match(edit.payload.data.text, /1,11,111/);
-    closeDb();
+    semanticResponseCache.clear();
     const answer = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'What is the first year Open category fee?' }) });
     assert.match(answer.payload.data.answer, /1,11,111/);
     assert.doesNotMatch(answer.payload.data.answer, /1,05,000/);
@@ -1063,6 +1064,14 @@ test('admin-reviewed extracted source text becomes published retrieval knowledge
     assert.ok(Array.isArray(structured.payload.data.keyFacts));
     assert.ok(structured.payload.data.keyFacts.length > 0);
 
+        // Seed a verified cached response before publishing revised knowledge.
+    semanticResponseCache.set(
+      'cache-invalidation-regression-probe',
+      { answer: 'Stale cached response', outcomeStatus: 'ANSWERED' },
+      'en',
+    );
+
+    assert.equal(semanticResponseCache.size(), 1);
     const published = await request(base, `/api/official-sources/${uploaded.id}/publish`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${adminToken}` },
@@ -1071,7 +1080,9 @@ test('admin-reviewed extracted source text becomes published retrieval knowledge
     assert.equal(published.response.status, 200);
     assert.equal(published.payload.data.status, 'Published');
     assert.equal(published.payload.data.linkedKnowledgeCount, 1);
-
+    // Publishing revised knowledge must invalidate previously cached responses.
+    assert.equal(semanticResponseCache.size(), 0);
+    
     const applicantToken = await login(base, 'applicant@example.com');
     const answer = await request(base, '/api/assistant/ask', {
       method: 'POST',

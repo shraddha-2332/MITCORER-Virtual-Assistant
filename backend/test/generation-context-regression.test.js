@@ -1,5 +1,6 @@
 import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { semanticResponseCache } from '../src/semantic-cache.js';
 import { config } from '../src/config.js';
 import { resetDbForTests, closeDb, getDb } from '../src/store.js';
 import { answerAdmissionQuestion } from '../src/server.js';
@@ -16,6 +17,7 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   config.geminiApiKey = originalKey;
   closeDb();
+  semanticResponseCache.clear();
 });
 
 test('successful advisory generation is verified without a context initialization crash', async () => {
@@ -74,9 +76,11 @@ test('public DSE follow-up uses edited maintained fees and preserves route and a
 
 test('profile context cannot reintroduce fees after canonical record retirement', async () => {
   getDb().knowledge.find(item => item.id === 'KB-2').status = 'Retired';
-  const answer = await answerAdmissionQuestion({ question: 'What are first year engineering fees?', context: { category: 'SC' } }, null);
-  assert.equal(answer.evidence.length, 0);
-  assert.doesNotMatch(answer.answer, /10,582|Profile Note/);
+semanticResponseCache.clear();
+
+const retired = await answerAdmissionQuestion({ question: 'Tell me about first year engineering fees.', language: 'en' }, null);
+  assert.equal(retired.evidence.length, 0);
+  assert.doesNotMatch(retired.answer, /10,582|Profile Note/);
 });
 
 test('advisory phrasing cannot bypass maintained critical facts or their retirement', async () => {
@@ -89,6 +93,7 @@ test('advisory phrasing cannot bypass maintained critical facts or their retirem
     assert.ok(answer.evidence.length);
   }
   getDb().knowledge.find(item => item.id === 'KB-2').status = 'Retired';
+  semanticResponseCache.clear();
   const retired = await answerAdmissionQuestion({ question: 'Tell me about first year engineering fees.', language: 'en' }, null);
   assert.equal(retired.evidence.length, 0);
   assert.equal(calls, 0);

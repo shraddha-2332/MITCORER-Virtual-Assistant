@@ -511,15 +511,88 @@ function PublicAssistantWidget({ onAdminLogin }) {
     setInput('');
     setBusy(true);
     try {
-      const answer = await api.askPublicAssistant(question, language, conversationId);
-      if (answer.conversationId) {
-        setConversationId(answer.conversationId);
-      }
-      setMessages((items) => [...items,
-        ...(answer.conversationReset ? [{ type: 'assistant', text: 'The previous chat expired or was reset. This answer starts a new conversation.' }] : []),
-        { type: 'assistant', text: answer.answer, next: answer.next, source: answer.source, sourceUrl: answer.sourceUrl, officialLinks: answer.officialLinks, evidence: answer.evidence, sections: answer.sections, requestedLanguage: answer.requestedLanguage, showQuickReplies: !answer.answerPart2, choices: retainedChoices || undefined, suggestions: answer.suggestions, escalation: answer.escalation, originalQuestion: question, model: answer.model },
-        ...(answer.answerPart2 ? [{ type: 'assistant', text: answer.answerPart2, choices: retainedChoices || undefined, suggestions: answer.suggestions, escalation: answer.escalation, originalQuestion: question, model: answer.model }] : []),
+      let streamedText = '';
+      let metaInfo = {};
+      const assistantMessageId = 'msg-' + Date.now();
+
+      setMessages((items) => [
+        ...items,
+        {
+          id: assistantMessageId,
+          type: 'assistant',
+          text: '',
+          isStreaming: true,
+          choices: retainedChoices || undefined,
+        },
       ]);
+
+      await api.streamPublicAssistant(
+        question,
+        language,
+        conversationId,
+        (token) => {
+          streamedText += token;
+          setMessages((items) =>
+            items.map((m) =>
+              m.id === assistantMessageId
+                ? { ...m, text: streamedText }
+                : m
+            )
+          );
+        },
+        (meta) => {
+          metaInfo = meta || {};
+        },
+        (doneAnswer) => {
+          if (doneAnswer?.conversationId) {
+            setConversationId(doneAnswer.conversationId);
+          }
+          setMessages((items) => [
+            ...items.filter((m) => m.id !== assistantMessageId),
+            ...(doneAnswer?.conversationReset ? [{ type: 'assistant', text: 'The previous chat expired or was reset. This answer starts a new conversation.' }] : []),
+            {
+              id: assistantMessageId,
+              type: 'assistant',
+              text: doneAnswer?.answer || streamedText,
+              next: doneAnswer?.next,
+              source: doneAnswer?.source || metaInfo?.source,
+              sourceUrl: doneAnswer?.sourceUrl,
+              officialLinks: doneAnswer?.officialLinks,
+              evidence: doneAnswer?.evidence,
+              sections: doneAnswer?.sections,
+              requestedLanguage: doneAnswer?.requestedLanguage,
+              showQuickReplies: !doneAnswer?.answerPart2,
+              choices: retainedChoices || undefined,
+              suggestions: doneAnswer?.suggestions,
+              escalation: doneAnswer?.escalation,
+              originalQuestion: question,
+              model: doneAnswer?.model || metaInfo?.model,
+              isStreaming: false,
+            },
+            ...(doneAnswer?.answerPart2 ? [{
+              type: 'assistant',
+              text: doneAnswer.answerPart2,
+              choices: retainedChoices || undefined,
+              suggestions: doneAnswer.suggestions,
+              escalation: doneAnswer.escalation,
+              originalQuestion: question,
+              model: doneAnswer.model || metaInfo.model,
+            }] : []),
+          ]);
+        },
+        async (streamErr) => {
+          const fallback = await api.askPublicAssistant(question, language, conversationId);
+          if (fallback.conversationId) {
+            setConversationId(fallback.conversationId);
+          }
+          setMessages((items) => [
+            ...items.filter((m) => m.id !== assistantMessageId),
+            ...(fallback.conversationReset ? [{ type: 'assistant', text: 'The previous chat expired or was reset. This answer starts a new conversation.' }] : []),
+            { type: 'assistant', text: fallback.answer, next: fallback.next, source: fallback.source, sourceUrl: fallback.sourceUrl, officialLinks: fallback.officialLinks, evidence: fallback.evidence, sections: fallback.sections, requestedLanguage: fallback.requestedLanguage, showQuickReplies: !fallback.answerPart2, choices: retainedChoices || undefined, suggestions: fallback.suggestions, escalation: fallback.escalation, originalQuestion: question, model: fallback.model },
+            ...(fallback.answerPart2 ? [{ type: 'assistant', text: fallback.answerPart2, choices: retainedChoices || undefined, suggestions: fallback.suggestions, escalation: fallback.escalation, originalQuestion: question, model: fallback.model }] : []),
+          ]);
+        }
+      );
     } catch (error) {
       const limited = /Too many requests/.test(error.message);
       const failure = language === 'mr' ? limited ? 'खूप विनंत्या आल्या आहेत. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.' : 'सध्या अधिकृत माहिती मिळवता आली नाही. कृपया पुन्हा प्रयत्न करा किंवा प्रवेश कार्यालयाशी संपर्क साधा.'

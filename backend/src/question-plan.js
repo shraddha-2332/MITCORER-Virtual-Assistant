@@ -68,6 +68,7 @@ export function buildContextualPassage(normalized, records) {
 export function buildCompoundAnswer(question, normalized, records) {
   // Existing admission progress/checklist logic must retain its personal workflow semantics.
   if (/admission|allotment|reporting|\bcap\b/.test(normalized) && /remaining|pending|checklist|last step|final step|what.*next/.test(normalized)) return null;
+  if (/\b(?:faculty|faculties|teacher|teachers|professor|professors|teaching staff)\b/i.test(normalized) && !/\b(?:fee|fees|cost|hostel|mess|cutoff|cut-off|scholarship)\b/i.test(normalized)) return null;
   if (/mou|corporate readiness|railway signaling|railway track|railway technology|railway diploma|railway modules/.test(normalized)) return null;
   let parts = clauses(normalized);
   if (parts.length < 2) return null;

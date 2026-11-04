@@ -1,3 +1,5 @@
+
+import { semanticResponseCache } from './semantic-cache.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -29,11 +31,16 @@ function openDatabase() {
 
 export function getStoredVectors() {
   try {
-    const rows = openDatabase().prepare('SELECT id, content_hash, embedding FROM vector_embeddings').all();
+    const rows = openDatabase()
+      .prepare('SELECT id, content_hash, embedding FROM vector_embeddings')
+      .all();
     const map = new Map();
     for (const row of rows) {
       try {
-        map.set(row.id, { hash: row.content_hash, vector: JSON.parse(row.embedding) });
+        map.set(row.id, {
+          hash: row.content_hash,
+          vector: JSON.parse(row.embedding)
+        });
       } catch {}
     }
     return map;
@@ -52,7 +59,9 @@ export function saveStoredVector(id, contentHash, vector) {
 }
 
 function readCollection(name) {
-  const row = openDatabase().prepare('SELECT data FROM collections WHERE name = ?').get(name);
+  const row = openDatabase()
+    .prepare('SELECT data FROM collections WHERE name = ?')
+    .get(name);
   return row ? JSON.parse(row.data) : null;
 }
 
@@ -70,7 +79,11 @@ function normalizeDb(nextDb) {
       ? { ...item, id: 'SRC-12' }
       : item
   ));
-  const existingOfficialSources = [...new Map(migratedOfficialSources.map((item) => [item.id, item])).values()];
+
+  const existingOfficialSources = [
+    ...new Map(migratedOfficialSources.map((item) => [item.id, item])).values()
+  ];
+
   return {
     users: (nextDb.users || []).map((user) => {
       if (user.id === 'USR-STF') return { ...user, name: 'Shobhana Raichurkar' };
@@ -78,9 +91,15 @@ function normalizeDb(nextDb) {
       return user;
     }),
     inquiries: nextDb.inquiries || [],
-    documents: (nextDb.documents || []).map((item) => item.status === 'Uploaded for review'
-      ? { ...item, status: 'Submitted for review', submittedAt: item.submittedAt || item.updatedAt || item.createdAt }
-      : item),
+    documents: (nextDb.documents || []).map((item) =>
+      item.status === 'Uploaded for review'
+        ? {
+            ...item,
+            status: 'Submitted for review',
+            submittedAt: item.submittedAt || item.updatedAt || item.createdAt
+          }
+        : item
+    ),
     content: nextDb.content || [],
     auditLogs: nextDb.auditLogs || [],
     refreshTokens: nextDb.refreshTokens || [],
@@ -95,11 +114,14 @@ function normalizeDb(nextDb) {
 
 export function loadDb() {
   if (db) return db;
+
   const persisted = readCollection('app');
+
   if (persisted) {
     db = normalizeDb(persisted);
     return db;
   }
+
   db = normalizeDb(createSeedData());
   saveDb();
   return db;
@@ -113,11 +135,13 @@ export function saveDb() {
 export function getDb() {
   return loadDb();
 }
+
 export function checkStorageReady() {
   return openDatabase().prepare('SELECT 1 AS ready').get().ready === 1;
 }
 
 export function closeDb() {
+  semanticResponseCache.clear();
   if (sqlite) {
     sqlite.close();
     sqlite = null;

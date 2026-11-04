@@ -71,6 +71,44 @@ export const api = {
       return { ...fresh, conversationReset: true };
     }
   },
+  streamPublicAssistant: async (question, language = 'auto', conversationId = null, onToken, onMeta, onDone, onError) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/public-assistant/stream`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, language, conversationId }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error?.message || 'Streaming failed');
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop();
+        for (const block of lines) {
+          if (!block.trim()) continue;
+          const eventMatch = block.match(/^event:\s*(.+)$/m);
+          const dataMatch = block.match(/^data:\s*(.+)$/m);
+          const event = eventMatch ? eventMatch[1].trim() : 'message';
+          const data = dataMatch ? JSON.parse(dataMatch[1]) : null;
+          if (event === 'meta' && onMeta) onMeta(data);
+          else if (event === 'token' && onToken) onToken(data?.delta || '');
+          else if (event === 'done' && onDone) onDone(data);
+          else if (event === 'error' && onError) onError(new Error(data?.message || 'Stream error'));
+        }
+      }
+    } catch (err) {
+      if (onError) onError(err);
+      else throw err;
+    }
+  },
   resetPublicConversation: (conversationId) => request('/api/public-assistant/conversation', { method: 'DELETE', body: { conversationId } }),
   getAssistantAttachments: (token) => request('/api/assistant/attachments', { token }),
   uploadAssistantAttachment: (token, note, file) => {
