@@ -1,0 +1,478 @@
+{
+  "cse": {
+    "title": "MITCORER Computer Science & Engineering (CSE) Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering/faculty",
+    "members": [
+      {
+        "name": "Prof. Somnath Mule",
+        "role": "Head of Department & Assistant Professor",
+        "qual": "B.E. (IT), M.E. (CSE)",
+        "exp": "15.5 yrs",
+        "area": "Cloud Computing, Image Processing"
+      },
+      {
+        "name": "Dr. Shudhodhan Bokefode",
+        "role": "Associate Professor",
+        "qual": "B.E., M.Tech, Ph.D. (CSE)",
+        "exp": "17+ yrs",
+        "area": "AI, ML & Deep Learning"
+      },
+      {
+        "name": "Prof. Prasad Pratape",
+        "role": "Assistant Professor",
+        "qual": "M.E. (CSE)",
+        "exp": "16 yrs",
+        "area": "AI & Machine Learning"
+      },
+      {
+        "name": "Prof. Meghraj Chougule",
+        "role": "Assistant Professor",
+        "qual": "B.E. (IT), M.Tech (CSE)",
+        "exp": "16 yrs",
+        "area": "Image Processing, Blockchain, Algorithms"
+      },
+      {
+        "name": "Prof. Shobhana Raichurkar",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.E. (CSE)",
+        "exp": "11 yrs",
+        "area": "Data Analytics, DevOps"
+      },
+      {
+        "name": "Prof. Sushma Mule",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.E. (CSIT)",
+        "exp": "10 yrs",
+        "area": "AI/ML, Mobile App Development"
+      },
+      {
+        "name": "Prof. Amruta Deshmukh",
+        "role": "Assistant Professor",
+        "qual": "B.E. (IT), M.E. (SE)",
+        "exp": "7 yrs",
+        "area": "Cybersecurity, Software Engineering"
+      },
+      {
+        "name": "Prof. Samadhan Yadav",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.Tech (CSE)",
+        "exp": "5.9 yrs",
+        "area": "Data Structures, Java & Python"
+      },
+      {
+        "name": "Prof. Srushti Raut",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.E. (CSE)",
+        "exp": "4 yrs",
+        "area": "Machine Learning, NLP"
+      },
+      {
+        "name": "Prof. Alka Taur",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.E. (CSE)",
+        "exp": "4 yrs",
+        "area": "Cloud Computing, Python"
+      },
+      {
+        "name": "Prof. Sangita Mete",
+        "role": "Assistant Professor",
+        "qual": "B.E. (CSE), M.E. (CN)",
+        "exp": "1 yr",
+        "area": "Computer Networks, C/C++"
+      },
+      {
+        "name": "Prof. Sakshi Anil Parkhe",
+        "role": "Assistant Professor",
+        "qual": "B.Tech (CSE), M.Tech (AI)",
+        "exp": "1 yr",
+        "area": "Large Language Models, Deep Learning"
+      },
+      {
+        "name": "Prof. Archana Bhosale",
+        "role": "Assistant Professor",
+        "qual": "M.E. (CSE)",
+        "exp": "10 yrs",
+        "area": "Java, Python Programming"
+      },
+      {
+        "name": "Prof. Madhu Karwalkar",
+        "role": "Assistant Professor",
+        "qual": "M.Tech (CSE)",
+        "exp": "5+ yrs",
+        "area": "AI/ML, Software Testing"
+      }
+    ]
+  },
+  "entc": {
+    "title": "MITCORER Electronics & Telecommunication Engineering (E&TC) Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/electronic-telecommunication-engineering/faculty",
+    "members": [
+      {
+        "name": "Prof. Mrs. Deepali Gajanan Mali",
+        "role": "Head of Department & Assistant Professor",
+        "qual": "M.E. (E&TC), Ph.D* (Pursuing)",
+        "exp": "13 yrs",
+        "area": "Wireless, Image Processing"
+      },
+      {
+        "name": "Prof. Mrugendra D. Andhare",
+        "role": "Assistant Professor & Central Exam Controller",
+        "qual": "M.E. (EnTC Microwave), B.E. (EC)",
+        "exp": "15 yrs",
+        "area": "Microwave, Radar Systems"
+      },
+      {
+        "name": "Prof. Satish H. Mali",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Communication Engg)",
+        "exp": "12 yrs",
+        "area": "Communication Systems"
+      },
+      {
+        "name": "Prof. Amol S. Velapure",
+        "role": "Assistant Professor",
+        "qual": "M.E. (VLSI & Embedded Systems)",
+        "exp": "10 yrs",
+        "area": "VLSI, Embedded Systems"
+      },
+      {
+        "name": "Prof. Surekha R. Raut",
+        "role": "Assistant Professor",
+        "qual": "M.E. (VLSI & Embedded Systems)",
+        "exp": "9 yrs",
+        "area": "Basic Electronics, VLSI"
+      },
+      {
+        "name": "Prof. Kashiraj V. Kalshetti",
+        "role": "Assistant Professor",
+        "qual": "M.Tech (VLSI), Ph.D* (Pursuing)",
+        "exp": "8 yrs",
+        "area": "VLSI Design, Signal Processing"
+      },
+      {
+        "name": "Dr. Sachin Shamkiran Gade",
+        "role": "Assistant Professor",
+        "qual": "Ph.D., M.E. (Electronics)",
+        "exp": "10+ yrs",
+        "area": "Electronics Engineering"
+      },
+      {
+        "name": "Prof. Utkarsha Shivaji Gaikwad",
+        "role": "Assistant Professor",
+        "qual": "M.Tech (Electronics)",
+        "exp": "6 yrs",
+        "area": "Electronics Systems"
+      },
+      {
+        "name": "Prof. Simran Ramjan Sayyad",
+        "role": "Assistant Professor",
+        "qual": "M.Tech (Electrical Engg)",
+        "exp": "4 yrs",
+        "area": "Electrical & Electronic Systems"
+      },
+      {
+        "name": "Mrs. Sandhyarani R. Hajare",
+        "role": "Lab Assistant",
+        "qual": "B.E. (E&TC)",
+        "exp": "5+ yrs",
+        "area": "Technical Lab Operations"
+      }
+    ]
+  },
+  "mech": {
+    "title": "MITCORER Mechanical & Rail Engineering Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering/faculty",
+    "members": [
+      {
+        "name": "Dr. Sanjay Pandurang Mane",
+        "role": "Head of Department & Assistant Professor",
+        "qual": "B.E., M.E. (Heat Power), Ph.D. (Microfluidics)",
+        "exp": "18+ yrs",
+        "area": "Thermal Engg, Microfluidics"
+      },
+      {
+        "name": "Mr. Abhijeet Arjunrao Pawar",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Heat Power), Ph.D* (Appearing)",
+        "exp": "14 yrs",
+        "area": "Heat Power Engineering"
+      },
+      {
+        "name": "Mr. Netaji Limbraj Hajgude",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Mechanical Design Engineering)",
+        "exp": "12 yrs",
+        "area": "Machine Design, CAD"
+      },
+      {
+        "name": "Prof. Anand Maruti Markad",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Heat Power)",
+        "exp": "11 yrs",
+        "area": "Thermal Systems, Thermodynamics"
+      },
+      {
+        "name": "Mr. Vaibhav Channappa Mali",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Design Engg), Ph.D* (Appearing)",
+        "exp": "10 yrs",
+        "area": "Design Engg, FEA"
+      },
+      {
+        "name": "Prof. Sandeep Subhash Kajalekar",
+        "role": "Assistant Professor",
+        "qual": "M.Tech. (Design Engineering)",
+        "exp": "10 yrs",
+        "area": "Robotics, Design Engineering"
+      },
+      {
+        "name": "Mr. Vyankatesh Limbraj Mundhe",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Mechanical)",
+        "exp": "8 yrs",
+        "area": "Production, Manufacturing"
+      },
+      {
+        "name": "Prof. Nisar Shaukat Shaikh",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Mechanical), Ph.D* (Appearing)",
+        "exp": "7 yrs",
+        "area": "Automobile, Railway Mechanics"
+      },
+      {
+        "name": "Dr. Sachin Mahadev Khomane",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Design Engg), Ph.D.",
+        "exp": "12 yrs",
+        "area": "Design Engineering"
+      }
+    ]
+  },
+  "civil": {
+    "title": "MITCORER Civil Engineering Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/civil-engineering/faculty",
+    "members": [
+      {
+        "name": "Prof. Amit Raosaheb Shinde",
+        "role": "Head of Department & Assistant Professor",
+        "qual": "M.Tech (Structural Engg), Ph.D* (Pursuing)",
+        "exp": "14 yrs",
+        "area": "Structural Engineering"
+      },
+      {
+        "name": "Prof. Mangesh Daji Kevadkar",
+        "role": "Assistant Professor & IQAC Coordinator",
+        "qual": "M.E. (Structural Engg), Ph.D* (Pursuing)",
+        "exp": "13 yrs",
+        "area": "Structural Dynamics"
+      },
+      {
+        "name": "Prof. Hemchandra R. Pawar",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Water Resources), Ph.D* (Pursuing)",
+        "exp": "10 yrs",
+        "area": "Water Resources Engg"
+      },
+      {
+        "name": "Prof. Sandeep Dilip Jagtap",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Geotechnical), Ph.D* (Pursuing)",
+        "exp": "10 yrs",
+        "area": "Geotechnical Engineering"
+      },
+      {
+        "name": "Prof. Niranjan Dilip Patil",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Structural Engineering)",
+        "exp": "8 yrs",
+        "area": "Concrete Technology, CAD"
+      },
+      {
+        "name": "Prof. Amruta Vyankatesh Mundhe",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Construction Management)",
+        "exp": "7 yrs",
+        "area": "Construction Management"
+      },
+      {
+        "name": "Prof. Pramol Prakash Waychal",
+        "role": "Assistant Professor",
+        "qual": "M.E. (Structural Engineering)",
+        "exp": "6 yrs",
+        "area": "Structural Analysis"
+      },
+      {
+        "name": "Mr. Saddam Pathan",
+        "role": "Lab Assistant",
+        "qual": "B.E. (Civil), M.E. (Construction)",
+        "exp": "5 yrs",
+        "area": "Surveying & Materials Lab"
+      }
+    ]
+  },
+  "ece": {
+    "title": "MITCORER Electronics & Computer Engineering Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/electronics-computer-engineering/faculty",
+    "members": [
+      {
+        "name": "Prof. Shashikant S. Sathe",
+        "role": "Head of Department & Assistant Professor",
+        "qual": "M.Tech (Digital Electronics), PG (Data Science), Ph.D* (Pursuing)",
+        "exp": "15 yrs",
+        "area": "Digital Electronics, Data Science"
+      },
+      {
+        "name": "Prof. Sayli D. Hulwan",
+        "role": "Assistant Professor",
+        "qual": "M.Tech (E&TC)",
+        "exp": "8 yrs",
+        "area": "Embedded Systems, IoT"
+      },
+      {
+        "name": "Prof. Pranali A. Tayade",
+        "role": "Assistant Professor",
+        "qual": "M.E. (ENTC)",
+        "exp": "7 yrs",
+        "area": "Signal Processing, Microcontrollers"
+      },
+      {
+        "name": "Prof. Seema Sachin Khomane",
+        "role": "Assistant Professor",
+        "qual": "M.E. (E&TC)",
+        "exp": "7 yrs",
+        "area": "VLSI, Digital Systems"
+      },
+      {
+        "name": "Prof. Kumar Prakash Londhe",
+        "role": "Assistant Professor",
+        "qual": "M.E. (VLSI & Embedded Systems)",
+        "exp": "6 yrs",
+        "area": "ASIC Design, Embedded Systems"
+      }
+    ]
+  },
+  "fe": {
+    "title": "MITCORER First Year Engineering (FE) Department Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/fy-engineering/faculty",
+    "members": [
+      {
+        "name": "Dr. Pravin Ashok Madane",
+        "role": "Head of First Year Engineering / Assistant Professor",
+        "qual": "M.E. (Heat Power), Ph.D.",
+        "exp": "16 yrs",
+        "area": "Mechanical & Applied Sciences"
+      },
+      {
+        "name": "Prof. Chetan Anil Adhye",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Mathematics), SET",
+        "exp": "12 yrs",
+        "area": "Engineering Mathematics"
+      },
+      {
+        "name": "Prof. Kiran Dinkar Mundhe",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Chemistry), B.Ed.",
+        "exp": "11 yrs",
+        "area": "Engineering Chemistry"
+      },
+      {
+        "name": "Prof. Pradip Limbaraj Jagadale",
+        "role": "Assistant Professor",
+        "qual": "M.A. (English), B.Ed.",
+        "exp": "10 yrs",
+        "area": "Professional Communication"
+      },
+      {
+        "name": "Prof. Pooja Gorakh Ghadage",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Mathematics)",
+        "exp": "8 yrs",
+        "area": "Applied Mathematics"
+      },
+      {
+        "name": "Dr. Supriya Anantrao Joshi",
+        "role": "Assistant Professor",
+        "qual": "Ph.D. (Chemistry)",
+        "exp": "10 yrs",
+        "area": "Applied Chemistry"
+      },
+      {
+        "name": "Dr. Vijay Laxman Shinde",
+        "role": "Assistant Professor",
+        "qual": "Ph.D. (Physics)",
+        "exp": "9 yrs",
+        "area": "Engineering Physics"
+      },
+      {
+        "name": "Prof. Rohit Rajesh Shahapure",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Physics)",
+        "exp": "7 yrs",
+        "area": "Engineering Physics"
+      },
+      {
+        "name": "Prof. Ajit Dattatray Kashid",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Mathematics), B.Ed.",
+        "exp": "6 yrs",
+        "area": "Discrete Mathematics"
+      },
+      {
+        "name": "Prof. Appasaheb D. Metkari",
+        "role": "Assistant Professor",
+        "qual": "M.Sc. (Physics)",
+        "exp": "5 yrs",
+        "area": "Semiconductor Physics"
+      },
+      {
+        "name": "Prof. Amol Waghmare",
+        "role": "Assistant Professor",
+        "qual": "M.A. (English), B.Ed.",
+        "exp": "6 yrs",
+        "area": "Technical Communication"
+      }
+    ]
+  },
+  "poly": {
+    "title": "MITCORER Polytechnic (MSBTE) Faculty",
+    "url": "https://mitcorer.edu.in/mitcorer/public/department/polytechnic/faculty",
+    "members": [
+      {
+        "name": "Dr. Khogare Balaji Trimbak",
+        "role": "Head of Polytechnic / Lecturer",
+        "qual": "M.Sc., Ph.D. (Chemistry)",
+        "exp": "14 yrs",
+        "area": "Applied Chemistry"
+      },
+      {
+        "name": "Mr. Kurmude Swapnil Gokuldas",
+        "role": "Lecturer",
+        "qual": "M.Sc., B.Ed. (Mathematics)",
+        "exp": "8 yrs",
+        "area": "Basic Mathematics"
+      },
+      {
+        "name": "Mrs. Waghmare Swati Amol",
+        "role": "Lecturer",
+        "qual": "M.A., B.Ed. (English)",
+        "exp": "7 yrs",
+        "area": "English Communication"
+      },
+      {
+        "name": "Mr. Rohit Rajesh Shahapure",
+        "role": "Lecturer",
+        "qual": "M.Sc. (Physics)",
+        "exp": "7 yrs",
+        "area": "Basic Physics"
+      },
+      {
+        "name": "Mr. Kiran Dinkar Mundhe",
+        "role": "Lecturer",
+        "qual": "M.Sc., B.Ed. (Chemistry)",
+        "exp": "9 yrs",
+        "area": "Basic Chemistry"
+      }
+    ]
+  }
+}

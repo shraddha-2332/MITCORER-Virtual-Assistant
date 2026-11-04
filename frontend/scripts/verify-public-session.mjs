@@ -28,7 +28,7 @@ try {
   const ask = async question => {
     resetRuntimeStateForTests();
     await page.locator('.publicComposer textarea').fill(question);
-    const response = page.waitForResponse(response => response.url().endsWith('/api/public-assistant/ask') && response.status() === 200);
+    const response = page.waitForResponse(response => (response.url().endsWith('/api/public-assistant/ask') || response.url().endsWith('/api/public-assistant/stream')) && response.status() === 200);
     await page.locator('.publicComposer textarea').press('Enter');
     const payload = (await (await response).json()).data;
     await page.waitForFunction(() => !document.querySelector('.publicComposer textarea').disabled);

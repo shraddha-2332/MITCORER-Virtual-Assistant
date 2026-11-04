@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { createServer as createViteServer } from 'vite';
 import { config } from '../../backend/src/config.js';
 import { createSeedData } from '../../backend/src/seed.js';
-import { resetDbForTests, getDb, closeDb } from '../../backend/src/store.js';
+import { resetDbForTests, closeDb } from '../../backend/src/store.js';
 import { createServer, resetRuntimeStateForTests } from '../../backend/src/server.js';
 
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const root = path.resolve(frontendRoot, '..');
 
 config.databaseFile = ':memory:';
 resetDbForTests(createSeedData());

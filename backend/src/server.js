@@ -1197,6 +1197,80 @@ function buildCollegeProfileAnswer(question) {
   const asksHod = /\b(?:hod|head of department|department head)\b/i.test(normalized);
   const asksLabs = /\b(?:labs?|laborator(?:y|ies))\b/i.test(normalized);
   const asksSyllabus = /\b(?:syllabus|curriculum|subjects)\b/i.test(normalized);
+  const asksFacultyStaff = /\b(?:faculty|faculties|teachers?|professors?|teaching staff|assistant professors?|lecturers?|teach|teaches|teaching)\b/i.test(normalized) && !/\b(?:hiring|recruitment|vacancy|vacancies|job|jobs|career|careers|opening|openings|employment|apply for job|work with us)\b/i.test(normalized);
+
+  const asksEc = /\b(?:electronics & computer|electronic & computer|electronics and computer|electronic and computer|ece)\b/i.test(normalized);
+  const asksEntc = /\b(?:entc|electronic & telecommunication|electronics & telecommunication|electronic and telecommunication|electronics and telecommunication|telecommunication)\b/i.test(normalized);
+  const asksFe = /\b(?:first year|fe|fy|engineering physics|engineering chemistry|engineering mathematics|fe head)\b/i.test(normalized);
+  const asksPoly = /\b(?:polytechnic|msbte diploma|diploma in engineering)\b/i.test(normalized);
+
+  if (asksFacultyStaff) {
+    if (asksCse && !asksMech && !asksCivil && !asksEntc && !asksEc) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Computer Science & Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering/faculty',
+        answer: 'MITCORER Computer Science & Engineering (CSE) Department Faculty (14 Members):\n\n- Prof. Somnath Mule - Head of Department & Assistant Professor | B.E. (IT), M.E. (CSE) | Cloud Computing, Image Processing (15.5 yrs)\n- Dr. Shudhodhan Bokefode - Associate Professor | B.E., M.Tech, Ph.D. (CSE) | AI, ML & Deep Learning (17+ yrs)\n- Prof. Prasad Pratape - Assistant Professor | M.E. (CSE) | AI & Machine Learning (16 yrs)\n- Prof. Meghraj Chougule - Assistant Professor | B.E. (IT), M.Tech (CSE) | Image Processing, Blockchain, Algorithms (16 yrs)\n- Prof. Shobhana Raichurkar - Assistant Professor | B.E. (CSE), M.E. (CSE) | Data Analytics, DevOps (11 yrs)\n- Prof. Sushma Mule - Assistant Professor | B.E. (CSE), M.E. (CSIT) | AI/ML, Mobile App Development (10 yrs)\n- Prof. Amruta Deshmukh - Assistant Professor | B.E. (IT), M.E. (SE) | Cybersecurity, Software Engineering (7 yrs)\n- Prof. Samadhan Yadav - Assistant Professor | B.E. (CSE), M.Tech (CSE) | Data Structures, Java & Python (5.9 yrs)\n- Prof. Srushti Raut - Assistant Professor | B.E. (CSE), M.E. (CSE) | Machine Learning, NLP (4 yrs)\n- Prof. Alka Taur - Assistant Professor | B.E. (CSE), M.E. (CSE) | Cloud Computing, Python (4 yrs)\n- Prof. Sangita Mete - Assistant Professor | B.E. (CSE), M.E. (CN) | Computer Networks, C/C++ (1 yr)\n- Prof. Sakshi Anil Parkhe - Assistant Professor | B.Tech (CSE), M.Tech (AI) | Large Language Models, Deep Learning (1 yr)\n- Prof. Archana Bhosale - Assistant Professor | M.E. (CSE) | Java, Python Programming (10 yrs)\n- Prof. Madhu Karwalkar - Assistant Professor | M.Tech (CSE) | AI/ML, Software Testing (5+ yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore Computer Science & Engineering',
+      };
+    }
+    if (asksEntc && !asksCse && !asksMech && !asksCivil) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Electronics & Telecommunication Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/electronic-telecommunication-engineering/faculty',
+        answer: 'MITCORER Electronics & Telecommunication Engineering (E&TC) Department Faculty (10 Members):\n\n- Prof. Mrs. Deepali Gajanan Mali - Head of Department & Assistant Professor | M.E. (E&TC), Ph.D* (Pursuing) | Wireless, Image Processing (13 yrs)\n- Prof. Mrugendra D. Andhare - Assistant Professor & Central Exam Controller | M.E. (EnTC Microwave), B.E. (EC) | Microwave, Radar Systems (15 yrs)\n- Prof. Satish H. Mali - Assistant Professor | M.E. (Communication Engg) | Communication Systems (12 yrs)\n- Prof. Amol S. Velapure - Assistant Professor | M.E. (VLSI & Embedded Systems) | VLSI, Embedded Systems (10 yrs)\n- Prof. Surekha R. Raut - Assistant Professor | M.E. (VLSI & Embedded Systems) | Basic Electronics, VLSI (9 yrs)\n- Prof. Kashiraj V. Kalshetti - Assistant Professor | M.Tech (VLSI), Ph.D* (Pursuing) | VLSI Design, Signal Processing (8 yrs)\n- Dr. Sachin Shamkiran Gade - Assistant Professor | Ph.D., M.E. (Electronics) | Electronics Engineering (10+ yrs)\n- Prof. Utkarsha Shivaji Gaikwad - Assistant Professor | M.Tech (Electronics) | Electronics Systems (6 yrs)\n- Prof. Simran Ramjan Sayyad - Assistant Professor | M.Tech (Electrical Engg) | Electrical & Electronic Systems (4 yrs)\n- Mrs. Sandhyarani R. Hajare - Lab Assistant | B.E. (E&TC) | Technical Lab Operations (5+ yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/electronic-telecommunication-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore E&TC Engineering',
+      };
+    }
+    if (asksMech && !asksCse && !asksCivil) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Mechanical & Rail Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering/faculty',
+        answer: 'MITCORER Mechanical & Rail Engineering Department Faculty (9 Members):\n\n- Dr. Sanjay Pandurang Mane - Head of Department & Assistant Professor | B.E., M.E. (Heat Power), Ph.D. (Microfluidics) (18+ yrs)\n- Mr. Abhijeet Arjunrao Pawar - Assistant Professor | M.E. (Heat Power), Ph.D* (Appearing) (14 yrs)\n- Mr. Netaji Limbraj Hajgude - Assistant Professor | M.E. (Mechanical Design Engineering) (12 yrs)\n- Prof. Anand Maruti Markad - Assistant Professor | M.E. (Heat Power) (11 yrs)\n- Mr. Vaibhav Channappa Mali - Assistant Professor | M.E. (Design Engg), Ph.D* (Appearing) (10 yrs)\n- Prof. Sandeep Subhash Kajalekar - Assistant Professor | M.Tech. (Design Engineering) (10 yrs)\n- Mr. Vyankatesh Limbraj Mundhe - Assistant Professor | M.E. (Mechanical) (8 yrs)\n- Prof. Nisar Shaukat Shaikh - Assistant Professor | M.E. (Mechanical), Ph.D* (Appearing) (7 yrs)\n- Dr. Sachin Mahadev Khomane - Assistant Professor | M.E. (Design Engg), Ph.D. (12 yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore Mechanical & Rail Engineering',
+      };
+    }
+    if (asksCivil && !asksCse && !asksMech) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Civil Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/civil-engineering/faculty',
+        answer: 'MITCORER Civil Engineering Department Faculty (8 Members):\n\n- Prof. Amit Raosaheb Shinde - Head of Department & Assistant Professor | M.Tech (Structural Engg), Ph.D* (Pursuing) (14 yrs)\n- Prof. Mangesh Daji Kevadkar - Assistant Professor & IQAC Coordinator | M.E. (Structural Engg), Ph.D* (Pursuing) (13 yrs)\n- Prof. Hemchandra R. Pawar - Assistant Professor | M.E. (Water Resources), Ph.D* (Pursuing) (10 yrs)\n- Prof. Sandeep Dilip Jagtap - Assistant Professor | M.E. (Geotechnical), Ph.D* (Pursuing) (10 yrs)\n- Prof. Niranjan Dilip Patil - Assistant Professor | M.E. (Structural Engineering) (8 yrs)\n- Prof. Amruta Vyankatesh Mundhe - Assistant Professor | M.E. (Construction Management) (7 yrs)\n- Prof. Pramol Prakash Waychal - Assistant Professor | M.E. (Structural Engineering) (6 yrs)\n- Mr. Saddam Pathan - Lab Assistant | B.E. (Civil), M.E. (Construction) (5 yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/civil-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore Civil Engineering',
+      };
+    }
+    if (asksEc) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Electronics & Computer Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/electronics-computer-engineering/faculty',
+        answer: 'MITCORER Electronics & Computer Engineering Department Faculty (5 Members):\n\n- Prof. Shashikant S. Sathe - Head of Department & Assistant Professor | M.Tech (Digital Electronics), PG (Data Science), Ph.D* (Pursuing) (15 yrs)\n- Prof. Sayli D. Hulwan - Assistant Professor | M.Tech (E&TC) (8 yrs)\n- Prof. Pranali A. Tayade - Assistant Professor | M.E. (ENTC) (7 yrs)\n- Prof. Seema Sachin Khomane - Assistant Professor | M.E. (E&TC) (7 yrs)\n- Prof. Kumar Prakash Londhe - Assistant Professor | M.E. (VLSI & Embedded Systems) (6 yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/electronics-computer-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore Electronics & Computer Engineering',
+      };
+    }
+    if (asksFe) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER First Year Engineering department portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/fy-engineering/faculty',
+        answer: 'MITCORER First Year Engineering (FE) Department Faculty (11 Members):\n\n- Dr. Pravin Ashok Madane - Head of First Year Engineering / Assistant Professor | M.E. (Heat Power), Ph.D. (16 yrs)\n- Prof. Chetan Anil Adhye - Assistant Professor | M.Sc. (Mathematics), SET (12 yrs)\n- Prof. Kiran Dinkar Mundhe - Assistant Professor | M.Sc. (Chemistry), B.Ed. (11 yrs)\n- Prof. Pradip Limbaraj Jagadale - Assistant Professor | M.A. (English), B.Ed. (10 yrs)\n- Prof. Pooja Gorakh Ghadage - Assistant Professor | M.Sc. (Mathematics) (8 yrs)\n- Dr. Supriya Anantrao Joshi - Assistant Professor | Ph.D. (Chemistry) (10 yrs)\n- Dr. Vijay Laxman Shinde - Assistant Professor | Ph.D. (Physics) (9 yrs)\n- Prof. Rohit Rajesh Shahapure - Assistant Professor | M.Sc. (Physics) (7 yrs)\n- Prof. Ajit Dattatray Kashid - Assistant Professor | M.Sc. (Mathematics), B.Ed. (6 yrs)\n- Prof. Appasaheb D. Metkari - Assistant Professor | M.Sc. (Physics) (5 yrs)\n- Prof. Amol Waghmare - Assistant Professor | M.A. (English), B.Ed. (6 yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/fy-engineering/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore First Year Engineering',
+      };
+    }
+    if (asksPoly) {
+      return {
+        recordId: 'KB-38',
+        source: 'MITCORER Polytechnic (MSBTE) portal',
+        sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/polytechnic/faculty',
+        answer: 'MITCORER Polytechnic (MSBTE) Faculty (5 Members):\n\n- Dr. Khogare Balaji Trimbak - Head of Polytechnic / Lecturer | M.Sc., Ph.D. (Chemistry) (14 yrs)\n- Mr. Kurmude Swapnil Gokuldas - Lecturer | M.Sc., B.Ed. (Mathematics) (8 yrs)\n- Mrs. Waghmare Swati Amol - Lecturer | M.A., B.Ed. (English) (7 yrs)\n- Mr. Rohit Rajesh Shahapure - Lecturer | M.Sc. (Physics) (7 yrs)\n- Mr. Kiran Dinkar Mundhe - Lecturer | M.Sc., B.Ed. (Chemistry) (9 yrs)\n\nOfficial Faculty Portal: https://mitcorer.edu.in/mitcorer/public/department/polytechnic/faculty',
+        next: '', actionView: 'programs', actionLabel: 'Explore Polytechnic',
+      };
+    }
+  }
+
+
   const asksHodOrDept = /\b(?:hod|head of department|department head|labs?|laborator(?:y|ies)|syllabus|curriculum|subjects?|taught|programming languages?|coding languages?|specializations?|honor degrees?|minor degrees?)\b/i.test(normalized);
   const isExcludedFromProfile = /\b(?:eligible|eligibility|percentile|cutoff|cut-off|fee|fees|scholarship)\b/i.test(normalized);
 
