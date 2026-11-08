@@ -251,7 +251,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-026",
@@ -261,7 +262,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-027",
@@ -271,7 +273,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-028",
@@ -281,7 +284,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-029",
@@ -291,7 +295,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-030",
@@ -301,7 +306,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-031",
@@ -311,7 +317,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-032",
@@ -321,7 +328,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-033",
@@ -331,7 +339,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-034",
@@ -341,7 +350,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-035",
@@ -351,7 +361,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-036",
@@ -361,7 +372,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-037",
@@ -371,7 +383,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-038",
@@ -381,7 +394,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-039",
@@ -391,7 +405,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-040",
@@ -401,7 +416,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-041",
@@ -411,7 +427,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-042",
@@ -421,7 +438,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-043",
@@ -431,7 +449,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-044",
@@ -441,7 +460,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-045",
@@ -451,7 +471,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-046",
@@ -461,7 +482,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-047",
@@ -471,7 +493,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-048",
@@ -481,7 +504,8 @@
       "expectedEvidenceCategory": "cutoff",
       "expectedBehavior": "Require year, round, exam, category and seat type; label historical values and avoid guarantees.",
       "mustCiteSource": true,
-      "mustNotGuarantee": true
+      "mustNotGuarantee": true,
+      "expectedOutcome": "clarification"
     },
     {
       "id": "CGQ-049",

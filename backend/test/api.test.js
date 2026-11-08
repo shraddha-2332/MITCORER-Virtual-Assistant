@@ -459,7 +459,7 @@ test('public assistant formats scholarship, placement, fee, and contact informat
     assert.match(scholarship.answer, /^- MITCORER lists/m);
     assert.match(scholarship.answer, /^- Open the official scholarship page/m);
     assert.match(scholarship.sourceUrl, /scholarship\.php$/);
-    assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship schemes', 'MahaDBT scholarship portal']);
+    assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship and financial-aid guidance', 'MahaDBT scholarship portal']);
 
     const placement = await ask('What placement highlights and companies does MITCORER have?');
     assert.match(placement.answer, /100\+ companies visiting/);

@@ -752,7 +752,7 @@ function buildCutoffAnswer(question, records) {
       recordId: 'KB-5',
       source: 'MITCORER First Year B.Tech Eligibility Criteria 2026-27',
       sourceUrl: 'https://mitcorer.edu.in/fy-btech-eligibility-criteria.php',
-      answer: 'For AY 2026-27 First Year B.Tech, the published Maharashtra State criteria require at least 45% aggregate marks in the qualifying subjects, or 40% for eligible Maharashtra reserved, EWS, and PwD candidates. Required subjects and a non-zero MHT-CET score also apply; meeting the minimum does not guarantee a seat. Polytechnic and Direct Second Year have separate criteria.',
+      answer: 'For AY 2026-27 First Year B.Tech, the published Maharashtra State criteria require Physics and Mathematics plus an accepted third subject, with at least 45% aggregate marks in the qualifying subjects or 40% for eligible Maharashtra reserved, EWS, and PwD candidates. Appearance in all PCM MHT-CET subjects with a non-zero PCM score is also required; meeting the minimum does not guarantee a seat. Polytechnic and Direct Second Year have separate criteria.',
       next: 'Tell me whether you are applying for First Year B.Tech, Direct Second Year, or Polytechnic if you need that route’s criteria.',
       actionView: 'programs', actionLabel: 'Check eligibility',
     };
@@ -3209,7 +3209,7 @@ function getAssistantAttachmentFile(id, user) {
   return { __file: true, filePath, mimeType: record.mimeType, fileName: record.fileName };
 }
 
-async function handleApi(req) {
+async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   const url = new URL(req.url, 'http://localhost');
   const user = getUserFromRequest(req);
   const context = { user };
@@ -3320,7 +3320,7 @@ async function handleApi(req) {
   }
   if (req.method === 'POST' && url.pathname === '/api/official-sources/sync') {
     requireRole({ user }, ['admin']);
-    return syncMonitoredWebsiteSources({ db: getDb(), user, saveFn: saveDb, auditFn: audit });
+    return syncMonitoredWebsiteSources({ db: getDb(), user, saveFn: saveDb, auditFn: audit, ...officialSourceSyncOptions });
   }
   const officialSourceExtractionMatch = url.pathname.match(/^\/api\/official-sources\/([^/]+)\/extracted-text$/);
   if (req.method === 'GET' && officialSourceExtractionMatch) return getOfficialSourceExtractedText(officialSourceExtractionMatch[1], user);
@@ -3369,7 +3369,7 @@ async function handleApi(req) {
   throw notFound('API route not found.');
 }
 
-export function createServer() {
+export function createServer({ officialSourceSyncOptions = {} } = {}) {
   loadDb();
   if (prunePublicConversations()) saveDb();
   if (config.geminiApiKey && config.geminiApiKey !== 'test-unused-key' && process.env.NODE_ENV !== 'test') {
@@ -3391,7 +3391,7 @@ export function createServer() {
       return;
     }
     try {
-      const payload = await handleApi(req);
+      const payload = await handleApi(req, { officialSourceSyncOptions });
       if (payload?.__stream) {
         res.writeHead(200, {
           'Content-Type': 'text/event-stream',

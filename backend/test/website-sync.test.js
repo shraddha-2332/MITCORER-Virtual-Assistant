@@ -5,9 +5,9 @@ import { createServer } from '../src/server.js';
 import { config } from '../src/config.js';
 import { resetDbForTests } from '../src/store.js';
 
-async function withServer(fn) {
+async function withServer(fn, serverOptions) {
   resetDbForTests();
-  const server = createServer();
+  const server = createServer(serverOptions);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   const base = `http://127.0.0.1:${address.port}`;
@@ -119,6 +119,21 @@ test('syncMonitoredWebsiteSources stages changed pages in Review status without 
 });
 
 test('POST /api/official-sources/sync enforces admin authorization and executes website sync', async () => {
+  const rootUrl = 'https://mitcorer.edu.in/mitcorer/public/index.php';
+  const linkedPaths = [
+    '/mitcorer/public/admissions/programmes',
+    '/mitcorer/public/department/cse',
+    '/mitcorer/public/department/civil',
+    '/mitcorer/public/infrastructure/library',
+    '/mitcorer/public/contact-us',
+  ];
+  const mockFetcher = async (url) => {
+    if (url === rootUrl) {
+      return `<html><body>${linkedPaths.map((path) => `<a href="${path}">Official section</a>`).join(' ')}</body></html>`;
+    }
+    return '<html><body><h1>Official MITCORER page</h1><p>Verified website content for deterministic CI synchronization checks.</p></body></html>';
+  };
+
   await withServer(async (base) => {
     // 1. Unauthenticated request should fail
     const unauth = await request(base, '/api/official-sources/sync', { method: 'POST' });
@@ -152,7 +167,7 @@ test('POST /api/official-sources/sync enforces admin authorization and executes 
     assert.ok(adminSync.payload.data.checked >= 6);
     assert.ok(typeof adminSync.payload.data.unchanged === 'number');
     assert.ok(typeof adminSync.payload.data.changed === 'number');
-  });
+  }, { officialSourceSyncOptions: { fetcher: mockFetcher } });
 });
 
 test('analyzeContentDrift detects metric changes, academic year updates, and character deltas', () => {

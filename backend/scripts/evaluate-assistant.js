@@ -107,12 +107,17 @@ async function main() {
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ question }),
       });
+      const expectsClarification = item.expectedOutcome === 'clarification';
       const expectedCategory = item.expectedCategory || expectedCategoryByIntent[item.intent];
       const actualCategory = String(payload.data?.evidence?.[0]?.category || '').toLowerCase();
       const answer = String(payload.data?.answer || '').toLowerCase();
       const expectedText = String(item.mustInclude || '').toLowerCase();
-      const actionMatches = !item.expectedAction || payload.data?.actionView === item.expectedAction;
-      if (response.status !== 200 || actualCategory !== expectedCategory || !actionMatches || (expectedText && !answer.includes(expectedText))) {
+      const actionMatches = (!item.expectedAction || payload.data?.actionView === item.expectedAction)
+        && (!expectsClarification || payload.data?.actionView === 'cap');
+      const outcomeMatches = expectsClarification
+        ? payload.data?.clarification === true && actualCategory === ''
+        : actualCategory === expectedCategory;
+      if (response.status !== 200 || !outcomeMatches || !actionMatches || (expectedText && !answer.includes(expectedText))) {
         failures.push({ id: item.id, intent: item.intent, question, expectedCategory, actualCategory, status: response.status, action: payload.data?.actionView, expectedText });
       }
     }
