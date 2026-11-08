@@ -4,7 +4,6 @@ import { createServer, resetRuntimeStateForTests } from '../src/server.js';
 import { config } from '../src/config.js';
 import { resetDbForTests } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
-import path from 'node:path';
 
 async function withServer(fn) {
   const server = createServer();
@@ -18,7 +17,7 @@ async function withServer(fn) {
 }
 
 beforeEach(() => {
-  config.databaseFile = path.resolve(process.cwd(), 'data', 'mitra.test.sqlite');
+  config.databaseFile = ':memory:';
   resetRuntimeStateForTests();
   resetDbForTests(createSeedData());
 });
