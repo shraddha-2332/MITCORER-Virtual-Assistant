@@ -63,10 +63,12 @@ try {
   assert.equal(login.status(), 200);
   const token = (await login.json()).data.token;
   await page.reload();
-  await page.locator('.knowledgeGrid').waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).click();
+  await page.locator('.knowledgeRecordList').waitFor();
   const editor = page.getByRole('region', { name: 'Edit knowledge record' });
-  const card = title => page.locator('.knowledgeGrid article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
-  const openRecord = async title => { await card(title).getByRole('button', { name: 'Edit record' }).click(); await editor.waitFor(); };
+  const card = title => page.locator('.knowledgeRecordList article').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
+  const openRecord = async title => { await card(title).getByRole('button', { name: 'Edit', exact: true }).click(); await editor.waitFor(); };
   const save = async (id, expected = 200) => {
     const received = page.waitForResponse(response => response.url().endsWith(`/api/knowledge/${id}`) && response.request().method() === 'PATCH');
     await editor.getByRole('button', { name: 'Save record', exact: true }).click();
@@ -99,7 +101,9 @@ try {
   assert.equal(await amount.inputValue(), '114567');
   await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.reload();
-  await page.locator('.knowledgeGrid').waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).click();
+  await page.locator('.knowledgeRecordList').waitFor();
   await openRecord('MITCORER library and digital resources');
   await editor.getByLabel('Verified text').fill('Library test record: digital resources are available. Timings are not published.');
   await editor.getByLabel('Reviewed Hindi translation').fill('इस परीक्षण रिकॉर्ड में पुस्तकालय की डिजिटल सामग्री उपलब्ध है। समय प्रकाशित नहीं है।');
@@ -142,7 +146,9 @@ try {
   assert.equal(after.evidence[0].passage.sha256, before.evidence[0].passage.sha256);
   assert.equal((await ask('Tell me about the library.', 'hi')).localizationStatus, 'fallback');
   await page.reload();
-  await page.locator('.knowledgeGrid').waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Knowledge Base', exact: true }).click();
+  await page.locator('.knowledgeRecordList').waitFor();
   await openRecord(`${fee.title} (concurrent)`);
   await editor.getByLabel('Publication status').selectOption('Retired');
   await save('KB-2');
