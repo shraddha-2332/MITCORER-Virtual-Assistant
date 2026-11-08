@@ -18,11 +18,23 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
         working-directory: frontend
-      - run: npm run check && npm test && npm run evaluate && npm run evaluate:public -- --strict
+      - run: npm run check
         working-directory: backend
-      - run: npm test && npm run lint && npm run build
+      - run: npm test
+        working-directory: backend
+      - run: npm run evaluate
+        working-directory: backend
+      - run: npm run evaluate:public -- --strict
+        working-directory: backend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run lint
+        working-directory: frontend
+      - run: npm run build
         working-directory: frontend
       - run: npx --no-install playwright-core install --with-deps chrome
         working-directory: frontend
-      - run: npm run test:public-session-browser && npm run test:maintainer-browser
+      - run: npm run test:public-session-browser
+        working-directory: frontend
+      - run: npm run test:maintainer-browser
         working-directory: frontend
