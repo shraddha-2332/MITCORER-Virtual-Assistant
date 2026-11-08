@@ -4,6 +4,7 @@ import { createServer, resetRuntimeStateForTests } from '../src/server.js';
 import { config } from '../src/config.js';
 import { resetDbForTests } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
+import path from 'node:path';
 
 async function withServer(fn) {
   const server = createServer();
@@ -17,7 +18,7 @@ async function withServer(fn) {
 }
 
 beforeEach(() => {
-  config.databaseFile = ':memory:';
+  config.databaseFile = path.resolve(process.cwd(), 'data', 'mitra.stream.test.sqlite');
   resetRuntimeStateForTests();
   resetDbForTests(createSeedData());
 });
@@ -34,7 +35,7 @@ test('POST /api/public-assistant/stream streams SSE event tokens and done payloa
     assert.equal(response.headers.get('content-type'), 'text/event-stream');
 
     const text = await response.text();
-    assert.ok(text.includes('event: meta'));
+    assert.ok(text.includes('event: meta'), text);
     assert.ok(text.includes('event: token'));
     assert.ok(text.includes('event: done'));
     assert.ok(text.includes('61,109') || text.includes('61109'));
