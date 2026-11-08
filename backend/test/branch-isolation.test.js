@@ -34,6 +34,13 @@ test('mechanical branch HOD query returns only Dr. Sanjay Mane and never other d
   assert.doesNotMatch(ans, /Somnath Mule/i);
 });
 
+test('E&TC HOD query returns Prof. Deepali Mali without unrelated departments', async () => {
+  const result = await answerAdmissionQuestion({ question: 'Who is the HOD of Electronics and Telecommunication Engineering?' });
+  assert.match(result.answer, /Prof\. Mrs\. Deepali Gajanan Mali/i);
+  assert.match(result.answer, /Electronics and Telecommunication|E&TC/i);
+  assert.doesNotMatch(result.answer, /Somnath Mule|Amit Raosaheb Shinde|Sanjay Pandurang Mane/i);
+});
+
 test('civil engineering labs query returns civil laboratories and never other branches', async () => {
   const result = await answerAdmissionQuestion({ question: 'civil engineering labs' });
   const ans = result.answer;
@@ -47,13 +54,23 @@ test('civil engineering labs query returns civil laboratories and never other br
   assert.doesNotMatch(ans, /High-Performance Computing/i);
 });
 
-test('civil branch cutoff and intake queries isolate civil engineering details', async () => {
-  const cutoff = await answerAdmissionQuestion({ question: 'what is the cutoff for civil branch' });
-  assert.match(cutoff.answer, /Civil Engineering/i);
-  assert.match(cutoff.answer, /0690119110/);
-  assert.doesNotMatch(cutoff.answer, /Mechanical/i);
-  assert.doesNotMatch(cutoff.answer, /Computer Science|CSE/i);
+test('cutoff answers require a matching published scope and never substitute branch or year', async () => {
+  const ambiguous = await answerAdmissionQuestion({ question: 'what is the cutoff for civil branch' });
+  assert.equal(ambiguous.evidence.length, 0);
+  assert.match(ambiguous.answer, /academic year|CAP Round I|All India seat type|JEE Main/i);
+  assert.doesNotMatch(ambiguous.answer, /0690119110|42429|56892/);
 
+  const unsupportedBranch = await answerAdmissionQuestion({ question: 'What was the 2025 All India JEE Main cutoff for Civil Engineering CAP Round I?' });
+  assert.equal(unsupportedBranch.evidence.length, 0);
+  assert.equal(unsupportedBranch.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.match(unsupportedBranch.answer, /could not find a verified 2025 civil/i);
+  assert.doesNotMatch(unsupportedBranch.answer, /CSE|42429|56892|0690119110/);
+  assert.ok(unsupportedBranch.officialLinks.some(link => link.url.includes('fe2024.mahacet.org')));
+
+  const unspecified = await answerAdmissionQuestion({ question: 'What are the historical cutoffs?' });
+  assert.equal(unspecified.evidence.length, 0);
+  assert.match(unspecified.answer, /branch|academic year/i);
+  assert.doesNotMatch(unspecified.answer, /42429|56892/);
   const intake = await answerAdmissionQuestion({ question: 'civil engineering intake' });
   assert.match(intake.answer, /Civil Engineering/i);
   assert.match(intake.answer, /intake 60/i);
@@ -100,5 +117,36 @@ test('multi-turn conversation preserves civil branch context and never leaks oth
   assert.match(turn3.answer, /Strength of Materials/i);
   assert.doesNotMatch(turn3.answer, /Mechanical/i);
   assert.doesNotMatch(turn3.answer, /Robotics Lab/i);
+});
+
+test('public branch follow-up answers the original intake question for the new branch', async () => {
+  const sessionToken = 'd'.repeat(64);
+  const first = await askPublicWithHistory({ question: 'What is the intake for CSE?' }, answerAdmissionQuestion, sessionToken);
+  assert.match(first.answer, /intake 120/i);
+  const followup = await askPublicWithHistory({ question: 'What about Civil?', conversationId: first.conversationId }, answerAdmissionQuestion, sessionToken);
+  assert.match(followup.answer, /Civil Engineering has sanctioned intake 60/i);
+  assert.doesNotMatch(followup.answer, /Computer Science|CSE|intake 120/i);
+});
+
+test('public E&TC intake follow-up resolves HOD to Prof. Deepali Mali only', async () => {
+  const sessionToken = 'e'.repeat(64);
+  const first = await askPublicWithHistory({
+    question: 'what is the intake of Electronics and Telecommunication Engineering',
+  }, answerAdmissionQuestion, sessionToken);
+  assert.match(first.answer, /Electronics and Telecommunication Engineering has sanctioned intake 60/i);
+
+  const followup = await askPublicWithHistory({
+    question: 'who is the HOD there?',
+    conversationId: first.conversationId,
+  }, answerAdmissionQuestion, sessionToken);
+  assert.match(followup.answer, /Prof\. Mrs\. Deepali Gajanan Mali/i);
+  assert.match(followup.answer, /Electronics and Telecommunication|E&TC/i);
+  assert.doesNotMatch(followup.answer, /Somnath Mule|Amit Raosaheb Shinde|Sanjay Pandurang Mane/i);
+  assert.equal(followup.source, 'MITCORER Electronics & Telecommunication Engineering department portal');
+  assert.deepEqual(followup.officialLinks.map(link => link.url), [
+    'https://mitcorer.edu.in/mitcorer/public/department/electronic-telecommunication-engineering/faculty',
+  ]);
+  assert.equal(followup.evidence[0].id, 'KB-52');
+  resetPublicConversation(first.conversationId, sessionToken);
 });
 

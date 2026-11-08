@@ -4,10 +4,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.js';
-import { createSeedData } from './seed.js';
+import { createSeedData, seedKnowledge } from './seed.js';
 
 let db = null;
 let sqlite = null;
+const ENTC_HOD_MIGRATION = 'seed-entc-hod-kb52';
 
 function openDatabase() {
   if (sqlite) return sqlite;
@@ -58,6 +59,12 @@ export function saveStoredVector(id, contentHash, vector) {
   } catch {}
 }
 
+export function deleteStoredVector(id) {
+  try {
+    openDatabase().prepare('DELETE FROM vector_embeddings WHERE id = ?').run(id);
+  } catch {}
+}
+
 function readCollection(name) {
   const row = openDatabase()
     .prepare('SELECT data FROM collections WHERE name = ?')
@@ -90,8 +97,9 @@ function normalizeDb(nextDb) {
       if (user.id === 'USR-ADM') return { ...user, name: 'Mundhe' };
       return user;
     }),
-    inquiries: nextDb.inquiries || [],
-    documents: (nextDb.documents || []).map((item) =>
+    // Remove known development-only requests from earlier sample data. Preserve real visitor requests.
+    inquiries: (nextDb.inquiries || []).filter((item) => !['INQ-2401', 'INQ-2402', 'INQ-2403'].includes(item.id)),
+    documents: (nextDb.documents || []).filter((item) => !['DOC-SEED-1', 'DOC-SEED-2'].includes(item.id)).map((item) =>
       item.status === 'Uploaded for review'
         ? {
             ...item,
@@ -109,6 +117,7 @@ function normalizeDb(nextDb) {
     knowledge: nextDb.knowledge || [],
     officialSources: existingOfficialSources,
     feedback: nextDb.feedback || [],
+    migrations: nextDb.migrations || [],
   };
 }
 
@@ -118,11 +127,27 @@ export function loadDb() {
   const persisted = readCollection('app');
 
   if (persisted) {
+    const hadDemoInquiries = (persisted.inquiries || []).some((item) => ['INQ-2401', 'INQ-2402', 'INQ-2403'].includes(item.id));
+    const hadDemoDocuments = (persisted.documents || []).some((item) => ['DOC-SEED-1', 'DOC-SEED-2'].includes(item.id));
     db = normalizeDb(persisted);
+    // Run this additive migration once. Without a marker, a deliberately deleted
+    // seeded record would be silently restored on every process restart.
+    const entcHodRecord = seedKnowledge.find((record) => record.id === 'KB-52');
+    const migrations = new Set(db.migrations);
+    if (!migrations.has(ENTC_HOD_MIGRATION)) {
+      if (entcHodRecord && !db.knowledge.some((record) => record.id === entcHodRecord.id)) {
+        db.knowledge.push({ ...structuredClone(entcHodRecord), updatedAt: new Date().toISOString() });
+      }
+      db.migrations.push(ENTC_HOD_MIGRATION);
+    }
+    if (hadDemoInquiries || hadDemoDocuments || !migrations.has(ENTC_HOD_MIGRATION)) {
+      saveDb();
+    }
     return db;
   }
 
   db = normalizeDb(createSeedData());
+  db.migrations.push(ENTC_HOD_MIGRATION);
   saveDb();
   return db;
 }

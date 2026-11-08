@@ -618,6 +618,16 @@ export const seedKnowledge = [
     text: 'MITCORER Industrial Visits, Railway Field Training, and Practical Internships:\n\n- Railway Field Exposure: Proximity to Central Railway hubs enables guided technical visits to the historic Kurduwadi Railway Workshop, Solapur Railway Divisional Headquarters, diesel/electric loco sheds, and signaling interlock installations for practical railway systems understanding.\n- Multi-Industry Site Visits: Regular industrial visits to manufacturing units, structural construction sites, thermal power stations, and IT software companies across Barshi, Solapur, Pune, and surrounding industrial belts.\n- Mandatory Internships: In alignment with AICTE and PAH Solapur University curriculum, all B.Tech students undergo 4-to-8-week industrial internships with leading infrastructure, manufacturing, and software organizations before final-year graduation.\n- Practical Application: Field training bridges classroom engineering theory with operational railway maintenance, safety standards, and modern corporate engineering practices.',
     status: 'Published',
   },
+  {
+    id: 'KB-52',
+    title: 'MITCORER Electronics & Telecommunication Engineering HOD',
+    category: 'Faculty',
+    source: 'MITCORER Electronics & Telecommunication Engineering department portal',
+    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/department/electronic-telecommunication-engineering/faculty',
+    tags: ['electronics and telecommunication', 'electronics & telecommunication', 'e&tc', 'entc', 'department head', 'head of department', 'hod', 'deepali mali'],
+    text: 'The Head of Department (HOD) of Electronics and Telecommunication (E&TC) Engineering at MITCORER is Prof. Mrs. Deepali Gajanan Mali.',
+    status: 'Published',
+  },
 ];
 
 for (const record of seedKnowledge) {
@@ -665,15 +675,8 @@ export function createSeedData() {
   const users = (isProduction && !allowDemoUsers) ? productionUsers : defaultUsers;
   const seeded = {
     users,
-    inquiries: [
-      { id: 'INQ-2401', name: 'Aarav Kulkarni', role: 'Applicant', topic: 'Caste validity receipt', priority: 'High', status: 'Needs reply', city: 'Solapur', contact: 'aarav@example.com', question: 'Caste validity receipt is pending. Can I report?', createdAt, updatedAt: createdAt },
-      { id: 'INQ-2402', name: 'Mrs. Deshmukh', role: 'Parent', topic: 'Hostel and fee installment', priority: 'Medium', status: 'In progress', city: 'Latur', contact: 'parent@example.com', question: 'Can hostel and mess amount be confirmed before travel?', createdAt, updatedAt: createdAt },
-      { id: 'INQ-2403', name: 'Rohan Jadhav', role: 'Applicant', topic: 'TFWS and EBC documents', priority: 'New', status: 'Unassigned', city: 'Barshi', contact: 'rohan@example.com', question: 'Which documents are needed for TFWS/EBC?', createdAt, updatedAt: createdAt },
-    ],
-    documents: [
-      { id: 'DOC-SEED-1', ownerName: 'Aarav Kulkarni', ownerEmail: 'aarav@example.com', ownerRole: 'Applicant', docName: 'CET or JEE scorecard', fileName: 'aarav-cet-scorecard.pdf', status: 'Needs correction', createdAt, updatedAt: createdAt },
-      { id: 'DOC-SEED-2', ownerName: 'Rohan Jadhav', ownerEmail: 'rohan@example.com', ownerRole: 'Applicant', docName: 'CAP allotment letter', fileName: 'rohan-cap-allotment.pdf', status: 'Ready for reporting', createdAt, updatedAt: createdAt },
-    ],
+    inquiries: [],
+    documents: [],
     content: [
       { id: 'CNT-1', title: 'Admission process 2026-27', category: 'Admissions', status: 'Published', updatedAt: createdAt },
       { id: 'CNT-2', title: 'Course intake and choice codes', category: 'Courses', status: 'Published', updatedAt: createdAt },

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { requestGeneration } from '../src/generation-client.js';
+import { requestGeneration, requestGroqGeneration } from '../src/generation-client.js';
 const options = { apiKey: 'test-key', primaryModel: 'primary', fallbackModel: 'fallback', body: {}, sleep: async () => {}, random: () => 0 };
 
 test('generation retries transient failures once then identifies the actual fallback model', async () => {
@@ -34,4 +34,32 @@ test('total deadline and abort signals bound repeated timeouts', async () => {
   const result = await requestGeneration({ ...options, timeoutMs: 30, fetchImpl: async (_url, { signal }) => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')), { once: true })) });
   assert.equal(result, null);
   assert.ok(Date.now() - start < 1000);
+});
+
+test('Groq retries transient failures and identifies the fallback model', async () => {
+  const calls = [];
+  const result = await requestGroqGeneration({
+    apiKey: 'test-key', primaryModel: 'primary', fallbackModel: 'fallback',
+    sleep: async () => {}, random: () => 0,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, body: JSON.parse(options.body) });
+      return calls.length === 1
+        ? { ok: false, status: 503 }
+        : { ok: true, json: async () => ({ choices: [{ message: { content: 'Grounded draft.' } }] }) };
+    },
+  });
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every(call => call.url.includes('api.groq.com')));
+  assert.deepEqual(calls.map(call => call.body.model), ['primary', 'fallback']);
+  assert.deepEqual(result, { text: 'Grounded draft.', model: 'groq:fallback', attempts: 2 });
+});
+
+test('Groq does not retry non-transient provider errors', async () => {
+  let calls = 0;
+  const result = await requestGroqGeneration({
+    apiKey: 'test-key', primaryModel: 'primary', fallbackModel: 'fallback',
+    fetchImpl: async () => { calls++; return { ok: false, status: 401 }; },
+  });
+  assert.equal(result, null);
+  assert.equal(calls, 1);
 });

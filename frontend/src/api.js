@@ -122,6 +122,7 @@ export const api = {
   submitFeedback: (body) => request('/api/public/feedback', { method: 'POST', body }),
   createInquiry: (token, body) => request('/api/inquiries', { token, method: 'POST', body }),
   updateInquiryStatus: (token, id, updates) => request(`/api/inquiries/${id}/status`, { token, method: 'PATCH', body: updates }),
+  getFeedback: (token) => request('/api/feedback', { token }),
   getAdmissionWorkspace: (token) => request('/api/admission-workspace', { token }),
   updateAdmissionWorkspace: (token, section, value) => request('/api/admission-workspace', { token, method: 'PATCH', body: { section, value } }),
   getDocuments: (token) => request('/api/documents', { token }),
@@ -142,6 +143,7 @@ export const api = {
   getKnowledge: (token) => request('/api/knowledge', { token }),
   createKnowledge: (token, body) => request('/api/knowledge', { token, method: 'POST', body }),
   updateKnowledge: (token, id, body) => request(`/api/knowledge/${encodeURIComponent(id)}`, { token, method: 'PATCH', body }),
+  deleteKnowledge: (token, id, body) => request(`/api/knowledge/${encodeURIComponent(id)}`, { token, method: 'DELETE', body }),
   getOfficialSources: (token) => request('/api/official-sources', { token }),
   uploadOfficialSource: (token, body, file) => {
     const formData = new FormData();
@@ -150,7 +152,7 @@ export const api = {
     return upload('/api/official-sources/upload', { token, formData });
   },
   getOfficialSourceExtractedText: (token, id) => request(`/api/official-sources/${id}/extracted-text`, { token }),
-  publishOfficialSource: (token, id, verifiedText) => request(`/api/official-sources/${id}/publish`, { token, method: 'PATCH', body: { verifiedText } }),
+  publishOfficialSource: (token, id, verifiedText, resolveConflicts = false) => request(`/api/official-sources/${id}/publish`, { token, method: 'PATCH', body: { verifiedText, resolveConflicts } }),
   extractStructuredOfficialSource: (token, id) => request(`/api/official-sources/${id}/extract-structured`, { token, method: 'POST' }),
   openOfficialSource: (token, id) => openProtectedFile(`/api/official-sources/${id}/file`, token),
   syncOfficialSources: (token) => request('/api/official-sources/sync', { token, method: 'POST' }),

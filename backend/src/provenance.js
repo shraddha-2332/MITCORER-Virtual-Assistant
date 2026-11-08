@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { badRequest } from './errors.js';
 
-const fields = ['documentId', 'documentVersion', 'academicYear', 'section', 'pageStart', 'pageEnd', 'validFrom', 'validUntil', 'supersededBy'];
+const fields = ['documentId', 'documentVersion', 'academicYear', 'section', 'capturedAt', 'pageStart', 'pageEnd', 'validFrom', 'validUntil', 'supersededBy'];
 export function validDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
     && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
@@ -14,8 +14,8 @@ export function validateProvenance(value) {
     const item = value[field];
     if (field === 'pageStart' || field === 'pageEnd') {
       if (!Number.isSafeInteger(item) || item < 1 || item > 100000) throw badRequest('Pages must be whole numbers from 1 to 100000.');
-    } else if (field === 'validFrom' || field === 'validUntil') {
-      if (!validDate(item)) throw badRequest('Use a real validity date in YYYY-MM-DD format.');
+    } else if (field === 'validFrom' || field === 'validUntil' || field === 'capturedAt') {
+      if (!validDate(item)) throw badRequest('Use a real source date in YYYY-MM-DD format.');
     } else if (typeof item !== 'string' || !item.trim() || item.length > 180) throw badRequest(`Invalid ${field}.`);
     result[field] = typeof item === 'string' ? item.trim() : item;
   }

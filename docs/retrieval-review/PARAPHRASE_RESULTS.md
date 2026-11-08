@@ -70,7 +70,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-For AY 2026-27, Computer Science and Engineering has sanctioned intake 120 and choice code 0690124210. Intake does not confirm current vacancies or guarantee admission.
+For AY 2026-27, Computer Science and Engineering has a published sanctioned intake of 120. Sanctioned intake is the programme’s approved capacity; it does not show how many seats remain available today. The published page does not confirm current vacancies, and the indexed records do not contain a live vacancy count. Check the current CAP or ACAP notice for availability.
 
 Evidence IDs: KB-10
 
@@ -82,9 +82,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-Bus and transport: MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment. [1]
-
-Other requested information: I could not find a verified answer for this part. Please ask a more specific institutional question or check with the college.
+MITCORER lists a bus facility. The published page does not state a route list, stops, timetable, seat availability, or transport fee. Confirm the current route and timetable with the college before planning travel.
 
 Evidence IDs: KB-19
 

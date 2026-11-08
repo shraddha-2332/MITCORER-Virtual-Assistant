@@ -25,6 +25,17 @@ test('localized normalization preserves numeric years and distinguishes intake f
   assert.deepEqual([...numericTokens('4.4 LPA and 0690124210')], ['4.4', '0690124210']);
 });
 
+test('common Marathi, Hindi and Romanized questions normalize to existing answer intents', () => {
+  assert.match(normalizeLocalTerms('तुमच्या कॉलेजमध्ये कोणते इंजिनिअरिंग कोर्स आहेत?'), /list engineering programmes/);
+  assert.match(normalizeLocalTerms('कॉलेज कहाँ स्थित है?'), /where is the college located/);
+  assert.match(normalizeLocalTerms('मुलींसाठी हॉस्टेल आहे का?'), /girls hostel facilities available/);
+  assert.match(normalizeLocalTerms('कॉलेजमध्ये स्कॉलरशिप मिळते का?'), /scholarship schemes/);
+  assert.match(normalizeLocalTerms('कॉलेजचे प्राचार्य कोण आहेत?'), /who is the principal/);
+  assert.match(normalizeLocalTerms('कॉम्पुटर इंजिनियरिंग ची फिस किती?'), /computer engineering\s+fee/);
+  assert.match(normalizeLocalTerms('admission sathi docs konti pahijet?'), /admission documents required/);
+  assert.match(normalizeLocalTerms('placement kase aahet?'), /placement highlights/);
+});
+
 test('structured localized fees preserve category, route, amount, year and annual-payment caveat', () => {
   const records = createSeedData().knowledge;
   for (const language of ['mr', 'hi']) {

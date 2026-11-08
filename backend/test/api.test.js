@@ -5,7 +5,7 @@ import { beforeEach, test } from 'node:test';
 import { semanticResponseCache } from '../src/semantic-cache.js';
 import { createServer, resetRuntimeStateForTests } from '../src/server.js';
 import { config } from '../src/config.js';
-import { resetDbForTests, closeDb } from '../src/store.js';
+import { resetDbForTests, closeDb, getDb, saveDb } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -168,6 +168,49 @@ test('knowledge creation defaults to review and supports revisioned plain-text e
     closeDb();
     const list = await request(base, '/api/knowledge', { headers });
     assert.equal(list.payload.data.items.find((item) => item.id === created.payload.data.id).text, 'Revised reviewed notice text');
+  });
+});
+
+test('knowledge deletion is admin-only, revision-checked, audited, and limited to archived unlinked records', async () => {
+  await withServer(async (base) => {
+    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const staff = await login(base, 'staff@mitcorer.edu.in');
+    const headers = { Authorization: `Bearer ${admin}` };
+    const created = await request(base, '/api/knowledge', { method: 'POST', headers,
+      body: JSON.stringify({ title: 'Temporary notice', category: 'Admissions', source: 'Admin review', text: 'Temporary verified text.' }) });
+    const id = created.payload.data.id;
+
+    assert.equal((await request(base, `/api/knowledge/${id}`, { method: 'DELETE', body: JSON.stringify({ expectedRevision: 1 }) })).response.status, 401);
+    assert.equal((await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${staff}` }, body: JSON.stringify({ expectedRevision: 1 }) })).response.status, 403);
+    const stale = await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ expectedRevision: 0 }) });
+    assert.equal(stale.response.status, 409);
+
+    getDb().knowledge.find((item) => item.id === id).sourceDocumentId = 'SRC-1';
+    saveDb();
+    const linked = await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers, body: JSON.stringify({ expectedRevision: 1 }) });
+    assert.equal(linked.response.status, 409);
+    assert.equal(linked.payload.error.code, 'KNOWLEDGE_SOURCE_LINKED');
+    delete getDb().knowledge.find((item) => item.id === id).sourceDocumentId;
+
+    const published = await request(base, `/api/knowledge/${id}`, { method: 'PATCH', headers,
+      body: JSON.stringify({ expectedRevision: 1, status: 'Published' }) });
+    assert.equal(published.response.status, 200);
+    const publishedDelete = await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers,
+      body: JSON.stringify({ expectedRevision: 2 }) });
+    assert.equal(publishedDelete.response.status, 409);
+    assert.equal(publishedDelete.payload.error.code, 'KNOWLEDGE_MUST_BE_ARCHIVED');
+    const archived = await request(base, `/api/knowledge/${id}`, { method: 'PATCH', headers,
+      body: JSON.stringify({ expectedRevision: 2, status: 'Archived' }) });
+    assert.equal(archived.response.status, 200);
+    const deleted = await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers,
+      body: JSON.stringify({ expectedRevision: 3 }) });
+    assert.equal(deleted.response.status, 200);
+    assert.equal(deleted.payload.data.deleted, true);
+    assert.equal(getDb().knowledge.some((item) => item.id === id), false);
+    assert.ok(getDb().auditLogs.some((item) => item.action === 'knowledge.deleted' && item.resourceId === id));
+    const missing = await request(base, `/api/knowledge/${id}`, { method: 'DELETE', headers,
+      body: JSON.stringify({ expectedRevision: 3 }) });
+    assert.equal(missing.response.status, 404);
   });
 });
 
@@ -439,6 +482,21 @@ test('public assistant formats scholarship, placement, fee, and contact informat
 
 test('public assistant serves verified About and Why MITCORER responses', async () => {
   await withServer(async (base) => {
+    const fullName = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'What is the full name of your college?' }),
+    });
+    assert.equal(fullName.response.status, 200);
+    assert.match(fullName.payload.data.answer, /^The full name of MITCORER is MIT College of Railway Engineering and Research\.$/);
+    assert.equal(fullName.payload.data.evidence[0]?.id, 'KB-34');
+    assert.ok(fullName.payload.data.officialLinks.some((link) => link.url === 'https://www.mitcorer.edu.in/mit-corer.php'));
+
+    const identity = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'What is MITCORER?' }),
+    });
+    assert.equal(identity.payload.data.evidence[0]?.id, 'KB-34');
+    assert.match(identity.payload.data.answer, /MITCORER stands for MIT College of Railway Engineering and Research/);
+
     const about = await request(base, '/api/public-assistant/ask', {
       method: 'POST',
       body: JSON.stringify({ question: 'Tell me about MITCORER.' }),
@@ -456,6 +514,87 @@ test('public assistant serves verified About and Why MITCORER responses', async 
     assert.match(why.payload.data.answer, /What sets MITCORER apart/);
     assert.match(why.payload.data.answer, /60\+ faculty and 900\+ alumni/);
     assert.equal(why.payload.data.source, 'MITCORER Admissions FAQ and official website');
+  });
+});
+
+test('public assistant routes common admission, eligibility and programme wording to supporting records', async () => {
+  await withServer(async (base) => {
+    const ask = async (question) => {
+      const { response, payload } = await request(base, '/api/public-assistant/ask', {
+        method: 'POST', body: JSON.stringify({ question }),
+      });
+      assert.equal(response.status, 200, question);
+      return payload.data;
+    };
+
+    const admission = await ask('How can I get admission to your college?');
+    assert.equal(admission.evidence[0]?.id, 'KB-29');
+    assert.match(admission.answer, /register on the Maharashtra CET Cell portal/);
+    assert.match(admission.answer, /Direct Second Year, Polytechnic, and institute-level admission have separate schedules/);
+
+    const onlineAdmission = await ask('Can I apply for admission online?');
+    assert.equal(onlineAdmission.evidence[0]?.id, 'KB-29');
+    assert.match(onlineAdmission.answer, /register on the Maharashtra CET Cell portal/);
+    assert.match(onlineAdmission.answer, /institute reporting steps/);
+
+    const overview = await ask('Tell me about admission.');
+    assert.deepEqual(overview.evidence.map((record) => record.id), ['KB-29', 'KB-14', 'KB-5', 'KB-1']);
+    assert.match(overview.answer, /separate admission routes for First Year B.Tech CAP, Direct Second Year, Polytechnic, and institute-level\/ACAP/);
+
+    const broadOverview = await ask('Explain everything I should know before taking admission to MITCORER.');
+    assert.deepEqual(broadOverview.evidence.map((record) => record.id), ['KB-29', 'KB-14', 'KB-5', 'KB-1']);
+
+    const minimum = await ask('What is the minimum percentage required?');
+    assert.equal(minimum.evidence[0]?.id, 'KB-5');
+    assert.match(minimum.answer, /45% aggregate marks/);
+    assert.match(minimum.answer, /40% for eligible Maharashtra reserved, EWS, and PwD candidates/);
+
+    const capacity = await ask('Can you distinguish approved CSE capacity from the number of seats still available today?');
+    assert.equal(capacity.evidence[0]?.id, 'KB-10');
+    assert.match(capacity.answer, /sanctioned intake of 120/);
+    assert.match(capacity.answer, /does not show how many seats remain available today/);
+    assert.match(capacity.answer, /do not contain a live vacancy count/);
+
+    const electrical = await ask('What is the intake capacity of Electrical Engineering?');
+    assert.equal(electrical.evidence[0]?.id, 'KB-10');
+    assert.match(electrical.answer, /does not list a standalone Electrical Engineering degree/);
+    assert.match(electrical.answer, /Electronics and Telecommunication Engineering/);
+
+    const internalExams = await ask('Are internal examinations conducted?');
+    assert.equal(internalExams.evidence[0]?.id, 'KB-45');
+    assert.match(internalExams.answer, /mid-term evaluations and continuous internal evaluation/);
+  });
+});
+
+test('hostel facility wording does not turn general availability into live vacancy claims', async () => {
+  await withServer(async (base) => {
+    const general = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'Are hostel rooms available for outstation students?' }),
+    });
+    assert.equal(general.payload.data.evidence[0]?.id, 'KB-23');
+    assert.match(general.payload.data.answer, /separate hostels for boys and girls/);
+    assert.match(general.payload.data.answer, /Room availability and student eligibility must be confirmed/);
+    assert.doesNotMatch(general.payload.data.answer, /next month|first-come|first come/i);
+
+    const live = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'How many hostel rooms are available right now?' }),
+    });
+    assert.equal(live.payload.data.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.deepEqual(live.payload.data.evidence, []);
+  });
+});
+
+test('bus timetable paraphrases use the bus record and do not fabricate route details', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Can students commute on an institute-operated vehicle, and where is its timetable?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.ok(payload.data.evidence.some((record) => record.id === 'KB-19'));
+    assert.match(payload.data.answer, /MITCORER lists a bus facility/);
+    assert.match(payload.data.answer, /does not state a route list, stops, timetable/);
+    assert.equal(payload.data.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
   });
 });
 
@@ -1470,6 +1609,9 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalateResult.response.status, 200);
     assert.equal(escalateResult.payload.data.success, true);
     assert.ok(escalateResult.payload.data.inquiryId);
+    assert.equal(escalateResult.payload.data.routing.queue, 'MITCORER Staff Triage');
+    assert.equal(escalateResult.payload.data.routing.assignedTo, null);
+    assert.equal(escalateResult.payload.data.routing.notificationSent, false);
 
     // 3. Verify inquiry is saved in store with High priority and Needs reply status
     const admin = await login(base, 'admin@mitcorer.edu.in');
@@ -1484,7 +1626,23 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalatedInquiry.priority, 'High');
     assert.equal(escalatedInquiry.status, 'Needs reply');
     assert.equal(escalatedInquiry.topic, 'Human Escalation');
+    assert.equal(escalatedInquiry.routingQueue, 'MITCORER Staff Triage');
+    assert.equal(escalatedInquiry.assignedTo, '');
     assert.match(escalatedInquiry.messages[0].text, /Human Escalation from Mitra Assistant/);
+
+    const feedbackResult = await request(base, '/api/public/feedback', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Which courses are offered?', answer: 'Six B.Tech programmes.', helpful: false, model: 'deterministic-rag-fallback' }),
+    });
+    assert.equal(feedbackResult.response.status, 200);
+    assert.equal(feedbackResult.payload.data.success, true);
+    const staffFeedback = await request(base, '/api/feedback', {
+      headers: { Authorization: `Bearer ${admin}` },
+    });
+    const savedFeedback = staffFeedback.payload.data.items.find(item => item.id === feedbackResult.payload.data.feedbackId);
+    assert.ok(savedFeedback, 'Answer feedback must be reviewable by staff');
+    assert.equal(savedFeedback.helpful, false);
+    assert.equal(savedFeedback.question, 'Which courses are offered?');
   });
 });
 

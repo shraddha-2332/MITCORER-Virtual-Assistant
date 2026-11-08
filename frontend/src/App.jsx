@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Cpu, FileText,
-  HandCoins, LockKeyhole, LogOut, Menu, Phone,
+  ArrowLeft, ArrowRight, CheckCircle2, Cpu, FileText, LayoutDashboard,
+  LockKeyhole, LogOut, Menu, Phone,
   Send, ShieldCheck, UploadCloud, X,
   PanelLeftClose, PanelLeftOpen, Languages, RefreshCw,
   ThumbsDown, ThumbsUp,
@@ -13,7 +13,7 @@ import mitcorerLogo from './assets/mitcorer-logo.png';
 import mitcorerCampus from './assets/mitcorer-campus.png';
 import { api } from './api.js';
 import { formatPublicResponse } from './answer-format.mjs';
-import { publicAnswerLinks, matchesFeeSnapshot } from './public-answer-links.mjs';
+import { publicAnswerLinks } from './public-answer-links.mjs';
 import { KnowledgeRecordEditor } from './KnowledgeRecordEditor.jsx';
 
 
@@ -32,185 +32,16 @@ const institution = {
 
 
 
-const courses = [
-  { name: 'Computer Science and Engineering', intake: 120, choiceCode: '0690124210' },
-  { name: 'Artificial Intelligence and Data Science', intake: 60, choiceCode: '0690126310' },
-  { name: 'Civil Engineering', intake: 60, choiceCode: '0690119110' },
-  { name: 'Electronics and Computer Engineering', intake: 60, choiceCode: '0690184410' },
-  { name: 'Electronics and Telecommunication Engineering', intake: 60, choiceCode: '0690137210' },
-  { name: 'Mechanical and Rail Engineering', intake: 60, choiceCode: '0690158510' },
-];
-
-const dseCourses = [
-  { name: 'Civil Engineering', choiceCode: '690119110' },
-  { name: 'Computer Science and Engineering', choiceCode: '690124210' },
-  { name: 'Electronics and Computer Engineering', choiceCode: '690184410' },
-  { name: 'Electronics and Telecommunication Engineering', choiceCode: '690137210' },
-  { name: 'Mechanical and Rail Engineering', choiceCode: '690161210' },
-];
-
-const polytechnicCourses = [
-  { name: 'Civil Engineering', intake: 60 },
-  { name: 'Computer Science and Engineering', intake: 60 },
-  { name: 'Electronics and Telecommunication Engineering', intake: 60 },
-  { name: 'Mechanical Engineering', intake: 60 },
-];
-
-const facilities = [
-  'Hostel',
-  'Bus facility',
-  'Library',
-  'Computer center',
-  'Railway model room',
-  'Workshop',
-  'Cafeteria',
-  'Seminar hall',
-];
-
-const scholarshipSchemes = [
-  'AICTE Pragati Scholarship Scheme for Girl Students (Technical Degree / Diploma)',
-  'Dr. Panjabrao Deshmukh Vastigruh Nirvah Bhatta Yojna',
-  'Rajarshi Chhatrapati Shahu Maharaj Shikshan Shulkh Shishyavrutti Yojna',
-  'Minority communities scholarship for higher and professional courses',
-  'OBC / VJNT / SBC post-matric and maintenance allowance schemes',
-  'Tuition and examination fee support for eligible category students',
-];
-
-const scholarshipDocuments = {
-  open: ['Income certificate', 'Domicile / nationality proof', 'Admission / allotment proof', 'Bank passbook'],
-  ews: ['EWS certificate', 'Income certificate', 'Domicile / nationality proof', 'Bank passbook'],
-  obc: ['Caste certificate', 'Caste validity if required', 'Non-creamy layer certificate', 'Income certificate', 'Domicile / nationality proof'],
-  vjnt: ['Caste certificate', 'Caste validity if required', 'Non-creamy layer certificate', 'Income certificate', 'Domicile / nationality proof'],
-  scst: ['Caste certificate', 'Caste validity if required', 'Domicile / nationality proof', 'Bank passbook'],
-  minority: ['Minority declaration/certificate', 'Income certificate', 'Domicile / nationality proof', 'Bank passbook'],
-};
-
-const scholarshipChecklist = [
-  ['Admission route', 'CAP and institute-level/non-CAP admissions must be checked against each scheme\'s current route condition.'],
-  ['Income proof', 'Needed for EBC/EWS/OBC/minority or other income-linked claims.'],
-  ['Category proof', 'Caste certificate, validity, and non-creamy layer wherever applicable.'],
-  ['Domicile / nationality', 'Often required to confirm Maharashtra/state scheme eligibility.'],
-  ['Bank details', 'Keep passbook or account details ready for scheme applications.'],
-  ['Hostel claim', 'If hostel benefit is expected, confirm stay proof and scheme condition with staff.'],
-];
-
-function getLikelyScholarships(profile) {
-  const items = [];
-  if (profile.gender === 'girl' && profile.income === 'under8') {
-    items.push({
-      title: 'AICTE Pragati Scholarship for Girl Students',
-      reason: profile.route === 'cap'
-        ? 'Potential match for a girl student in an AICTE-approved technical degree or diploma course. Confirm the current NSP merit criteria, family limit, admission details, and documents before applying.'
-        : 'Potential profile match, but institute-level/non-CAP admission does not automatically establish Pragati eligibility. Verify that the current NSP specification accepts this admission route before applying.',
-    });
-  }
-  if (profile.income === 'under8' && ['open', 'ews'].includes(profile.category)) {
-    items.push({
-      title: 'Rajarshi Chhatrapati Shahu Maharaj Shikshan Shulkh Shishyavrutti Yojna',
-      reason: 'Relevant for EBC/EWS or eligible open-category fee concession checks where income criteria are satisfied.',
-    });
-  }
-  if (profile.hostel === 'yes' && ['open', 'ews', 'minority'].includes(profile.category)) {
-    items.push({
-      title: 'Dr. Panjabrao Deshmukh Vastigruh Nirvah Bhatta Yojna',
-      reason: 'Relevant when the student is claiming hostel/residence-related support and satisfies scheme conditions.',
-    });
-  }
-  if (profile.category === 'minority') {
-    items.push({
-      title: 'Minority scholarship for higher and professional courses',
-      reason: 'Relevant for eligible minority-community students pursuing professional courses.',
-    });
-  }
-  if (profile.category === 'obc') {
-    items.push({
-      title: 'Post Matric Scholarship / Tuition and Examination Fee support for OBC',
-      reason: 'Relevant for eligible OBC/SEBC students, with income and required category documents.',
-    });
-  }
-  if (profile.category === 'vjnt') {
-    items.push({
-      title: 'VJNT / SBC maintenance allowance and post-matric support',
-      reason: 'Relevant for eligible VJNT/SBC students, especially where hostel or professional-course support applies.',
-    });
-  }
-  if (profile.category === 'scst') {
-    items.push({
-      title: 'SC/ST post-matric or fee support route',
-      reason: 'Relevant for eligible SC/ST students as per applicable state scholarship rules and category verification.',
-    });
-  }
-  if (profile.admission === 'polytechnic') {
-    items.push({
-      title: 'Diploma admission scholarship check',
-      reason: 'Scheme applicability can differ from B.Tech, so diploma candidates should verify the exact portal/scheme route.',
-    });
-  }
-  if (profile.route === 'nonCap') {
-    items.push({
-      title: 'Institute-level / non-CAP route verification',
-      reason: 'Keep the institute application, merit-list or allotment proof, fee receipt, and originals ready. Confirm the selected scheme explicitly accepts this admission route before relying on a scholarship or concession.',
-    });
-  }
-  if (items.length === 0) {
-    items.push({
-      title: 'No clear concession route from selected profile',
-      reason: 'The student may follow the regular fee route unless another official scheme, category, or income condition applies.',
-    });
-  }
-  return items;
-}
-
-const placementSignals = [
-  ['Final-year students', '113'],
-  ['Internships recorded', '81'],
-  ['Students placed', '48'],
-  ['Highest CTC', '21 LPA'],
-];
-
-const branchPlacementRecords = [
-  ['Civil Engineering', '13', '0', '11'],
-  ['Computer Science Engineering', '62', '50', '13'],
-  ['E&TC Engineering', '35', '31', '21'],
-  ['Mechanical Engineering', '3', '0', '3'],
-];
-
-const placementPlatforms = [
-  { name: 'Preskilet', purpose: 'Build recruiter-facing readiness', details: ['Create a live/video profile', 'Practise communication and presentation', 'Show projects and proof of work', 'Complete recruiter-recommended tasks'], url: 'https://preskilet.com/' },
-  { name: 'POD.AI', purpose: 'Track and apply for opportunities', details: ['Receive company and job-description updates', 'Check eligibility and register for drives', 'Follow interview or selection stages', 'Receive recruitment notifications'], url: 'https://pod.ai/' },
-];
-
-const recruiters = ['Accenture', 'Amdocs', 'TCS', 'Wipro', 'IBM', 'Infosys', 'Cognizant', 'Cummins', 'Atlas Copco', 'Cloud4C', "Byju's", 'Clover', 'Atos', 'Juspay'];
-
-const branchCareerOutcomes = {
-  'Computer Science and Engineering': { roles: ['Software developer', 'Web or app developer', 'Cloud and DevOps associate', 'Data analyst'], skills: ['Programming fundamentals', 'Data structures and problem solving', 'Projects and Git portfolio', 'Aptitude and communication'] },
-  'Artificial Intelligence and Data Science': { roles: ['Data analyst', 'Junior ML engineer', 'Business intelligence analyst', 'Software developer'], skills: ['Python and SQL', 'Statistics and data handling', 'Machine-learning projects', 'Programming and aptitude'] },
-  'Civil Engineering': { roles: ['Site engineer', 'Quantity surveyor', 'CAD/BIM trainee', 'Government exam pathway'], skills: ['Surveying and estimation', 'CAD/BIM tools', 'Site exposure', 'Core aptitude and communication'] },
-  'Electronics and Computer Engineering': { roles: ['Embedded systems trainee', 'Software developer', 'IoT engineer', 'Electronics testing engineer'], skills: ['C/C++ and programming', 'Microcontrollers and embedded systems', 'Electronics fundamentals', 'Projects and aptitude'] },
-  'Electronics and Telecommunication Engineering': { roles: ['Telecom engineer', 'Embedded systems trainee', 'Network support engineer', 'Electronics testing engineer'], skills: ['Communication systems', 'Networking basics', 'Embedded projects', 'Core aptitude and communication'] },
-  'Mechanical and Rail Engineering': { roles: ['Design engineer', 'Production engineer', 'Quality engineer', 'Railway and government exam pathway'], skills: ['CAD and design tools', 'Manufacturing fundamentals', 'Workshop or industry exposure', 'Core aptitude and communication'] },
-};
-
-const hostelConfirmations = [
-  'Room availability and allotment timing',
-  'Deposit refund process',
-  'Documents needed for hostel admission',
-  'Mess joining date and payment process',
-  'Local transport or bus option if hostel is not selected',
-  'Parent visit timing before final reporting',
-];
-
-
 function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState('');
-  const [view, setView] = useState('knowledge');
+  const [view, setView] = useState('overview');
   const [viewHistory, setViewHistory] = useState([]);
   const [navOpen, setNavOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('mitra.sidebarCollapsed') === 'true');
-  const [publicFacts, setPublicFacts] = useState(null);
   const [knowledge, setKnowledge] = useState([]);
   const [officialSources, setOfficialSources] = useState([]);
+  const [knowledgeInitialTab, setKnowledgeInitialTab] = useState('records');
   const [appError, setAppError] = useState('');
 
   const navigateTo = (nextView) => {
@@ -229,14 +60,12 @@ function App() {
 
   const refreshWorkspaceData = async (authToken) => {
     try {
-      const [knowledgeResult, sourceResult, factsResult] = await Promise.all([
+      const [knowledgeResult, sourceResult] = await Promise.all([
         api.getKnowledge(authToken).catch(() => ({ items: [] })),
         api.getOfficialSources(authToken).catch(() => ({ items: [] })),
-        api.getPublicFacts().catch(() => null),
       ]);
       setKnowledge(knowledgeResult.items || []);
       setOfficialSources(sourceResult.items || []);
-      if (factsResult) setPublicFacts(factsResult);
     } catch (error) {
       setAppError(error.message);
     }
@@ -244,15 +73,12 @@ function App() {
 
   useEffect(() => {
     let active = true;
-    api.getPublicFacts().then((facts) => {
-      if (active && facts) setPublicFacts(facts);
-    }).catch(() => {});
     const restoreSession = async () => {
       try {
         const payload = await api.refresh();
         if (!active) return;
         setToken(payload.token);
-        setView('knowledge');
+        setView('overview');
         setViewHistory([]);
         await refreshWorkspaceData(payload.token);
         setUser(payload.user);
@@ -279,18 +105,34 @@ function App() {
     try {
       const saved = await api.createKnowledge(token, record);
       setKnowledge((items) => [saved, ...items]);
-      api.getPublicFacts().then((facts) => setPublicFacts(facts)).catch(() => setPublicFacts(null));
-      return saved;
+        return saved;
     } catch (error) {
       setAppError(error.message);
     }
   };
 
   const updateKnowledgeItem = async (id, changes) => {
-    const saved = await api.updateKnowledge(token, id, changes);
-    setKnowledge((items) => items.map((item) => item.id === id ? saved : item));
-    api.getPublicFacts().then((facts) => setPublicFacts(facts)).catch(() => setPublicFacts(null));
-    return saved;
+    setAppError('');
+    try {
+      const saved = await api.updateKnowledge(token, id, changes);
+      setKnowledge((items) => items.map((item) => item.id === id ? saved : item));
+      return saved;
+    } catch (error) {
+      setAppError(error.message);
+      return null;
+    }
+  };
+
+  const deleteKnowledgeItem = async (id, expectedRevision) => {
+    setAppError('');
+    try {
+      await api.deleteKnowledge(token, id, { expectedRevision });
+      setKnowledge((items) => items.filter((item) => item.id !== id));
+      return true;
+    } catch (error) {
+      setAppError(error.message);
+      return false;
+    }
   };
 
   const uploadOfficialSource = async (record, file) => {
@@ -326,15 +168,14 @@ function App() {
     }
   };
 
-  const publishOfficialSource = async (id, verifiedText) => {
+  const publishOfficialSource = async (id, verifiedText, resolveConflicts = false) => {
     setAppError('');
     try {
-      const saved = await api.publishOfficialSource(token, id, verifiedText);
+      const saved = await api.publishOfficialSource(token, id, verifiedText, resolveConflicts);
       setOfficialSources((items) => items.map((item) => (item.id === id ? saved : item)));
       const knowledgeResult = await api.getKnowledge(token);
       setKnowledge(knowledgeResult.items || []);
-      api.getPublicFacts().then((facts) => setPublicFacts(facts)).catch(() => setPublicFacts(null));
-      return saved;
+        return saved;
     } catch (error) {
       setAppError(error.message);
       return null;
@@ -359,7 +200,7 @@ function App() {
     try {
       const payload = await api.login({ email, password });
       setToken(payload.token);
-      setView('knowledge');
+      setView('overview');
       setViewHistory([]);
       await refreshWorkspaceData(payload.token);
       setUser(payload.user);
@@ -392,12 +233,9 @@ function App() {
         {navOpen && <button className="mobileScrim" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)}><X size={18} /></button>}
         <section className="workspaceBody">
           {appError && <div className="errorBanner">{appError}</div>}
-          {view === 'knowledge' && <KnowledgeManager items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onSyncWebsite={syncOfficialSources} onExtractStructuredSource={extractStructuredOfficialSource} />}
-          {view === 'programs' && <Programs publicFacts={publicFacts} />}
-          {view === 'fees' && <Fees setView={navigateTo} publicFacts={publicFacts} />}
-          {view === 'scholarships' && <ScholarshipAid />}
-          {view === 'placements' && <CareerOutcomes setView={navigateTo} />}
-          {view === 'visit' && <HostelMess setView={navigateTo} publicFacts={publicFacts} />}
+          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onSyncWebsite={syncOfficialSources} />}
+          {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onSyncWebsite={syncOfficialSources} onExtractStructuredSource={extractStructuredOfficialSource} />}
+          {view === 'inquiries' && <ReviewInbox token={token} />}
         </section>
       </main>
     </div>
@@ -456,7 +294,6 @@ function PublicAssistantWidget({ onAdminLogin }) {
       { label: 'Hostel & Mess Fees', question: 'What are the hostel and mess fees at MITCORER?' },
       { label: 'More', action: 'main' },
     ] },
-    { label: 'Cutoffs', question: 'What are the historical cutoffs for Computer Science and Engineering?' },
     { label: 'Required Documents', question: 'What are the required admission documents?' },
     { label: 'Scholarships', question: 'What scholarships are available at MITCORER and where can I apply?' },
     { label: 'Placements', question: 'What placement support and published placement highlights does MITCORER offer?' },
@@ -702,6 +539,7 @@ function PublicEscalationCard({ message, language }) {
   const [contact, setContact] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submissionId, setSubmissionId] = useState('');
   const [error, setError] = useState('');
 
   const escalation = message.escalation || {
@@ -720,12 +558,13 @@ function PublicEscalationCard({ message, language }) {
     setSubmitting(true);
     setError('');
     try {
-      await api.escalateInquiry({
+      const result = await api.escalateInquiry({
         name: name.trim() || 'Prospective Student',
         contact: contact.trim(),
         question: message.originalQuestion || message.text || 'Inquiry regarding MITCORER admissions',
         topic: 'Human Escalation',
       });
+      setSubmissionId(result.inquiryId || '');
       setSubmitted(true);
       setShowForm(false);
     } catch (err) {
@@ -739,30 +578,36 @@ function PublicEscalationCard({ message, language }) {
     ? 'मानव प्रवेश सल्लागारांशी संपर्क साधा'
     : language === 'hi'
       ? 'मानव प्रवेश परामर्शदाता से संपर्क करें'
-      : 'Connect with Admission Counselors';
+      : 'Contact MITCORER Staff';
 
   const promptText = language === 'mr'
-    ? 'या प्रश्नाची अधिकृत माहिती खात्रीशीर नसल्यास, थेट आमच्या प्रवेश कार्यालयाशी बोला किंवा संपर्क नोंदवा:'
+    ? 'तुमची विनंती MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली जाईल. ती आपोआप एखाद्या विशिष्ट सल्लागाराकडे पाठवली जात नाही. तातडीसाठी खालील क्रमांकांवर कॉल करा:'
     : language === 'hi'
-      ? 'यदि इस प्रश्न की आधिकारिक जानकारी सत्यापित नहीं है, तो सीधे हमारे प्रवेश कार्यालय से संपर्क करें:'
-      : 'For unverified queries or specific guidance, connect directly with MITCORER admissions staff:';
+      ? 'आपका अनुरोध MITCORER कर्मचारी समीक्षा कतार में दर्ज होगा। यह अपने आप किसी विशेष परामर्शदाता को नहीं भेजा जाता। तत्काल सहायता के लिए नीचे दिए गए नंबरों पर कॉल करें:'
+      : 'Submitting saves your request to the MITCORER staff triage queue. It is not automatically assigned to a named counselor or sent by email/SMS. For urgent help, call one of the numbers below:';
 
   return (
-    <div className="escalationCard" role="region" aria-label="Admissions escalation">
+    <div className="escalationCard" role="region" aria-label="MITCORER staff inquiry">
       <div className="escalationCardHeader">
         <Phone size={13} aria-hidden="true" />
         <span>{headerTitle}</span>
       </div>
       <p className="escalationCardPrompt">{promptText}</p>
+      {language === 'en' && <div className="escalationVerifiedContacts" aria-label="Verified MITCORER admission desk contacts">
+        <span>Admission Enquiry Desk</span>
+        <a href="tel:+918459967882">+91 84599 67882</a>
+        <a href="tel:+918669662106">+91 86696 62106</a>
+        <a href="mailto:info.mitcorer@mitpune.edu.in">info.mitcorer@mitpune.edu.in</a>
+      </div>}
       {submitted ? (
         <div className="escalationSuccess">
           <CheckCircle2 size={14} />
           <span>
             {language === 'mr'
-              ? 'तुमची विनंती नोंदवली गेली आहे! आमचे प्रवेश अधिकारी लवकरच संपर्क साधतील.'
+    ? `तुमची विनंती ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली आहे. कोणताही विशिष्ट सल्लागार आपोआप नियुक्त झालेला नाही. तातडीसाठी वरील क्रमांकांवर कॉल करा.`
               : language === 'hi'
-                ? 'आपका अनुरोध दर्ज कर लिया गया है! हमारे प्रवेश अधिकारी शीघ्र संपर्क करेंगे।'
-                : 'Callback requested! Our admissions counselor will contact you shortly.'}
+      ? `आपका अनुरोध ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचारी समीक्षा कतार में दर्ज किया गया है। कोई विशेष परामर्शदाता अपने आप नियुक्त नहीं हुआ है। तत्काल सहायता के लिए ऊपर दिए गए नंबरों पर कॉल करें।`
+                : `Your inquiry${submissionId ? ` (${submissionId})` : ''} was saved to the MITCORER staff triage queue. No individual counselor was assigned automatically. For urgent help, please call one of the numbers above.`}
           </span>
         </div>
       ) : (
@@ -779,7 +624,7 @@ function PublicEscalationCard({ message, language }) {
                 className="escalationBtn staffBtn"
                 onClick={() => setShowForm(true)}
               >
-                {language === 'mr' ? 'कॉल-बॅक विनंती करा' : language === 'hi' ? 'कॉल-बैक अनुरोध करें' : 'Request Staff Callback'}
+                {language === 'mr' ? 'कॉल-बॅक विनंती करा' : language === 'hi' ? 'कॉल-बॅक अनुरोध करें' : 'Submit for Staff Review'}
               </button>
             )}
           </div>
@@ -904,6 +749,70 @@ function linkOfficialContact(text) {
   return parts.length ? parts : value;
 }
 
+function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onSyncWebsite }) {
+  const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null });
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([api.getInquiries(token), api.getFeedback(token)])
+      .then(([inquiryResult, feedbackResult]) => {
+        if (active) setReviewCounts({ inquiries: inquiryResult.items?.length || 0, feedback: feedbackResult.items?.length || 0 });
+      })
+      .catch(() => { if (active) setReviewCounts({ inquiries: null, feedback: null }); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
+
+  const publishedKnowledge = knowledge.filter(item => item.status === 'Published').length;
+  const needsReview = sources.filter(item => {
+    const state = `${item.status || ''} ${item.extractionStatus || ''}`.toLowerCase();
+    return /review|staged|conflict|pending|extract/.test(state);
+  }).length;
+  const pendingSources = sources.filter(item => /review|staged|conflict|pending|extract/i.test(`${item.status || ''} ${item.extractionStatus || ''}`)).slice(0, 5);
+  const launchSync = async () => {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const result = await onSyncWebsite();
+      if (result) setSyncMessage(`Sync checked ${result.checked} pages: ${result.changed} staged for review, ${result.conflictCount || 0} conflicts flagged, ${result.unchanged} unchanged.`);
+    } finally { setSyncing(false); }
+  };
+
+  return <div className="pageStack adminDashboard">
+    <section className="adminWelcome">
+      <div><span className="eyebrow">MITCORER · Staff workspace</span><h2>Welcome, {user.name.split(' ')[0]}</h2><p>Manage verified assistant knowledge and review what visitors send to the college.</p></div>
+      <button type="button" onClick={launchSync} disabled={syncing}><RefreshCw size={16} />{syncing ? 'Checking website…' : 'Sync official website'}</button>
+    </section>
+    {syncMessage && <div className="decisionResult positive"><strong>{syncMessage}</strong></div>}
+    <section className="adminMetricGrid" aria-label="Workspace summary">
+      <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
+      <article><span>Sources to review</span><strong>{needsReview}</strong><small>staged pages, files or conflicts</small></article>
+      <article><span>Visitor requests</span><strong>{loading ? '…' : reviewCounts.inquiries ?? '—'}</strong><small>saved in the review inbox</small></article>
+      <article><span>Answer ratings</span><strong>{loading ? '…' : reviewCounts.feedback ?? '—'}</strong><small>visitor helpful / not helpful votes</small></article>
+    </section>
+    <section className="adminDashboardGrid">
+      <article className="adminActionPanel">
+        <div className="sectionHead"><span className="eyebrow">Daily work</span><h2>Workspace shortcuts</h2><p>Start with the tasks that maintain answer quality.</p></div>
+        <div className="adminShortcutList">
+          <button type="button" onClick={() => setView('knowledge')}><FileText size={19} /><span><strong>Manage verified knowledge</strong><small>Edit records and review official sources</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => setView('inquiries')}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => setView('inquiries')}><ThumbsDown size={19} /><span><strong>Inspect answer feedback</strong><small>Find answers visitors marked unhelpful</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={onOpenSources}><FileText size={19} /><span><strong>Review official sources</strong><small>Check indexed pages, files and source updates</small></span><ArrowRight size={16} /></button>
+        </div>
+      </article>
+      <article className="adminActionPanel">
+        <div className="sectionHead"><span className="eyebrow">Source review</span><h2>Needs attention</h2><p>Review staged website changes and document extraction before they become trusted answers.</p></div>
+        {pendingSources.length ? <div className="adminPendingList">{pendingSources.map(item => <div key={item.id}><span className="statusDot" /><span><strong>{item.title}</strong><small>{item.status || item.extractionStatus || 'Needs review'}</small></span></div>)}<button type="button" onClick={onOpenSources}>Open source review <ArrowRight size={15} /></button></div> : <div className="adminAllClear"><CheckCircle2 size={20} /><span><strong>No staged sources found</strong><small>New source changes will appear here for review.</small></span></div>}
+      </article>
+    </section>
+    <footer className="adminWorkspaceNote"><ShieldCheck size={16} /><span>Only published, verified records are used for official answers. Staff assignments and review actions in this workspace do not send automatic email or SMS notifications.</span></footer>
+  </div>;
+}
+
 function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setCollapsed, onLogout }) {
   const openView = (id) => { setView(id); setNavOpen(false); };
   const toggleCollapsed = () => {
@@ -914,39 +823,133 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
   return (
     <aside className={`sidebar ${navOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebarBrandRow">
-        <div className="brandLockup compact"><span className="collegeLogo"><img src={mitcorerLogo} alt="MITCORER logo" /></span><div><strong>MITCORER</strong><small>{institution.code}</small></div></div>
+        <div className="brandLockup compact"><span className="collegeLogo"><img src={mitcorerLogo} alt="MITCORER logo" /></span><div><strong>MITCORER</strong><small>Admin workspace</small></div></div>
         <button className="sidebarToggle" type="button" onClick={toggleCollapsed} aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'} title={collapsed ? 'Open sidebar' : 'Close sidebar'}>{collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</button>
       </div>
-      <button className="collegeMini" type="button" onClick={() => openView('knowledge')}>
-        <strong>{institution.shortName}</strong>
-        <span>Knowledge Management</span>
-      </button>
-      <nav className="sideNav">
+      <nav className="sideNav" aria-label="Admin workspace">
+        <button className={view === 'overview' ? 'active' : ''} type="button" onClick={() => openView('overview')} title={collapsed ? 'Overview' : undefined} aria-label={collapsed ? 'Overview' : undefined}><LayoutDashboard size={17} /><span>Overview</span></button>
         <button className={view === 'knowledge' ? 'active' : ''} type="button" onClick={() => openView('knowledge')} title={collapsed ? 'Knowledge Base' : undefined} aria-label={collapsed ? 'Knowledge Base' : undefined}>
           <FileText size={17} /><span>Knowledge Base</span>
         </button>
-        <button className={view === 'programs' ? 'active' : ''} type="button" onClick={() => openView('programs')} title={collapsed ? 'Programs' : undefined} aria-label={collapsed ? 'Programs' : undefined}>
-          <BookOpen size={17} /><span>Programs</span>
-        </button>
-        <button className={view === 'fees' ? 'active' : ''} type="button" onClick={() => openView('fees')} title={collapsed ? 'Fees' : undefined} aria-label={collapsed ? 'Fees' : undefined}>
-          <HandCoins size={17} /><span>Fees</span>
-        </button>
-        <button className={view === 'scholarships' ? 'active' : ''} type="button" onClick={() => openView('scholarships')} title={collapsed ? 'Scholarships' : undefined} aria-label={collapsed ? 'Scholarships' : undefined}>
-          <ShieldCheck size={17} /><span>Scholarships</span>
-        </button>
-        <button className={view === 'visit' ? 'active' : ''} type="button" onClick={() => openView('visit')} title={collapsed ? 'Hostel & Mess' : undefined} aria-label={collapsed ? 'Hostel & Mess' : undefined}>
-          <CheckCircle2 size={17} /><span>Hostel & Mess</span>
-        </button>
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')} title={collapsed ? 'Review inbox' : undefined} aria-label={collapsed ? 'Review inbox' : undefined}>
+          <Phone size={17} /><span>Review inbox</span>
+        </button>}
       </nav>
       <div className="accountFooter" title={user.email}>
         <span aria-hidden="true">{user.name.trim().charAt(0).toUpperCase()}</span>
-        <div><strong>{user.name}</strong><small>Maintainer</small></div>
+        <div><strong>{user.name}</strong><small>{user.role === 'admin' ? 'Administrator' : 'Staff'}</small></div>
         <button type="button" onClick={onLogout} title="Sign out" aria-label="Sign out"><LogOut size={17} /></button>
       </div>
     </aside>
   );
 }
 
+function ReviewInbox({ token }) {
+  const [inquiries, setInquiries] = useState([]);
+  const [feedback, setFeedback] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const selectedRef = useRef(null);
+  const [tab, setTab] = useState('inquiries');
+  const [status, setStatus] = useState('Needs reply');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [staffNote, setStaffNote] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [refreshCount, setRefreshCount] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([api.getInquiries(token), api.getFeedback(token)])
+      .then(([inquiryResult, feedbackResult]) => {
+        if (!active) return;
+        const nextInquiries = inquiryResult.items || [];
+        const nextFeedback = feedbackResult.items || [];
+        setInquiries(nextInquiries);
+        setFeedback(nextFeedback);
+        const previous = selectedRef.current;
+        let initial = previous?.type === 'feedback'
+          ? nextFeedback.find(item => item.id === previous.id) || null
+          : nextInquiries.find(item => item.id === previous?.id) || null;
+        if (!initial && !previous) {
+          const first = nextInquiries[0] || nextFeedback[0] || null;
+          initial = first ? { ...first, type: first.question && 'helpful' in first ? 'feedback' : 'inquiry' } : null;
+        }
+        setSelected(initial);
+        selectedRef.current = initial;
+        if (initial?.type === 'inquiry') { setStatus(initial.status || 'Needs reply'); setAssignedTo(initial.assignedTo || ''); }
+        setError('');
+      }).catch(loadError => setError(loadError.message || 'Could not load the review inbox.'))
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token, refreshCount]);
+  const allRows = [
+    ...inquiries.map(item => ({ ...item, type: 'inquiry' })),
+    ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer' })),
+  ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const visibleRows = allRows.filter(item => tab === 'inquiries' ? item.type === 'inquiry' : item.type === 'feedback');
+  const choose = (item) => { selectedRef.current = item; setSelected(item); setStatus(item.status || 'Needs reply'); setAssignedTo(item.assignedTo || ''); setStaffNote(''); setNotice(''); };
+  const saveAssignment = async () => {
+    if (!selected || selected.type !== 'inquiry') return;
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const updated = await api.updateInquiryStatus(token, selected.id, { status, assignedTo, reply: staffNote });
+      setInquiries(current => current.map(item => item.id === updated.id ? updated : item));
+      const nextSelected = { ...updated, type: 'inquiry' };
+      selectedRef.current = nextSelected;
+      setSelected(nextSelected);
+      setStaffNote('');
+      setNotice('Saved. Assignment is internal only; this does not email/text the submitter or assignee.');
+    } catch (saveError) { setError(saveError.message || 'Could not update this inquiry.'); }
+    finally { setSaving(false); }
+  };
+  const contactHref = selected?.contact?.includes('@') ? `mailto:${selected.contact}` : selected?.contact ? `tel:${selected.contact.replace(/[^0-9+]/g, '')}` : '';
+  const hasStaffResponse = (selected?.messages || []).some(entry => ['staff', 'admin'].includes(entry.authorRole));
+
+  return <div className="pageStack">
+    <div className="sectionHead">
+      <span className="eyebrow">Staff review</span>
+      <h2>Review inbox</h2>
+      <p>One place for visitor requests and answer ratings. Requests are stored locally in the application database; they are not automatically emailed or assigned.</p>
+      <div className="reviewInboxTabs">
+        <button type="button" className={tab === 'inquiries' ? 'active' : ''} onClick={() => setTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
+        <button type="button" className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
+        <button className="inlineAction secondary" type="button" disabled={loading} onClick={() => { setLoading(true); setRefreshCount(count => count + 1); }}><RefreshCw size={15} /> Refresh</button>
+      </div>
+    </div>
+    {error && <div className="errorBanner">{error}</div>}
+    {notice && <div className="decisionResult positive"><strong>{notice}</strong></div>}
+    {loading ? <div className="panelBlock">Loading review inbox?</div> : visibleRows.length === 0 ? (
+      <div className="panelBlock">No {tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.</div>
+    ) : <section className="inquiryWorkspace">
+      <div className="inquiryList" aria-label={tab === 'inquiries' ? 'Visitor requests' : 'Answer feedback'}>
+        {visibleRows.map(item => <button key={`${item.type}-${item.id}`} type="button" className={selected?.id === item.id ? 'active' : ''} onClick={() => choose(item)}>
+          <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.topic || (item.model ? `Answer feedback ? ${item.model}` : 'General request')}</small></div>
+          <span className="pill">{item.type === 'feedback' ? (item.helpful ? 'Helpful' : 'Not helpful') : item.status}</span>
+          <p>{item.question || 'No question text recorded'}</p>
+        </button>)}
+      </div>
+      {selected && <article className="inquiryDetail">
+        <header><div><span className="eyebrow">{selected.type === 'feedback' ? 'Answer feedback' : selected.routingQueue || 'MITCORER Staff Triage'}</span><h2>{selected.name || (selected.helpful ? 'Helpful answer' : 'Unhelpful answer')}</h2></div><span className="pill">{selected.type === 'feedback' ? (selected.helpful ? 'Helpful' : 'Not helpful') : selected.priority || 'Normal'}</span></header>
+        <dl>
+          <div><dt>Received</dt><dd>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : 'Unknown'}</dd></div>
+          {selected.type === 'inquiry' ? <><div><dt>Reference</dt><dd>{selected.id}</dd></div><div><dt>Contact</dt><dd>{contactHref ? <a href={contactHref}>{selected.contact}</a> : selected.contact || 'Not provided'}</dd></div><div><dt>Assigned to</dt><dd>{selected.assignedTo || 'Unassigned'}</dd></div></> : <><div><dt>Model</dt><dd>{selected.model || 'Unknown'}</dd></div><div><dt>Vote</dt><dd>{selected.helpful ? 'Helpful' : 'Not helpful'}</dd></div></>}
+        </dl>
+        <div className="inquiryQuestion"><strong>Visitor question</strong><p>{selected.question || 'No question was recorded.'}</p></div>
+        {selected.type === 'feedback' ? <div className="inquiryQuestion"><strong>Assistant answer</strong><p>{selected.answer || 'No answer text was recorded.'}</p>{selected.comment && <><strong>Visitor comment</strong><p>{selected.comment}</p></>}</div> : <>
+          {(selected.messages || []).length > 0 && <div className="staffReplyHistory">{selected.messages.map(entry => <div key={entry.id}><strong>{entry.authorName || entry.authorRole}</strong><p>{entry.text}</p><small>{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ''}</small></div>)}</div>}
+          <label className="staffReply">Assign to staff member (name or email)<input type="text" maxLength={120} value={assignedTo} onChange={event => setAssignedTo(event.target.value)} placeholder="Enter a verified MITCORER staff contact" /></label>
+          <label className="staffReply">Queue status<select value={status} onChange={event => setStatus(event.target.value)}>{['Unassigned', 'Needs reply', 'In progress', 'Resolved'].map(value => <option key={value}>{value}</option>)}</select></label>
+          <label className="staffReply">Internal note<textarea rows={3} maxLength={1500} value={staffNote} onChange={event => setStaffNote(event.target.value)} placeholder="Record an action taken. This note is not sent to the visitor." /></label>
+          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffResponse && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving?' : 'Save request'}</button></div>
+          {status === 'Resolved' && !hasStaffResponse && !staffNote.trim() && <small>Add an internal note before resolving this request.</small>}
+          <small>Use the displayed contact details to respond. Saving an assignment does not notify anyone automatically.</small>
+        </>}
+      </article>}
+    </section>}
+  </div>;
+}
 function Header({ user, setNavOpen, canGoBack, onBack }) {
   return (
     <header className="topHeader">
@@ -960,248 +963,7 @@ function Header({ user, setNavOpen, canGoBack, onBack }) {
   );
 }
 
-function Programs({ initial, onSave = () => {}, publicFacts }) {
-  const activeCourses = publicFacts?.programs || [];
-  const [preferences, setPreferences] = useState(initial?.preferences || []);
-  const updatePreferences = (updater) => setPreferences((items) => { const next = typeof updater === 'function' ? updater(items) : updater; onSave({ preferences: next }); return next; });
-  const addPreference = (course) => {
-    updatePreferences((items) => (items.some((item) => item.choiceCode === course.choiceCode) ? items : [...items, course]));
-  };
-  const removePreference = (choiceCode) => updatePreferences((items) => items.filter((item) => item.choiceCode !== choiceCode));
-  const movePreference = (index, direction) => {
-    updatePreferences((items) => {
-      const target = index + direction;
-      if (target < 0 || target >= items.length) return items;
-      const next = [...items];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  };
-
-  return (
-    <div className="pageStack">
-      <section className="panelBlock verificationStrip">
-        <div><span className="eyebrow">Official verification</span><h2>Approval and university records</h2></div>
-        <div className="workflowActions">
-          <a href="https://mitcorer.edu.in/pdf/Extension-of-Approval-2025-26.pdf" target="_blank" rel="noreferrer">AICTE extension of approval <ArrowRight size={16} /></a>
-          <a href="https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf" target="_blank" rel="noreferrer">Mandatory disclosure <ArrowRight size={16} /></a>
-          <a href="https://su.digitaluniversity.ac/" target="_blank" rel="noreferrer">PAHSUS University portal <ArrowRight size={16} /></a>
-        </div>
-      </section>
-      <div className="sectionHead"><span className="eyebrow">Program Finder</span><h2>Compare admission options before filling preferences.</h2><p>Shortlist branches, arrange a draft preference order, and keep choice codes ready for CAP or institute-level discussion.</p></div>
-      <section className="decisionPanel">
-        <div className="programGrid">
-          {activeCourses.map((course) => {
-            const added = preferences.some((item) => item.choiceCode === course.choiceCode);
-            return (
-              <article key={course.choiceCode}>
-                <h3>{course.name}</h3>
-                <dl><div><dt>Intake</dt><dd>{course.intake}</dd></div><div><dt>Choice code</dt><dd>{course.choiceCode}</dd></div></dl>
-                <button className="inlineAction secondary" type="button" disabled={added} onClick={() => addPreference(course)}>{added ? 'Added to draft' : 'Add to preference'} <ArrowRight size={15} /></button>
-              </article>
-            );
-          })}
-        </div>
-        <div className="decisionResult">
-          <span className="eyebrow">CAP preference draft</span>
-          {preferences.length === 0 ? (
-            <p>Add branches from the left side to build a draft order before CAP option form discussion.</p>
-          ) : (
-            <div className="preferenceList">
-              {preferences.map((course, index) => (
-                <div className="preferenceItem" key={course.choiceCode}>
-                  <strong>{index + 1}. {course.name}</strong>
-                  <span>{course.choiceCode}</span>
-                  <div>
-                    <button type="button" onClick={() => movePreference(index, -1)} disabled={index === 0}>Up</button>
-                    <button type="button" onClick={() => movePreference(index, 1)} disabled={index === preferences.length - 1}>Down</button>
-                    <button type="button" onClick={() => removePreference(course.choiceCode)}>Remove</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {preferences.length > 0 && <a className="inlineAction" href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Check admission details <ArrowRight size={16} /></a>}
-        </div>
-      </section>
-      <section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Direct Second Year</span><h2>DSE choice codes</h2></div><div className="compactList">{dseCourses.map((course) => <div key={course.choiceCode}><strong>{course.name}</strong><span>{course.choiceCode}</span></div>)}</div></section>
-      <section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Polytechnic</span><h2>Diploma courses</h2></div><div className="compactList">{polytechnicCourses.map((course) => <div key={course.name}><strong>{course.name}</strong><span>Intake {course.intake}</span></div>)}</div></section>
-    </div>
-  );
-}
-
-function Fees({ initial, onSave = () => {}, setView, publicFacts }) {
-  const [estimate, setEstimate] = useState(Object.keys(initial || {}).length ? initial : { admission: 'fy', category: 'open', hostel: 'no', mess: 'no' });
-  const updateEstimate = (key, value) => { const next = { ...estimate, [key]: value }; setEstimate(next); onSave(next); };
-  if (!publicFacts?.academicFees || !publicFacts?.accommodationFees) return <section className="panelBlock" role="status"><h2>Maintained fee records are unavailable</h2><p>Check with the college before estimating payment. Retired, conflicting or unavailable records cannot supply a fee estimate.</p></section>;
-  const academicFees = { fy: publicFacts.academicFees.fy, dse: publicFacts.academicFees.dse };
-  const academic = academicFees[estimate.admission][estimate.category];
-  const hostelTotalAmount = publicFacts.accommodationFees.hostelTotal;
-  const messTotalAmount = publicFacts.accommodationFees.messAnnual;
-  const hostel = estimate.hostel === 'yes' ? hostelTotalAmount : 0;
-  const mess = estimate.mess === 'yes' ? messTotalAmount : 0;
-  const total = academic + hostel + mess;
-  const formatCurrency = (amount) => `INR ${amount.toLocaleString('en-IN')}`;
-  const scholarshipHint = estimate.category === 'open'
-    ? 'Open/OMS profile may need EBC/EWS income proof if concession is expected.'
-    : estimate.category === 'scst'
-      ? 'SC/ST profile should prepare category proof and applicable scholarship documents.'
-      : 'Category profile should verify scholarship/concession documents before reporting.';
-
-  const displayFeeRecords = [
-    {
-      title: 'First Year Engineering',
-      year: `AY ${publicFacts.academicFees.academicYear}`,
-      image: matchesFeeSnapshot('firstYear', publicFacts.academicFees.academicYear, Object.values(publicFacts.academicFees.fy)) ? feeFirstYearImage : null,
-      rows: [
-        `Open/OMS: INR ${publicFacts.academicFees.fy.open.toLocaleString('en-IN')}`,
-        `Open EBC/EWS/OBC/SEBC boys: INR ${publicFacts.academicFees.fy.boys.toLocaleString('en-IN')}`,
-        `Girls: INR ${publicFacts.academicFees.fy.girls.toLocaleString('en-IN')}`,
-        `VJNT/SBC/TFWS: INR ${publicFacts.academicFees.fy.vjnt.toLocaleString('en-IN')}`,
-        `SC/ST: INR ${publicFacts.academicFees.fy.scst.toLocaleString('en-IN')}`,
-      ],
-    },
-    {
-      title: 'Direct Second Year',
-      year: `AY ${publicFacts.academicFees.academicYear}`,
-      image: matchesFeeSnapshot('directSecondYear', publicFacts.academicFees.academicYear, Object.values(publicFacts.academicFees.dse)) ? feeDirectSecondYearImage : null,
-      rows: [
-        `Open/OMS: INR ${publicFacts.academicFees.dse.open.toLocaleString('en-IN')}`,
-        `Open EBC/EWS/OBC/SEBC boys: INR ${publicFacts.academicFees.dse.boys.toLocaleString('en-IN')}`,
-        `Girls: INR ${publicFacts.academicFees.dse.girls.toLocaleString('en-IN')}`,
-        `VJNT/SBC/TFWS: INR ${publicFacts.academicFees.dse.vjnt.toLocaleString('en-IN')}`,
-        `SC/ST: INR ${publicFacts.academicFees.dse.scst.toLocaleString('en-IN')}`,
-      ],
-    },
-    {
-      title: 'Hostel and Mess',
-      year: `AY ${publicFacts.accommodationFees?.academicYear || publicFacts.academicFees.academicYear}`,
-      image: matchesFeeSnapshot('hostel', publicFacts.accommodationFees.academicYear, [publicFacts.accommodationFees.hostel, publicFacts.accommodationFees.refundableDeposit, hostelTotalAmount, messTotalAmount]) ? hostelMessFeeImage : null,
-      rows: [
-        `Hostel fee: INR ${(publicFacts.accommodationFees.hostel).toLocaleString('en-IN')}`,
-        `Refundable deposit: INR ${(publicFacts.accommodationFees.refundableDeposit).toLocaleString('en-IN')}`,
-        `Hostel total: INR ${hostelTotalAmount.toLocaleString('en-IN')}`,
-        `Mess fee per year: INR ${messTotalAmount.toLocaleString('en-IN')}`,
-      ],
-    },
-  ];
-
-  return <div className="pageStack"><div className="sectionHead"><span className="eyebrow">Fee Planner</span><h2>Estimate what to confirm before reporting.</h2><p>Select admission route and category to get an estimated payable amount before visiting campus.</p></div><section className="decisionPanel"><div><div className="sectionHead"><span className="eyebrow">Estimate calculator</span><h2>{formatCurrency(total)}</h2></div><div className="decisionForm"><label>Admission type<select value={estimate.admission} onChange={(event) => updateEstimate('admission', event.target.value)}><option value="fy">First Year Engineering</option><option value="dse">Direct Second Year</option></select></label><label>Category<select value={estimate.category} onChange={(event) => updateEstimate('category', event.target.value)}><option value="open">Open / OMS</option><option value="boys">Open EBC/EWS/OBC/SEBC Boys</option><option value="girls">Girls</option><option value="vjnt">VJNT / SBC / TFWS</option><option value="scst">SC / ST</option></select></label><label>Hostel<select value={estimate.hostel} onChange={(event) => updateEstimate('hostel', event.target.value)}><option value="no">No</option><option value="yes">Yes</option></select></label><label>Mess<select value={estimate.mess} onChange={(event) => updateEstimate('mess', event.target.value)}><option value="no">No</option><option value="yes">Yes</option></select></label></div></div><div className="decisionResult positive"><span className="eyebrow">Current estimate</span><div className="stepRow compact"><CheckCircle2 size={17} /> Academic fee: {formatCurrency(academic)}</div><div className="stepRow compact"><CheckCircle2 size={17} /> Hostel: {formatCurrency(hostel)}</div><div className="stepRow compact"><CheckCircle2 size={17} /> Mess: {formatCurrency(mess)}</div><strong>Total: {formatCurrency(total)}</strong></div></section><section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Scholarship connection</span><h2>Check concession documents before payment.</h2><p>{scholarshipHint}</p></div><div className="workflowActions"><button type="button" onClick={() => setView('scholarships')}>Check scholarship readiness <ArrowRight size={16} /></button><a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Check required documents <ArrowRight size={16} /></a><a href="https://mahafra.org/" target="_blank" rel="noreferrer">Verify approved fees on FRA <ArrowRight size={16} /></a><a href="https://mitcorer.edu.in/contact.php" target="_blank" rel="noreferrer">Contact admission office <ArrowRight size={16} /></a></div></section>{displayFeeRecords.map((record) => <section className="feeRecord" key={record.title}><div><span className="eyebrow">{record.year}</span><h3>{record.title}</h3><ul>{record.rows.map((row) => <li key={row}>{row}</li>)}</ul></div>{record.image && <img src={record.image} alt={`${record.title} fee table`} />}</section>)}</div>;
-}
-
-function ScholarshipAid({ initial, onSave = () => {} }) {
-  const [profile, setProfile] = useState({
-    category: 'obc',
-    income: 'under8',
-    hostel: 'yes',
-    admission: 'firstYear',
-    gender: 'girl',
-    route: 'cap',
-    ...(initial || {}),
-  });
-  const updateProfile = (key, value) => { const next = { ...profile, [key]: value }; setProfile(next); onSave(next); };
-  const pragatiDocuments = profile.gender === 'girl' && profile.income === 'under8'
-    ? ['10th / 12th marksheet as applicable', 'Admission letter or institute-level allotment / merit proof', 'Institute certificate', 'Tuition fee receipt', 'Aadhaar-seeded student bank passbook', 'Aadhaar card', 'Parent declaration']
-    : [];
-  const selectedDocs = [...new Set([...(scholarshipDocuments[profile.category] || scholarshipDocuments.open), ...pragatiDocuments])];
-  const likelyScholarships = getLikelyScholarships(profile);
-  return (
-    <div className="pageStack scholarshipPage">
-      <div className="sectionHead"><span className="eyebrow">Scholarship Aid</span><h2>Find likely scholarship routes from student profile.</h2><p>Select the profile to see which scholarship or concession route may fit and which documents should be prepared.</p></div>
-      <section className="decisionPanel">
-        <div className="decisionForm">
-          <label>Admission type<select value={profile.admission} onChange={(event) => updateProfile('admission', event.target.value)}><option value="firstYear">First Year Engineering</option><option value="dse">Direct Second Year</option><option value="polytechnic">Polytechnic</option></select></label>
-          <label>Admission route<select value={profile.route || 'cap'} onChange={(event) => updateProfile('route', event.target.value)}><option value="cap">CAP / centralized admission</option><option value="nonCap">Institute-level / non-CAP</option></select></label>
-          <label>Student gender<select value={profile.gender || 'girl'} onChange={(event) => updateProfile('gender', event.target.value)}><option value="girl">Girl</option><option value="boy">Boy</option><option value="other">Other / prefer not to say</option></select></label>
-          <label>Category / claim<select value={profile.category} onChange={(event) => updateProfile('category', event.target.value)}><option value="open">Open / OMS</option><option value="ews">EWS / EBC</option><option value="obc">OBC / SEBC</option><option value="vjnt">VJNT / SBC</option><option value="scst">SC / ST</option><option value="minority">Minority</option></select></label>
-          <label>Family income<select value={profile.income} onChange={(event) => updateProfile('income', event.target.value)}><option value="under8">Up to 8 lakh</option><option value="over8">Above 8 lakh / not claiming</option></select></label>
-          <label>Hostel needed<select value={profile.hostel} onChange={(event) => updateProfile('hostel', event.target.value)}><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not decided</option></select></label>
-        </div>
-        <div className="decisionResult scholarshipDocuments">
-          <span className="eyebrow">Required document checklist</span>
-          {selectedDocs.map((item) => <div className="stepRow compact" key={item}><CheckCircle2 size={17} /> {item}</div>)}
-        </div>
-      </section>
-      <section className="panelBlock">
-        <div className="sectionHead"><span className="eyebrow">Likely applicable routes</span><h2>Based on selected situation</h2></div>
-        <div className="ruleGrid">{likelyScholarships.map((item) => <div key={item.title}><strong>{item.title}</strong><p>{item.reason}</p></div>)}</div>
-        <p className="warningText"><ShieldCheck size={16} /> This is guidance for preparation. Final eligibility depends on official scheme rules and document verification.</p>
-        <div className="workflowActions"><a href="https://mahadbt.maharashtra.gov.in/login/login" target="_blank" rel="noreferrer">Apply through MahaDBT <ArrowRight size={16} /></a><a href="https://scholarships.gov.in/All-Scholarships" target="_blank" rel="noreferrer">Check Pragati on NSP <ArrowRight size={16} /></a><a href="https://www.mitcorer.edu.in/scholarship.php" target="_blank" rel="noreferrer">MITCORER scholarship list <ArrowRight size={16} /></a><a href="https://mitcorer.edu.in/contact.php" target="_blank" rel="noreferrer">Contact scholarship desk <ArrowRight size={16} /></a></div>
-      </section>
-      <div className="visitGrid">
-      <section className="panelBlock">
-        <div className="sectionHead"><span className="eyebrow">Scheme groups</span><h2>Scholarships listed for admission guidance</h2></div>
-        {scholarshipSchemes.map((scheme) => <div className="stepRow" key={scheme}><HandCoins size={17} /> {scheme}</div>)}
-      </section>
-      <section className="panelBlock">
-        <div className="sectionHead"><span className="eyebrow">Document purpose</span><h2>Why each proof matters</h2></div>
-        <div className="compactList">{scholarshipChecklist.map(([label, text]) => <div key={label}><strong>{label}</strong><span>{text}</span></div>)}</div>
-      </section>
-      </div>
-    </div>
-  );
-}
-
-function CareerOutcomes({ setView }) {
-  const [branch, setBranch] = useState('Computer Science and Engineering');
-  const outcome = branchCareerOutcomes[branch];
-  return (
-    <div className="pageStack careerPage">
-      <div className="placementHero"><div><span className="eyebrow">Career & Placement</span><h2>From admission to a placement opportunity</h2><p>Understand how students prepare, discover opportunities, register for drives, and verify MITCORER placement outcomes.</p></div><a href="https://www.mitcorer.edu.in/placement-committee.php" target="_blank" rel="noreferrer">Contact placement cell <ArrowRight size={16} /></a></div>
-      <section className="placementJourney"><article><span>1</span><div><h3>Build your profile</h3><p>Keep academics, resume, projects, skills, and communication evidence ready.</p></div></article><article><span>2</span><div><h3>Become placement-ready</h3><p>Use Preskilet for video-profile, communication, proof-of-work, and recruiter-oriented activities.</p></div></article><article><span>3</span><div><h3>Find and register</h3><p>Use POD.AI and official TPO communication for job descriptions, eligibility, registrations, dates, and updates.</p></div></article><article><span>4</span><div><h3>Complete the drive</h3><p>Attend tests, interviews, and selection stages; follow the company criteria and placement policy.</p></div></article></section>
-      <section className="placementPlatformGrid">{placementPlatforms.map((platform) => <article key={platform.name}><div><span>Student platform</span><h2>{platform.name}</h2><p>{platform.purpose}</p></div><ul>{platform.details.map((item) => <li key={item}>{item}</li>)}</ul><a href={platform.url} target="_blank" rel="noreferrer">Open official platform <ArrowRight size={15} /></a></article>)}</section>
-      <section className="branchExplorer">
-        <label>Choose the branch you are considering<select value={branch} onChange={(event) => setBranch(event.target.value)}>{courses.map((course) => <option key={course.choiceCode} value={course.name}>{course.name}</option>)}</select></label>
-        <div className="branchOutcomeColumns"><div><span>Possible career directions</span><h2>{branch}</h2><ul>{outcome.roles.map((item) => <li key={item}>{item}</li>)}</ul></div><div><span>What the student should prepare</span><h2>Skills and exposure</h2><ul>{outcome.skills.map((item) => <li key={item}>{item}</li>)}</ul></div></div>
-        <p className="careerDisclaimer">These are possible directions, not guaranteed jobs. Actual eligibility depends on the recruiter, student skills, academic performance, and market conditions.</p>
-      </section>
-      <section className="placementEvidence"><div className="sectionHead"><span className="eyebrow">Official 2024-25 record</span><h2>Placement and internship snapshot</h2><p>Period-specific figures from MITCORER's published Placement/Internship Statistics 2024–25. They should not be combined with lifetime promotional totals.</p></div><div className="reportGrid">{placementSignals.map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</div><div className="placementTable"><div><strong>Branch</strong><strong>Students</strong><strong>Internships</strong><strong>Placed</strong></div>{branchPlacementRecords.map((row) => <div key={row[0]}>{row.map((value) => <span key={value}>{value}</span>)}</div>)}</div><div className="evidenceLinks"><a href="https://www.mitcorer.edu.in/pdf/Placement_Internship_statistics_2024-2025.pdf" target="_blank" rel="noreferrer">Open official 2024-25 record <ArrowRight size={15} /></a><a href="https://mitcorer.edu.in/" target="_blank" rel="noreferrer">View current college highlights <ArrowRight size={15} /></a></div></section>
-      <section className="placementEvidence"><div className="sectionHead"><span className="eyebrow">Recruiter context</span><h2>Companies highlighted in college admission material</h2><p>Presence in published material does not mean every company recruits every branch or visits every year.</p></div><div className="facilityList">{recruiters.map((item) => <span key={item}>{item}</span>)}</div></section>
-      <section className="placementQuestions"><div><h2>Before taking admission, ask the TPO:</h2><ul><li>Show the latest branch-wise eligible, placed, internship, and offer counts.</li><li>Which opportunities are currently posted through POD.AI?</li><li>How will students be onboarded and assessed through Preskilet?</li><li>Which training begins in first year, and which activities are compulsory?</li><li>Are package figures college-wide, branch-specific, or single-student outcomes?</li></ul></div><div className="workflowActions"><a href="https://www.mitcorer.edu.in/placement-committee.php" target="_blank" rel="noreferrer">Contact placement cell <ArrowRight size={16} /></a><button type="button" onClick={() => setView('programs')}>Compare programs</button></div></section>
-    </div>
-  );
-}
-
-function HostelMess({ initial, onSave = () => {}, setView, publicFacts }) {
-  const [plan, setPlan] = useState(Object.keys(initial || {}).length ? initial : { hostel: 'yes', mess: 'yes', transport: 'no' });
-  const updatePlan = (key, value) => { const next = { ...plan, [key]: value }; setPlan(next); onSave(next); };
-  if (!publicFacts?.accommodationFees) return <section className="panelBlock" role="status"><h2>Maintained accommodation fees are unavailable</h2><p>Please confirm hostel, deposit and mess charges with the college.</p></section>;
-  const hostelFeeTotal = publicFacts.accommodationFees.hostelTotal;
-  const messFeeAnnual = publicFacts.accommodationFees.messAnnual;
-  const hostelTotal = plan.hostel === 'yes' ? hostelFeeTotal : 0;
-  const messTotal = plan.mess === 'yes' ? messFeeAnnual : 0;
-  const stayTotal = hostelTotal + messTotal;
-  const formatCurrency = (amount) => `INR ${amount.toLocaleString('en-IN')}`;
-  const displayHostelDetails = [
-    ['Hostel fee', `INR ${(publicFacts.accommodationFees.hostel).toLocaleString('en-IN')}`],
-    ['Refundable deposit', `INR ${(publicFacts.accommodationFees.refundableDeposit).toLocaleString('en-IN')}`],
-    ['Hostel total', `INR ${hostelFeeTotal.toLocaleString('en-IN')}`],
-    ['Mess fee per year', `INR ${messFeeAnnual.toLocaleString('en-IN')}`],
-  ];
-  return (
-    <div className="pageStack">
-      <div className="sectionHead"><span className="eyebrow">Hostel & Mess</span><h2>Check stay and meal planning before reporting.</h2><p>Estimate stay cost and confirm availability, rules, and payment process before travelling.</p></div>
-      <section className="decisionPanel">
-        <div className="decisionForm">
-          <label>Hostel needed<select value={plan.hostel} onChange={(event) => updatePlan('hostel', event.target.value)}><option value="yes">Yes</option><option value="no">No</option></select></label>
-          <label>Mess needed<select value={plan.mess} onChange={(event) => updatePlan('mess', event.target.value)}><option value="yes">Yes</option><option value="no">No</option></select></label>
-          <label>Bus/transport query<select value={plan.transport} onChange={(event) => updatePlan('transport', event.target.value)}><option value="no">No</option><option value="yes">Yes</option></select></label>
-        </div>
-        <div className="decisionResult positive">
-          <span className="eyebrow">Stay cost estimate</span>
-          <strong>{formatCurrency(stayTotal)}</strong>
-          <p>Hostel: {formatCurrency(hostelTotal)}<br />Mess: {formatCurrency(messTotal)}{plan.transport === 'yes' ? <><br />Bus route and charges should be confirmed with staff.</> : null}</p>
-        </div>
-      </section>
-      <div className="reportGrid">{displayHostelDetails.map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}</strong></article>)}</div>
-      <div className="visitGrid"><section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Confirm before admission</span><h2>Stay decision checklist</h2></div>{hostelConfirmations.map((item) => <div className="stepRow" key={item}><CheckCircle2 size={17} /> {item}</div>)}</section><section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Campus facilities</span><h2>Useful infrastructure</h2></div><div className="facilityList">{facilities.map((item) => <span key={item}>{item}</span>)}</div><p className="warningText"><ShieldCheck size={16} /> Final room availability, rules, and payment process should be confirmed by admission/hostel staff.</p></section></div>
-      <section className="panelBlock"><div className="sectionHead"><span className="eyebrow">Continue</span><h2>Confirm current availability with the college.</h2></div><div className="workflowActions"><a href="https://mitcorer.edu.in/contact.php" target="_blank" rel="noreferrer">Contact campus office <ArrowRight size={16} /></a><button type="button" onClick={() => setView('fees')}>Include stay cost in fee plan</button></div></section>
-    </div>
-  );
-}
-
-
-function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onSyncWebsite, onExtractStructuredSource }) {
+function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onSyncWebsite, onExtractStructuredSource }) {
   const [cdmExtracting, setCdmExtracting] = useState(false);
   const [cdmNotice, setCdmNotice] = useState('');
   const managedUsage = { 'KB-2': 'Public academic fee answers use this record.', 'KB-3': 'Public hostel and mess fee answers use this record.', 'KB-10': 'Public B.Tech intake answers use this record.', 'KB-6': 'Historical seat matrix answers use this record.' };
@@ -1213,6 +975,22 @@ function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, 
   const [sourceForm, setSourceForm] = useState({ title: '', documentType: 'Eligibility', academicYear: '2026-27', sourceAuthority: 'MITCORER / Maharashtra CET Cell', verifiedText: '' });
   const [sourceFile, setSourceFile] = useState(null);
   const [review, setReview] = useState(null);
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [recordSearch, setRecordSearch] = useState('');
+  const [recordCategory, setRecordCategory] = useState('All categories');
+  const [recordStatus, setRecordStatus] = useState('All statuses');
+  const [showRecordForm, setShowRecordForm] = useState(false);
+  const [showSourceForm, setShowSourceForm] = useState(false);
+  const [recordActionMessage, setRecordActionMessage] = useState('');
+  const [recordActionBusy, setRecordActionBusy] = useState('');
+  const filteredRecords = items
+    .filter((item) => recordCategory === 'All categories' || item.category === recordCategory)
+    .filter((item) => recordStatus === 'All statuses' || item.status === recordStatus)
+    .filter((item) => !recordSearch.trim() || [item.title, item.category, item.source, item.text].some((value) => String(value || '').toLowerCase().includes(recordSearch.trim().toLowerCase())))
+    .sort((a, b) => `${a.category}:${a.title}`.localeCompare(`${b.category}:${b.title}`));
+  const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const statuses = [...new Set(items.map((item) => item.status).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const sourcesNeedingReview = sources.filter(item => /review|staged|conflict|pending|extract/i.test(`${item.status || ''} ${item.extractionStatus || ''}`)).length;
   const update = (key, value) => setForm((item) => ({ ...item, [key]: value }));
   const updateSource = (key, value) => setSourceForm((item) => ({ ...item, [key]: value }));
   const submit = async (event) => {
@@ -1237,12 +1015,21 @@ function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, 
   };
   const openReview = async (source) => {
     const result = await onReviewSource(source.id);
-    if (result) setReview({ id: source.id, title: source.title, text: result.extractedText || '', status: result.extractionStatus });
+    if (result) setReview({
+      id: source.id,
+      title: source.title,
+      text: result.extractedText || '',
+      status: result.extractionStatus,
+      previousVersion: result.previousVersion || null,
+      conflicts: result.conflicts || [],
+      freshnessImpact: result.freshnessImpact || { withheldKnowledgeIds: [] },
+      resolveConflicts: false,
+    });
   };
   const publishReview = async (event) => {
     event.preventDefault();
     if (!review?.text.trim()) return;
-    const saved = await onPublishSource(review.id, review.text);
+    const saved = await onPublishSource(review.id, review.text, review.resolveConflicts);
     if (saved) setReview(null);
   };
   const handleSync = async () => {
@@ -1252,38 +1039,54 @@ function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, 
     try {
       const summary = await onSyncWebsite();
       if (summary) {
-        setSyncStatus(`Website sync complete: ${summary.checked} pages inspected, ${summary.changed} staged for review, ${summary.unchanged} unchanged.`);
+        setSyncStatus(`Website sync complete: ${summary.checked} pages checked${summary.discovered ? ` (${summary.discovered} discovered)` : ''}, ${summary.changed} updates staged for review, ${summary.conflictCount || 0} potential numeric conflicts flagged, ${summary.suspendedRecords || 0} conflicting knowledge records withheld pending review, ${summary.baselined || 0} monitoring baselines recorded, ${summary.unchanged} unchanged.`);
       }
     } finally {
       setSyncing(false);
     }
   };
+  const archiveRecord = async (item) => {
+    if (recordActionBusy) return;
+    setRecordActionBusy(item.id);
+    setRecordActionMessage('');
+    try {
+      const saved = await onUpdate(item.id, { status: 'Archived', expectedRevision: item.revision ?? 0 });
+      if (saved) setRecordActionMessage(`Archived “${item.title}”. You can delete it if it is not linked to an official source.`);
+    } finally { setRecordActionBusy(''); }
+  };
+  const deleteRecord = async (item) => {
+    if (recordActionBusy || !window.confirm(`Permanently delete “${item.title}”? This cannot be undone.`)) return;
+    setRecordActionBusy(item.id);
+    setRecordActionMessage('');
+    try {
+      if (await onDelete(item.id, item.revision ?? 0)) setRecordActionMessage(`Deleted “${item.title}”.`);
+    } finally { setRecordActionBusy(''); }
+  };
   return (
-    <div className="pageStack">
-      <div className="sectionHead"><span className="eyebrow">Official source library</span><h2>Documents and verified admission knowledge</h2><p>Upload institutional sources here or synchronize directly with the official college website. Staged pages require admin review before publication.</p></div>
-      <div className="workflowActions" style={{ marginBottom: '1rem' }}>
-        <button className="inlineAction secondary" type="button" disabled={syncing} onClick={handleSync}>
-          <RefreshCw size={16} /> {syncing ? 'Inspecting college website…' : 'Sync college website'}
-        </button>
-      </div>
-      {syncStatus && <div className="decisionResult positive" style={{ marginBottom: '1rem' }}><strong>{syncStatus}</strong></div>}
-      <section className="formBlock">
-        <form onSubmit={submitSource}>
+    <div className="pageStack knowledgeManager">
+      <header className="knowledgeHeader"><div><span className="eyebrow">Assistant knowledge</span><h2>Knowledge Base</h2><p>Keep visitor answers organized, traceable to official sources, and ready for retrieval.</p></div><button className="knowledgeSyncButton" type="button" disabled={syncing} onClick={handleSync}><RefreshCw size={16} />{syncing ? 'Syncing official site…' : 'Sync official site'}</button></header>
+      <section className="knowledgeStats"><article><span>All records</span><strong>{items.length}</strong></article><article><span>Published</span><strong>{items.filter(item => item.status === 'Published').length}</strong></article><article><span>Needs review</span><strong>{items.filter(item => /review|draft|pending/i.test(item.status || '')).length + sourcesNeedingReview}</strong></article><article><span>Official sources</span><strong>{sources.length}</strong></article></section>
+      {syncStatus && <div className="decisionResult positive"><strong>{syncStatus}</strong></div>}
+      {recordActionMessage && <div className="decisionResult positive" role="status"><strong>{recordActionMessage}</strong></div>}
+      <nav className="knowledgeTabs" aria-label="Knowledge Base sections">
+        <button type="button" className={activeTab === 'records' ? 'active' : ''} onClick={() => setActiveTab('records')}>Knowledge records <span>{items.length}</span></button>
+        <button type="button" className={activeTab === 'sources' ? 'active' : ''} onClick={() => setActiveTab('sources')}>Official sources <span>{sources.length}</span></button>
+      </nav>
+      {activeTab === 'sources' && <section className="knowledgePane">
+        <div className="knowledgePaneHead"><div><h3>Official sources</h3><p>Uploaded documents and synchronized pages. Review staged changes before publishing them.</p></div><button className="knowledgePrimaryAction" type="button" onClick={() => setShowSourceForm(value => !value)}><UploadCloud size={16} />{showSourceForm ? 'Close upload form' : 'Add official source'}</button></div>
+        {showSourceForm && <section className="formBlock knowledgeFormBlock"><form onSubmit={submitSource}>
           <label>Document title<input value={sourceForm.title} onChange={(event) => updateSource('title', event.target.value)} placeholder="Example: CAP Round I cutoff 2025" /></label>
           <label>Document type<select value={sourceForm.documentType} onChange={(event) => updateSource('documentType', event.target.value)}><option>Eligibility</option><option>Cutoff</option><option>Seat Matrix</option><option>Admissions</option><option>Fees</option><option>Scholarship</option><option>Programs</option><option>Facilities</option><option>Placement</option><option>Calendar</option></select></label>
           <label>Academic year<input value={sourceForm.academicYear} onChange={(event) => updateSource('academicYear', event.target.value)} placeholder="2026-27" /></label>
           <label>Source authority<input value={sourceForm.sourceAuthority} onChange={(event) => updateSource('sourceAuthority', event.target.value)} placeholder="MITCORER or Maharashtra CET Cell" /></label>
           <label className="wide">Official file<input type="file" accept=".pdf,.docx,.xlsx,.csv,.txt,image/png,image/jpeg" onChange={(event) => setSourceFile(event.target.files?.[0] || null)} /></label>
-          <label className="wide">Verified extracted text (optional)<textarea rows={4} value={sourceForm.verifiedText} onChange={(event) => updateSource('verifiedText', event.target.value)} placeholder="Paste the reviewed eligibility rule, cutoff row, seat matrix, fee notice, or policy text. Leaving this empty stores the source for later extraction and review." /></label>
-          <button type="submit" disabled={!sourceFile || !sourceForm.title.trim()}><UploadCloud size={17} /> Upload official source</button>
-        </form>
-      </section>
-      <div className="tableWrap sourceTable">
-        <table>
-          <thead><tr><th>Source</th><th>Type</th><th>Academic year</th><th>Authority</th><th>Extraction</th><th>Status</th><th>File</th></tr></thead>
-          <tbody>{sources.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br /><span>{item.originalFileName}</span></td><td>{item.documentType}</td><td>{item.academicYear}</td><td>{item.sourceAuthority}</td><td>{item.extractionStatus}</td><td>{item.status}</td><td>{item.storedFileName ? <button className="miniEditBtn" type="button" onClick={() => onOpenSource(item.id)}>Open file</button> : item.sourceUrl ? <a className="miniEditBtn sourceReference" href={item.sourceUrl} target="_blank" rel="noreferrer">Open source</a> : 'Reference only'} {item.status !== 'Published' && <button className="miniEditBtn" type="button" onClick={() => openReview(item)}>Review text</button>}</td></tr>)}</tbody>
-        </table>
-      </div>
+          <label className="wide">Verified extracted text (optional)<textarea rows={4} value={sourceForm.verifiedText} onChange={(event) => updateSource('verifiedText', event.target.value)} placeholder="Paste reviewed official text, or leave this empty to store the file for later extraction." /></label>
+          <button type="submit" disabled={!sourceFile || !sourceForm.title.trim()}><UploadCloud size={17} /> Upload source</button>
+        </form></section>}
+        <div className="tableWrap sourceTable knowledgeSourceTable"><table>
+          <thead><tr><th>Source</th><th>Type</th><th>Year</th><th>Authority</th><th>Extraction</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>{sources.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br /><span>{item.originalFileName || item.id}</span></td><td>{item.documentType}</td><td>{item.academicYear || '—'}</td><td>{item.sourceAuthority || '—'}</td><td>{item.extractionStatus || 'Not extracted'}</td><td><span className={`knowledgeStatus ${item.status === 'Published' ? 'published' : 'review'}`}>{item.status}</span></td><td><div className="knowledgeRowActions">{item.storedFileName ? <button type="button" onClick={() => onOpenSource(item.id)}>Open file</button> : item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer">Open source</a> : null}{item.status !== 'Published' && <button type="button" onClick={() => openReview(item)}>Review text</button>}</div></td></tr>)}</tbody>
+        </table>{sources.length === 0 && <div className="knowledgeEmpty">No official sources have been added yet.</div>}</div>
       {review && (
         <section className="formBlock">
           <div className="sectionHead">
@@ -1324,6 +1127,35 @@ function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, 
               <Cpu size={16} /> {cdmExtracting ? 'Extracting via CDM…' : 'Auto-extract structured facts (CDM)'}
             </button>
           </div>
+          {review.conflicts.length > 0 && (
+            <div className="decisionResult notice" style={{ marginBottom: '1rem' }}>
+              <strong>Potential factual conflicts found ({review.conflicts.length})</strong>
+              <p>Compare the current page with already published answers. Publishing with confirmation will archive the conflicting older records.</p>
+              <ul>{review.conflicts.slice(0, 10).map((conflict, index) => (
+                <li key={`${conflict.recordId}-${index}`}>
+                  <strong>Existing:</strong> {conflict.previousText}<br />
+                  <strong>New page:</strong> {conflict.currentText}
+                </li>
+              ))}</ul>
+              {review.conflicts.length > 10 && <p>Showing 10 of {review.conflicts.length} detected comparisons.</p>}
+              <label className="wide">
+                <input type="checkbox" checked={review.resolveConflicts} onChange={(event) => setReview((item) => ({ ...item, resolveConflicts: event.target.checked }))} />
+                I reviewed these comparisons and approve this version as the source to publish.
+              </label>
+            </div>
+          )}
+          {review.freshnessImpact?.withheldKnowledgeIds?.length > 0 && (
+            <div className="decisionResult notice" style={{ marginBottom: '1rem' }}>
+              <strong>{review.freshnessImpact.withheldKnowledgeIds.length} published answer record(s) temporarily withheld</strong>
+              <p>They contain numeric claims that changed or disappeared on this page. This prevents a possibly stale value from being returned while you review the source.</p>
+            </div>
+          )}
+          {review.previousVersion?.text && (
+            <details className="decisionResult" style={{ marginBottom: '1rem' }}>
+              <summary>View previous captured version ({review.previousVersion.capturedAt || 'capture date unavailable'})</summary>
+              <pre style={{ maxHeight: '18rem', overflow: 'auto', whiteSpace: 'pre-wrap' }}>{review.previousVersion.text}</pre>
+            </details>
+          )}
           <form onSubmit={publishReview}>
             <label className="wide">
               Verified text for retrieval
@@ -1334,27 +1166,37 @@ function KnowledgeManager({ items, sources, onCreate, onUpdate, onUploadSource, 
                 placeholder="No text was extracted. Paste the reviewed official text before publishing."
               />
             </label>
-            <button type="submit" disabled={!review.text.trim()}><CheckCircle2 size={17} /> Publish verified knowledge</button>
+            <button type="submit" disabled={!review.text.trim() || (review.conflicts.length > 0 && !review.resolveConflicts)}><CheckCircle2 size={17} /> Publish verified knowledge</button>
             <button className="miniEditBtn" type="button" onClick={() => { setReview(null); setCdmNotice(''); }}>Cancel</button>
           </form>
         </section>
       )}
-      <div className="sectionHead"><span className="eyebrow">Knowledge records</span><h2>Reviewed text available to retrieval</h2></div>
-      <section className="formBlock">
-        <form onSubmit={submit}>
+      </section>}
+      {activeTab === 'records' && <section className="knowledgePane">
+        <div className="knowledgePaneHead"><div><h3>Knowledge records</h3><p>Search and filter verified answers. Expand a row to inspect the exact text used for retrieval.</p></div><button className="knowledgePrimaryAction" type="button" onClick={() => setShowRecordForm(value => !value)}><FileText size={16} />{showRecordForm ? 'Close record form' : 'Add knowledge record'}</button></div>
+        <div className="knowledgeFilters"><label className="knowledgeSearch">Search records<input type="search" value={recordSearch} onChange={event => setRecordSearch(event.target.value)} placeholder="Search title, answer text, source…" /></label><label>Category<select value={recordCategory} onChange={event => setRecordCategory(event.target.value)}><option>All categories</option>{categories.map(category => <option key={category}>{category}</option>)}</select></label><label>Status<select value={recordStatus} onChange={event => setRecordStatus(event.target.value)}><option>All statuses</option>{statuses.map(status => <option key={status}>{status}</option>)}</select></label></div>
+        {showRecordForm && <section className="formBlock knowledgeFormBlock"><form onSubmit={submit}>
           <label>Title<input value={form.title} onChange={(event) => update('title', event.target.value)} placeholder="Example: CAP 2026 reporting rules" /></label>
           <label>Category<select value={form.category} onChange={(event) => update('category', event.target.value)}><option>Admissions</option><option>Eligibility</option><option>Cutoff</option><option>Seat Matrix</option><option>Documents</option><option>Fees</option><option>Scholarship</option><option>Facilities</option><option>Programs</option><option>Placement</option></select></label>
-          <label className="wide">Source<input value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Official brochure / website / notice" /></label>
+          <label className="wide">Source<input value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Official page, notice or document" /></label>
           <label>Status<select value={form.status} onChange={(event) => update('status', event.target.value)}><option>Published</option><option>Review</option><option>Archived</option></select></label>
-          <label className="wide">Verified text<textarea rows={5} value={form.text} onChange={(event) => update('text', event.target.value)} placeholder="Paste concise verified admission information..." /></label>
-          <button type="submit" disabled={creating}>{creating ? 'Saving…' : 'Add knowledge record'} <ArrowRight size={16} /></button>
-        </form>
-      </section>
-      {editing && <KnowledgeRecordEditor key={editing.id} record={editing} onSave={onUpdate} onCancel={() => setEditing(null)} />}
-      <div className="knowledgeGrid">{items.map((item) => <article key={item.id}><span className="eyebrow">{item.category}</span><h3>{item.title}</h3>{managedUsage[item.id] && <small>{managedUsage[item.id]}</small>}<p>{item.text}</p><footer>{item.source} · {item.status}</footer><button type="button" disabled={Boolean(editing)} onClick={() => setEditing(item)}>Edit record</button></article>)}</div>
+          <label className="wide">Verified text<textarea rows={5} value={form.text} onChange={(event) => update('text', event.target.value)} placeholder="Enter concise, reviewed facts and include scope such as year, branch and admission route." /></label>
+          <button type="submit" disabled={creating || !form.title.trim() || !form.text.trim()}>{creating ? 'Saving…' : 'Save record'} <ArrowRight size={16} /></button>
+        </form></section>}
+        {editing && <KnowledgeRecordEditor key={editing.id} record={editing} onSave={onUpdate} onCancel={() => setEditing(null)} />}
+        <div className="knowledgeRecordList">{filteredRecords.map(item => {
+          const sourceLinked = Boolean(item.sourceDocumentId || item.provenance?.documentId || sources.some(source => (source.knowledgeIds || source.linkedKnowledgeIds || []).includes(item.id)));
+          const hasSuccessor = items.some(candidate => candidate.id !== item.id && candidate.provenance?.supersededBy === item.id);
+          const deleteBlockedReason = item.status === 'Published' ? 'Archive this published record before deleting it.' : sourceLinked ? 'This record is managed by an official source and cannot be deleted directly.' : hasSuccessor ? 'Another record refers to this record in its source history.' : '';
+          return <article className="knowledgeRecordRow" key={item.id}>
+          <div className="knowledgeRecordMain"><div className="knowledgeRecordTitle"><span className="knowledgeCategory">{item.category || 'Uncategorized'}</span><span className={`knowledgeStatus ${item.status === 'Published' ? 'published' : item.status === 'Review' ? 'review' : 'archived'}`}>{item.status}</span><small>{item.id}</small></div><h4>{item.title}</h4><p>{item.source || 'Source not specified'}</p>
+            <details><summary>View indexed text</summary><div className="knowledgeRecordText">{managedUsage[item.id] && <strong>{managedUsage[item.id]}</strong>}<p>{item.text}</p></div></details>
+          </div><div className="knowledgeRecordActions"><button className="knowledgeEditButton" type="button" disabled={Boolean(editing) || Boolean(recordActionBusy)} onClick={() => setEditing(item)}>Edit</button>{canDeleteKnowledge && <>{item.status === 'Published' && <button className="knowledgeArchiveButton" type="button" disabled={Boolean(recordActionBusy)} onClick={() => archiveRecord(item)}>Archive</button>}<button className="knowledgeDeleteButton" type="button" disabled={Boolean(deleteBlockedReason) || Boolean(recordActionBusy)} title={deleteBlockedReason || 'Permanently delete this record'} onClick={() => deleteRecord(item)}>{recordActionBusy === item.id ? 'Working…' : 'Delete'}</button>{deleteBlockedReason && <small className="knowledgeDeleteHint">{deleteBlockedReason}</small>}</>}</div>
+        </article>;})}{filteredRecords.length === 0 && <div className="knowledgeEmpty">No records match those filters.</div>}</div>
+        <footer className="knowledgeResultsCount">Showing {filteredRecords.length} of {items.length} records</footer>
+      </section>}
     </div>
   );
 }
-
 
 export default App;

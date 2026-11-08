@@ -2,6 +2,7 @@ import { getDb, saveDb } from './store.js';
 import { badRequest, notFound } from './errors.js';
 import { generateId, nowIso, pick } from './utils.js';
 import { understandQuery } from './query-understanding.js';
+import { selectLanguage } from './language.js';
 import { config } from './config.js';
 import { publicSessionHash } from './public-session.js';
 
@@ -49,18 +50,18 @@ export function extractConversationContext(text, existingContext = {}) {
     context.category = 'Open';
   }
 
-  // Branch preference
-  if (/\b(?:computer engineering|computer science|computer branch|computer dept|cse)\b/.test(norm)) {
-    context.branch = 'Computer Engineering';
-  } else if (/\b(?:mechanical and rail(?:way)?|mechanical engineering|mechanical branch|mechanical dept|mechanical|mech|rail(?:way)? engineering)\b/.test(norm)) {
-    context.branch = 'Mechanical & Rail Engineering';
-  } else if (/\b(?:ai & ds|ai and ds|artificial intelligence|aids)\b/.test(norm)) {
-    context.branch = 'AI & Data Science';
-  } else if (/\b(?:civil engineering|civil branch|civil dept|civil)\b/.test(norm)) {
-    context.branch = 'Civil Engineering';
-  } else if (/\b(?:electronics and telecommunication|entc|electronics)\b/.test(norm)) {
-    context.branch = 'Electronics & Telecommunication';
-  }
+  // Use the same parsed branch slot as retrieval so Electronics and Computer
+  // is not collapsed into Electronics and Telecommunication by a broad regex.
+  const branchNames = {
+    cse: 'Computer Engineering',
+    civil: 'Civil Engineering',
+    mechanical: 'Mechanical & Rail Engineering',
+    aids: 'AI & Data Science',
+    electronicsComputer: 'Electronics and Computer Engineering',
+    entc: 'Electronics & Telecommunication',
+  };
+  if (query.branch.positive.length === 1) context.branch = branchNames[query.branch.positive[0]];
+  else if (query.branch.excluded.length || query.branch.positive.length > 1) delete context.branch;
 
   // Quota preference
   if (/\b(?:tfws|tuition fee waiver)\b/.test(norm)) {
@@ -85,14 +86,21 @@ export function extractConversationContext(text, existingContext = {}) {
     context.route = 'First Year';
   }
 
-  // Active topic identification for conversational follow-ups
+  // Keep the requested fact type so a short branch change ("What about Civil?")
+  // can replace the entity without losing the question being asked.
   if (/\b(?:hostel|mess|accommodation|stay|room|warden)\b/.test(norm)) {
     context.lastTopic = 'hostel';
   } else if (/\b(?:fee|fees|cost|tuition|installment|scholarship|concession)\b/.test(norm)) {
     context.lastTopic = 'fees';
+  } else if (/\b(?:intake|seats?|seat matrix|capacity)\b/.test(norm)) {
+    context.lastTopic = 'intake';
+  } else if (/\b(?:choice code|courses?|programmes?|programs?)\b/.test(norm)) {
+    context.lastTopic = 'programmes';
   } else if (/\b(?:placement|recruiter|package|salary|internship|job|career)\b/.test(norm)) {
     context.lastTopic = 'placement';
-  } else if (/\b(?:admission|cap|cutoff|eligibility|documents?|apply|seat)\b/.test(norm)) {
+  } else if (/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(norm)) {
+    context.lastTopic = 'cutoff';
+  } else if (/\b(?:admission|cap|eligibility|documents?|apply|seat)\b/.test(norm)) {
     context.lastTopic = 'admission';
   } else if (/\b(?:lab|laborator|workshop|infrastructure|campus|library)\b/.test(norm)) {
     context.lastTopic = 'facilities';
@@ -104,7 +112,7 @@ export function extractConversationContext(text, existingContext = {}) {
   }
   if (query.category.excluded.length || query.category.mentions.length > 1) delete context.category;
   if (/\b(?:not|no|except|excluding)\s+(?:tfws|cap|management|institute)/i.test(norm)) delete context.quota;
-  if (/\b(?:library|transport|bus|intake|choice code|courses?|programmes?|programs?)\b/.test(norm)
+  if (/\b(?:library|transport|bus)\b/.test(norm)
     && !/\b(?:fee|fees|cost|tuition|concession)\b/.test(norm)) context.lastTopic = 'facilities';
   return context;
 }
@@ -114,7 +122,17 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
   if (!chat || !Array.isArray(chat.messages) || chat.messages.length === 0) {
     return question;
   }
-  // If the query is already an explicit, comprehensive college inquiry, keep as-is.
+  // A generic seat-count question is ambiguous: it may mean sanctioned
+  // intake or live vacancies. Do not inherit an unrelated prior branch/topic.
+  if (/\b(?:how many|number of)\b.{0,35}\bseats?\b/i.test(norm)
+    && !/\b(?:intake|sanctioned|seat matrix|cutoffs?|vacanc(?:y|ies))\b/i.test(norm)) return question;
+  // Do not attach a branch from a prior subject when the current message explicitly changes topic.
+  const previousQuestionText = [...chat.messages].reverse().find(message => message.type === 'user')?.text || '';
+  if (/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(norm)
+    && !/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(previousQuestionText)
+    && (!/\b(?:labs?|laborator|library|campus|facilit|infrastructure)\b/i.test(previousQuestionText) || context.lastTopic === 'facilities')
+    && !(context.branch && !context.lastTopic)) return question;
+
   if (/\b(?:mitcorer|barshi|campus|college)\b/.test(norm) && norm.split(/\s+/).length > 8) {
     return question;
   }
@@ -123,19 +141,59 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
     || /^(?:and|what about|how about|any|for)\b/.test(norm)
     || norm.split(/\s+/).length <= 4;
   const currentQuery = understandQuery(question);
+  const previousQuestion = previousQuestionText;
+  const previousNorm = previousQuestion.normalize('NFKC').toLowerCase();
+  const previousTopic = /\b(?:intake|seats?|seat matrix|capacity)\b/.test(previousNorm) ? 'intake'
+    : /\b(?:cutoff|cut-off|closing rank|closing percentile)\b/.test(previousNorm) ? 'cutoff'
+      : /\b(?:hod|head of department|department head)\b/.test(previousNorm) ? 'hod'
+        : /\b(?:labs?|laborator\w*)\b/.test(previousNorm) ? 'labs'
+          : /\b(?:syllabus|curriculum)\b/.test(previousNorm) ? 'syllabus'
+            : /\b(?:placement|recruiter|package|salary|internship)\b/.test(previousNorm) ? 'placement'
+              : /\b(?:fee|fees|cost|tuition|installment|scholarship|concession)\b/.test(previousNorm) ? 'fees'
+                : /\b(?:courses?|programmes?|programs?|choice code)\b/.test(previousNorm) ? 'programmes' : null;
+  const followUpTopic = previousTopic || context.lastTopic;
   const explicitOtherTopic = currentQuery.topics.some(topic => ['library', 'transport', 'programmes', 'seatMatrix'].includes(topic))
     && !currentQuery.topics.includes('academicFees');
 
   // Explicit exclusions must reach the scope parser unchanged; do not reuse a negated profile.
   if (/\b(?:not|no|except|excluding|instead)\b/.test(norm)) return question;
 
+  // Preserve a cost-comparison intent when the user swaps only the service.
+  const feeFollowupCue = /^(?:and\s+)?(?:what|how) about\b/.test(norm);
+  const requestedServices = currentQuery.service.positive;
+  if (followUpTopic === 'fees' && feeFollowupCue && requestedServices.length === 1
+    && ['hostel', 'mess'].includes(requestedServices[0])
+    && !/\b(?:fee|fees|cost|charge|payment|availability|available|room|rules?)\b/.test(norm)) {
+    const year = currentQuery.academicYears[0] || context.academicYear;
+    return `What are the ${requestedServices[0]} fees${year ? ` for ${year}` : ''}?`;
+  }
+
+  // A named branch in a short "what about X?" turn updates the branch while
+  // carrying forward the prior intake request. Do not carry the old branch.
+  if (followUpTopic && currentQuery.branch.positive.length === 1
+    && /^(?:and\s+)?(?:what|how) about\b/.test(norm)) {
+    const branch = context.branch;
+    const year = currentQuery.academicYears[0] || context.academicYear;
+    const suffix = year ? ` for ${year}` : '';
+    const branchFollowups = {
+      intake: `What is the intake for ${branch}${suffix}?`,
+      cutoff: `What is the cutoff for ${branch}${suffix}?`,
+      hod: `Who is the HOD of ${branch}?`,
+      labs: `What laboratories are available in ${branch}?`,
+      syllabus: `What is the syllabus for ${branch}?`,
+      placement: `What are the placement details for ${branch}?`,
+      programmes: `What programmes are offered in ${branch}?`,
+    };
+    if (branchFollowups[followUpTopic]) return branchFollowups[followUpTopic];
+  }
+
   // 1. Hostel & mess follow-ups
-  if (context.lastTopic === 'hostel' && isBareOrPronoun && !explicitOtherTopic && !/\b(?:hostel|room)\b/.test(norm)) {
+  if (followUpTopic === 'hostel' && isBareOrPronoun && !explicitOtherTopic && !/\b(?:hostel|room)\b/.test(norm)) {
     return `Hostel inquiry: ${question}`;
   }
 
   // 2. Fee follow-ups
-  if (!explicitOtherTopic && !/\b(?:hostel|room|mess)\b/.test(norm) && (isBareOrPronoun && context.lastTopic === 'fees' || /\b(?:fee|fees|cost|tuition|charges|shulka|concession)\b/.test(norm))) {
+  if (!explicitOtherTopic && !/\b(?:hostel|room|mess)\b/.test(norm) && (isBareOrPronoun && followUpTopic === 'fees' || /\b(?:fee|fees|cost|tuition|charges|shulka|concession)\b/.test(norm))) {
     // Enrich the original question instead of replacing qualifiers such as DSE,
     // academic year, semester, comparison, or installment requests.
     const query = understandQuery(question);
@@ -155,12 +213,12 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
   }
 
   // 4. Cutoff follow-ups (e.g. "what was the cutoff?", "last year cutoff?")
-  if (/\b(?:cutoff|cut off|merit|percentile|rank)\b/.test(norm) && context.branch && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
+  if (/\b(?:cutoff|cut off|merit|percentile|rank)\b/.test(norm) && followUpTopic === 'cutoff' && context.branch && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
     return withScope(question, `for ${context.branch}`);
   }
 
   // 5. Placement follow-ups (e.g. "highest package?", "top recruiters?", "average salary?")
-  if (!explicitOtherTopic && context.lastTopic === 'placement' && !/\b(?:placement|package|recruiter)\b/.test(norm)) {
+  if (!explicitOtherTopic && followUpTopic === 'placement' && !/\b(?:placement|package|recruiter)\b/.test(norm)) {
     if (context.branch && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
       return `Placement inquiry for ${context.branch}: ${question}`;
     }
@@ -168,12 +226,14 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
   }
 
   // 6. Department / HOD / Lab / Syllabus follow-ups
-  if (/\b(?:hod|head of department|department head|labs?|laborator\w*|faculty|syllabus)\b/.test(norm) && context.branch && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
+  if (/\b(?:hod|head of department|department head|labs?|laborator\w*|faculty|syllabus)\b/.test(norm)
+    && !/\b(?:principal|director|campus director)\b/.test(norm)
+    && context.branch && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
     return withScope(question, `for ${context.branch}`);
   }
 
   // 7. Branch context fallback for short follow-ups
-  if (!explicitOtherTopic && context.branch && isBareOrPronoun && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
+  if (!explicitOtherTopic && !(followUpTopic === 'facilities' && /\b(?:cutoff|cut off|merit|percentile|rank)\b/.test(norm)) && context.branch && isBareOrPronoun && !/\b(?:computer|mechanical|civil|railway|ai|data science|entc|electronics)\b/.test(norm)) {
     return withScope(question, `for ${context.branch}`);
   }
 
@@ -189,7 +249,8 @@ export async function askWithHistory(body, user, answerQuestion) {
   if (chat && chat.messages.length >= 200) throw badRequest('This conversation is full. Start a new chat to continue.');
   const updatedContext = extractConversationContext(question, chat?.context || {});
   const contextualQuestion = resolveConversationalQuestion(question, chat, updatedContext);
-  const answer = await answerQuestion({ question: contextualQuestion, language: body.language, context: updatedContext }, user);
+  const language = body.language && body.language !== 'auto' ? body.language : selectLanguage(question, 'auto');
+  const answer = await answerQuestion({ question: contextualQuestion, language, context: updatedContext }, user);
   const now = nowIso();
   const conversation = chat || {
     id: generateId('CHAT'), ownerId: user.id, title: question.replace(/\s+/g, ' ').slice(0, 80),
@@ -262,9 +323,10 @@ export async function askPublicWithHistory(body, answerQuestion, sessionToken) {
   const updatedContext = extractConversationContext(question, chat?.context || {});
   const contextualQuestion = resolveConversationalQuestion(question, chat, updatedContext);
 
+  const language = body.language && body.language !== 'auto' ? body.language : selectLanguage(question, 'auto');
   const answer = await answerQuestion({
     question: contextualQuestion,
-    language: body.language,
+    language,
     context: updatedContext,
   }, null);
 

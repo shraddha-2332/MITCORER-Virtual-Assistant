@@ -23,6 +23,16 @@ export function normalizeLocalTerms(question) {
   let text = normalizeDigits(String(question).normalize('NFKC'));
   text = text.replace(/^(?:please\s+)?(?:answer|reply|respond)(?:\s+to me)?\s+in\s+(?:english|marathi|hindi)\s*[:,]?\s*(?:and\s+)?/i, '');
   const replacements = [
+    // Common Marathi and Hindi question forms need to normalize before intent routing.
+    [/तुमच्या कॉलेजमध्ये कोणते इंजिनिअरिंग कोर्स आहेत|आपके कॉलेज में कौन-कौन से इंजीनियरिंग कोर्स उपलब्ध हैं/gu, ' list engineering programmes '],
+    [/कॉलेज कुठे आहे|कॉलेज कहाँ स्थित है/gu, ' where is the college located '],
+    [/मुलींसाठी हॉस्टेल आहे का|क्या लड़कियों के लिए हॉस्टल है/gu, ' are girls hostel facilities available '],
+    [/और हॉस्टल की सुविधा है क्या/gu, ' are hostel facilities available '],
+    [/कॉलेजमध्ये स्कॉलरशिप मिळते का|कॉलेज में स्कॉलरशिप मिलती है क्या/gu, ' what scholarship schemes are available '],
+    [/कॉलेजचे प्राचार्य कोण आहेत|कॉलेज के प्राचार्य कौन हैं/gu, ' who is the principal '],
+    [/कॉम्पुटर इंजिनियरिंग ची फिस किती/gu, ' computer engineering fee '],
+    [/प्लेसमेन्ट कसे आहेत/gu, ' placement highlights '],
+    [/सिव्हिल इंजिनिअरिंगचा कटऑफ किती आहे|सिव्हिल इंजीनियरिंग का कटऑफ कितना है/gu, ' civil engineering cutoff '],
     // Devanagari mappings
     [/जागा\s+आणि\s+प्रवेश\s+क्षमता|सीट\s*मैट्रिक्स/gu, ' seat matrix '],
     [/संगणक विज्ञान आणि अभियांत्रिकी|कंप्यूटर साइंस एंड इंजीनियरिंग/gu, ' cse '],
@@ -41,6 +51,8 @@ export function normalizeLocalTerms(question) {
     [/शाखांची|शाखाओं/gu, ' branches '], [/सर्व|सभी/gu, ' all '],
 
     // Romanized Marathi & Hindi mappings to English search equivalents
+    [/\b(?:admission sathi docs konti pahijet|admission ke liye kaun se documents chahiye)\b/gi, ' admission documents required '],
+    [/\b(?:placement kase aahet|placement kaise hain)\b/gi, ' placement highlights '],
     [/\b(?:shulka|fees?|fee)\b/gi, ' fee '],
     [/\b(?:fee kiti|kiti fee|kiti kharch|kiti paise)\b/gi, ' fee '],
     [/\b(?:vasatigruh|vasatigruha|chhatravas)\b/gi, ' hostel '],

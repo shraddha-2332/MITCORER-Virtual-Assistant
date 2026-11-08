@@ -102,18 +102,21 @@ npm run dev
 
 Open http://127.0.0.1:5173. The backend health endpoint is http://127.0.0.1:4000/api/health. Vite proxies /api requests to the backend.
 
-## Optional Gemini Configuration
+## Optional Answer Providers
 
-Set these values in backend/.env and restart the backend:
+Set provider keys in `backend/.env` and restart the backend. Both answer providers are optional. When both are configured, the backend tries Groq first and then Gemini. It also proceeds to Gemini when a Groq draft fails grounding checks. If neither provider returns a verified draft, the backend uses its deterministic answer or abstains.
 
 ~~~dotenv
 GEMINI_API_KEY=your-google-gemini-api-key
 GEMINI_MODEL=gemini-3.8-flash
 GEMINI_EMBEDDING_MODEL=gemini-embedding-001
 GEMINI_FALLBACK_MODEL=
+GROQ_API_KEY=your-groq-api-key
+GROQ_MODEL=openai/gpt-oss-120b
+GROQ_FALLBACK_MODEL=openai/gpt-oss-20b
 ~~~
 
-The key authenticates backend requests to Google's model service; it is not the source of college knowledge. Keep it out of frontend code and version control. Direct supported answers work without Gemini. Optional generation uses temperature 0.2 and an overall 15-second budget, with one bounded transient retry and an optional configured fallback model. Every draft still passes the same verification checks.
+The provider keys authenticate backend requests; they are not sources of college knowledge. Keep them out of frontend code and version control. Direct supported answers work without either provider. Generation has a shared 15-second budget across Groq then Gemini, bounded transient retries and optional model fallbacks. Every accepted draft must pass factual-token, speculative-figure, and slot-grounding checks. These checks do not establish general semantic entailment. Gemini embeddings are a separate optional retrieval feature configured by `GEMINI_API_KEY` and `GEMINI_EMBEDDING_MODEL`.
 
 ## Docker
 
@@ -126,7 +129,7 @@ docker compose up --build
 
 Open http://127.0.0.1:8080. Nginx serves the frontend and proxies /api to the backend. Docker volumes preserve database and source files.
 
-The existing backend requires TOKEN_SECRET in production even though the public assistant does not require login. Compose forwards optional Gemini generation/embedding/fallback settings and administrator provisioning variables; backend/.env is not copied into the image. Supply secrets through the deployment environment. Use HTTPS and the correct CORS origin for a public deployment; the supplied Vercel frontend and Render backend were smoke-tested, but uncommitted changes have not been deployed. See the current completion report.
+The existing backend requires TOKEN_SECRET in production even though the public assistant does not require login. Compose forwards optional Gemini and Groq settings and administrator provisioning variables; backend/.env is not copied into the image. Supply secrets through the deployment environment. Use HTTPS and the correct CORS origin for a public deployment; the supplied Vercel frontend and Render backend were smoke-tested, but uncommitted changes have not been deployed. See the current completion report.
 
 ## Validation
 

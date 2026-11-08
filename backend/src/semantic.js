@@ -10,7 +10,7 @@
 
 import crypto from 'node:crypto';
 import { config } from './config.js';
-import { getStoredVectors, saveStoredVector } from './store.js';
+import { deleteStoredVector, getStoredVectors, saveStoredVector } from './store.js';
 import { usableKnowledge } from './provenance.js';
 
 const embeddingText = record => [record.title, record.category, ...(record.tags || []), record.text].join(' ').slice(0, 2048);
@@ -63,6 +63,11 @@ export function loadVectorIndex() {
 export function resetVectorIndexForTests() {
   vectorIndex = new Map();
   queryCache.clear();
+}
+
+export function removeKnowledgeVector(id) {
+  vectorIndex?.delete(id);
+  deleteStoredVector(id);
 }
 
 /**

@@ -57,6 +57,41 @@ test('resolveConversationalQuestion resolves intake and cutoff follow-ups', () =
   assert.equal(resolvedCutoff, 'what was the cutoff for AI & Data Science?');
 });
 
+test('branch-change follow-up keeps the intake intent and replaces the previous branch', () => {
+  const chat = { messages: [{ type: 'user', text: 'What is the intake for CSE?' }] };
+  const firstContext = extractConversationContext('What is the intake for CSE?');
+  assert.equal(firstContext.lastTopic, 'intake');
+  const nextContext = extractConversationContext('What about Civil?', firstContext);
+  assert.equal(nextContext.branch, 'Civil Engineering');
+  assert.equal(nextContext.lastTopic, 'intake');
+  assert.equal(resolveConversationalQuestion('What about Civil?', chat, nextContext), 'What is the intake for Civil Engineering?');
+});
+
+test('branch extraction distinguishes Electronics and Computer from E&TC', () => {
+  assert.equal(extractConversationContext('What is the intake for Electronics and Computer Engineering?').branch, 'Electronics and Computer Engineering');
+  assert.equal(extractConversationContext('What is the intake for Electronics and Telecommunication Engineering?').branch, 'Electronics & Telecommunication');
+});
+
+test('generic cutoff follow-up does not inherit branch from a different topic', () => {
+  const chat = { messages: [{ type: 'user', text: 'Tell me about CSE laboratories' }] };
+  const context = { branch: 'Computer Science and Engineering', lastTopic: 'facilities' };
+  assert.equal(resolveConversationalQuestion('what was the cutoff?', chat, context), 'what was the cutoff?');
+});
+test('branch changes retain cutoff and HOD intent and carry a prior year', () => {
+  const chat = { messages: [{ type: 'user', text: 'What was the cutoff for CSE in 2025-26?' }] };
+  const context = extractConversationContext('What about Civil?', { academicYear: '2025-26' });
+  assert.equal(resolveConversationalQuestion('What about Civil?', chat, context), 'What is the cutoff for Civil Engineering for 2025-26?');
+  const hodChat = { messages: [{ type: 'user', text: 'Who is the HOD of CSE?' }] };
+  assert.equal(resolveConversationalQuestion('What about Civil?', hodChat, extractConversationContext('What about Civil?')), 'Who is the HOD of Civil Engineering?');
+});
+
+test('service follow-up after a fee question keeps the fee intent but respects availability questions', () => {
+  const chat = { messages: [{ type: 'user', text: 'What are academic fees for AY 2026-27?' }] };
+  const context = { academicYear: '2026-27', lastTopic: 'fees' };
+  assert.equal(resolveConversationalQuestion('What about hostel?', chat, context), 'What are the hostel fees for 2026-27?');
+  assert.equal(resolveConversationalQuestion('What about hostel availability?', chat, context), 'What about hostel availability?');
+});
+
 test('resolveConversationalQuestion resolves hostel follow-ups without confusing with academic fees', () => {
   const chat = { messages: [{ type: 'user', text: 'Tell me about the hostel facility' }] };
   const context = { lastTopic: 'hostel' };
@@ -91,6 +126,18 @@ test('askPublicWithHistory maintains multi-turn context across turns', async () 
 
   assert.equal(res2.conversationId, res1.conversationId);
   assert.ok(recordedQuestions.some((q) => q.includes('Computer Engineering')));
+});
+
+test('public contextual rewrites preserve the language selected from the original follow-up', async () => {
+  const seen = [];
+  const mockAnswer = async ({ question, language }) => {
+    seen.push({ question, language });
+    return { answer: 'test answer', source: 'Mock Source' };
+  };
+  const first = await askPublicWithHistory({ question: 'What is the intake for CSE?' }, mockAnswer, session);
+  await askPublicWithHistory({ question: 'What about Civil? Answer in Marathi.', conversationId: first.conversationId }, mockAnswer, session);
+  assert.equal(seen[1].question, 'What is the intake for Civil Engineering?');
+  assert.equal(seen[1].language, 'mr');
 });
 
 test('fee enrichment preserves original qualifiers and explicit exclusions', () => {

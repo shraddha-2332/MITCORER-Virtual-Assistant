@@ -9,6 +9,40 @@
  */
 
 import { understandQuery } from './query-understanding.js';
+import { extractAcademicYears } from './query-scope.js';
+import { createFieldedBm25 } from './bm25.js';
+
+// Keep a small index per knowledge-corpus revision. The keyword retriever
+// remains the scoring authority; BM25 only adds candidates it did not return.
+const lexicalIndexes = new WeakMap();
+
+export function retrieveHybridCandidates(question, records, keywordResults = [], rewrite = rewriteQueryForRetrieval) {
+  if (!Array.isArray(records) || !records.length) return keywordResults;
+  // Preserve the established ranking when it already has three confident
+  // candidates. Lexical expansion is a recall fallback for sparse/weak results.
+  if (keywordResults.length >= 3 && (keywordResults[0].score || 0) >= 15) return keywordResults;
+  const scope = understandQuery(question);
+  // BM25 can match incidental words in long institutional profiles. Only
+  // expand recall when the bounded parser identifies a college topic or an
+  // explicit branch/route/year to constrain the candidate set.
+  const hasInstitutionScope = scope.topics.length > 0 || scope.branch.positive.length > 0
+    || scope.admissionRoute || scope.academicYears.length > 0;
+  if (!hasInstitutionScope) return keywordResults;
+  let index = lexicalIndexes.get(records);
+  if (!index) {
+    index = createFieldedBm25(records);
+    lexicalIndexes.set(records, index);
+  }
+
+  const variants = rewrite(question);
+  const lexicalResults = variants.flatMap(variant => index(variant).slice(0, 3));
+  const merged = new Map();
+  for (const item of [...keywordResults, ...lexicalResults]) {
+    const existing = merged.get(item.id);
+    if (!existing || (item.score || 0) > (existing.score || 0)) merged.set(item.id, item);
+  }
+  return [...merged.values()];
+}
 
 /**
  * Expands colloquial or abbreviated student queries into canonical search queries.
@@ -117,7 +151,20 @@ export function slotAwareRerank(candidates = [], scope = {}) {
   const branches = scope.branch?.positive || [];
   const categories = scope.category?.positive || [];
 
-  return [...candidates].sort((a, b) => {
+  // An explicit year is a scope constraint. Remove records known to belong to
+  // another year, while retaining records with no year metadata (unknown is
+  // not the same as a mismatch).
+  const scopedCandidates = years.length ? candidates.filter(record => {
+    const knownYears = new Set([
+      record.facts?.academicYear,
+      record.provenance?.academicYear,
+      record.academicYear,
+      ...extractAcademicYears(`${record.title || ''} ${record.text || ''}`).years,
+    ].filter(Boolean));
+    return knownYears.size === 0 || years.some(year => knownYears.has(year));
+  }) : candidates;
+
+  return [...scopedCandidates].sort((a, b) => {
     let scoreA = a.score || 0;
     let scoreB = b.score || 0;
 
@@ -153,7 +200,7 @@ export function slotAwareRerank(candidates = [], scope = {}) {
       if (categories.some(cat => b.text?.toLowerCase().includes(cat) || b.title?.toLowerCase().includes(cat))) scoreB += 20;
     }
 
-    return scoreB - scoreA;
+    return scoreB - scoreA || String(a.id || '').localeCompare(String(b.id || ''));
   });
 }
 

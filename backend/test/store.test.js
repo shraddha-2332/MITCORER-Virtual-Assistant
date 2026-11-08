@@ -33,6 +33,14 @@ function readFromNewProcess(databaseFile) {
   return JSON.parse(output);
 }
 
+test('fresh initialization does not create sample review inbox requests', () => {
+  withDatabase(() => {
+    const db = getDb();
+    assert.deepEqual(db.inquiries, []);
+    assert.deepEqual(db.documents, []);
+  });
+});
+
 test('fresh initialization seeds knowledge once and maintainer edits survive save and process restart', () => {
   withDatabase((databaseFile) => {
     const db = getDb();
@@ -76,17 +84,22 @@ test('existing legacy collection retains edited knowledge and unrelated data dur
   withDatabase((databaseFile) => {
     const legacy = { knowledge: [{ id: 'KB-2', title: 'Older maintained title', text: 'Preserve this edit',
       source: 'Circular', category: 'Fees', status: 'Retired' }], officialSources: [],
-      inquiries: [{ id: 'INQ-KEEP', question: 'Keep this inquiry' }], conversations: [{ id: 'CHAT-KEEP', messages: [] }] };
+      inquiries: [{ id: 'INQ-KEEP', question: 'Keep this inquiry' }, { id: 'INQ-2401', question: 'Old sample' }], documents: [{ id: 'DOC-KEEP' }, { id: 'DOC-SEED-1' }], feedback: [{ id: 'FB-KEEP', helpful: false }], conversations: [{ id: 'CHAT-KEEP', messages: [] }] };
     const sqlite = new DatabaseSync(databaseFile);
     try {
       sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
       sqlite.prepare('INSERT INTO collections VALUES (?, ?, ?)').run('app', JSON.stringify(legacy), '2026-01-01');
     } finally { sqlite.close(); }
     const loaded = getDb();
-    assert.deepEqual(loaded.knowledge, legacy.knowledge);
-    assert.deepEqual(loaded.inquiries, legacy.inquiries);
+    assert.deepEqual(loaded.knowledge.find((item) => item.id === 'KB-2'), legacy.knowledge[0]);
+    assert.ok(loaded.knowledge.some((item) => item.id === 'KB-52'));
+    assert.deepEqual(loaded.inquiries, [{ id: 'INQ-KEEP', question: 'Keep this inquiry' }]);
+    assert.deepEqual(loaded.documents, [{ id: 'DOC-KEEP' }]);
+    assert.deepEqual(loaded.feedback, legacy.feedback);
     assert.deepEqual(loaded.conversations, legacy.conversations);
     saveDb();
-    assert.deepEqual(readFromNewProcess(databaseFile).knowledge, legacy.knowledge);
+    const restarted = readFromNewProcess(databaseFile);
+    assert.deepEqual(restarted.knowledge.find((item) => item.id === 'KB-2'), legacy.knowledge[0]);
+    assert.ok(restarted.knowledge.some((item) => item.id === 'KB-52'));
   });
 });

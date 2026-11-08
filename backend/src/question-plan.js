@@ -18,7 +18,7 @@ function facet(text) {
 }
 const titles = { seatMatrix: 'Historical seat matrix', programmes: 'Programmes and intake', academicFees: 'Academic fees', accommodationFees: 'Hostel and mess fees',
   hostel: 'Hostel facilities', transport: 'Bus and transport', library: 'Library', unknown: 'Other requested information' };
-const entities = /\bcse\b|computer science|civil engineering|mechanical|electronics|artificial intelligence|polytechnic|diploma/;
+const entities = /\bcse\b|computer science|computer engineering|civil(?: engineering)?|mechanical(?: engineering)?|electronics|artificial intelligence|ai & ds|polytechnic|diploma/i;
 
 export function buildClarificationAnswer(normalized) {
   const clarification = queryClarification(normalized);

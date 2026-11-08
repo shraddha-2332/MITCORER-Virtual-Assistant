@@ -16,6 +16,6 @@ export function publicEvidence(record, at = Date.now()) {
 }
 
 function validatePublicProvenance(provenance) {
-  const allowed = ['documentId', 'documentVersion', 'academicYear', 'section', 'pageStart', 'pageEnd', 'validFrom', 'validUntil'];
+  const allowed = ['documentId', 'documentVersion', 'academicYear', 'section', 'capturedAt', 'pageStart', 'pageEnd', 'validFrom', 'validUntil'];
   return Object.fromEntries(allowed.filter(key => provenance[key] !== undefined).map(key => [key, provenance[key]]));
 }
