@@ -1553,6 +1553,20 @@ test('syllabus searches only cite an indexed syllabus for the requested branch',
   });
 });
 
+test('general placement record questions use the verified placement summary rather than document-only search', async () => {
+  assert.equal(searchDocumentCorpus('MITCORER placement record').length, 0);
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'MITCORER placement record' }),
+    });
+    assert.equal(response.status, 200);
+    assert.notEqual(payload.data.source, 'No matching indexed document');
+    assert.ok(payload.data.evidence.some((record) => record.id === 'KB-16'));
+    assert.match(payload.data.answer, /100\+ companies visiting/);
+  });
+});
+
 test('strategic improvement options: multi-turn session context, suggestions chips, fuzzy retrieval, and promissory guardrails', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
