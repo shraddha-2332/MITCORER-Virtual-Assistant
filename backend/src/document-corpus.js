@@ -51,15 +51,22 @@ export function searchDocumentCorpus(question, limit = 5) {
     const semester = /\b(?:semester|sem)[\s-]*(?:i|1|first)\b/i.test(normalizedQuestion) ? 1
       : /\b(?:semester|sem)[\s-]*(?:ii|2|second)\b/i.test(normalizedQuestion) ? 2 : 0;
     const requestedYear = normalizedQuestion.match(/\b(20\d{2})[-/ ](\d{2,4})\b/);
-    const branch = /\b(?:cse|computer science(?: and engineering)?)\b/i.test(normalizedQuestion) ? 'cse'
+    const branch = /\b(?:cse|computer science(?: and engineering)?|computer engineering)\b/i.test(normalizedQuestion) ? 'cse'
       : /\bcivil\b/i.test(normalizedQuestion) ? 'civil'
-        : /\b(?:entc|e&tc|electronics and telecommunication)\b/i.test(normalizedQuestion) ? 'entc' : '';
+        : /\b(?:entc|e&tc|electronics and telecommunication)\b/i.test(normalizedQuestion) ? 'entc'
+          : /\b(?:mechanical(?: and rail)?|mech)\b/i.test(normalizedQuestion) ? 'mechanical' : '';
+    const matchesBranchTitle = (title) => (
+      (branch === 'cse' && /\bcse\b|computer (?:science|engineering)/.test(title))
+      || (branch === 'civil' && /civil/.test(title))
+      || (branch === 'entc' && /entc|telecommunication/.test(title))
+      || (branch === 'mechanical' && /mechanical|\bmech\b/.test(title))
+    );
+    const requiresSyllabusTitle = /\bsyllabus\b/i.test(normalizedQuestion);
     const scored = rows.map((row) => {
       const title = row.title.normalize('NFKC').toLocaleLowerCase();
       const text = row.content.normalize('NFKC').toLocaleLowerCase();
       let specificity = 0;
-      if (branch) specificity += (branch === 'cse' && /\bcse\b|computer science/.test(title))
-        || (branch === 'civil' && /civil/.test(title)) || (branch === 'entc' && /entc|telecommunication/.test(title)) ? 80 : -80;
+      if (branch) specificity += matchesBranchTitle(title) ? 80 : -80;
       if (semester) specificity += new RegExp(`(?:sem(?:ester)?[ _.-]*${semester === 1 ? '(?:1|i)' : '(?:2|ii)'})`, 'i').test(title) ? 100 : -100;
       if (requestedYear) {
         const shortYear = requestedYear[2].slice(-2);
@@ -78,9 +85,8 @@ export function searchDocumentCorpus(question, limit = 5) {
       return { row, specificity, contentMatches, titleMatches, rank: row.rank };
     }).filter((item) => {
       const title = item.row.title.normalize('NFKC').toLocaleLowerCase();
-      if (branch && !((branch === 'cse' && /\bcse\b|computer science/.test(title))
-        || (branch === 'civil' && /civil/.test(title))
-        || (branch === 'entc' && /entc|telecommunication/.test(title)))) return false;
+      if (branch && !matchesBranchTitle(title)) return false;
+      if (requiresSyllabusTitle && !/\bsyllabus\b/i.test(title)) return false;
       if (semester && !new RegExp(`(?:sem(?:ester)?[ _.-]*${semester === 1 ? '(?:1|i)' : '(?:2|ii)'})`, 'i').test(title)) return false;
       if (requestedYear && !(title.includes(requestedYear[1]) && title.includes(requestedYear[2].slice(-2)))) return false;
       if (!branch && /\b(?:cse|ece|entc|civil|mechanical)\b/.test(title)) item.specificity -= 35;

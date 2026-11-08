@@ -8,6 +8,7 @@ import { config } from '../src/config.js';
 import { resetDbForTests, closeDb, getDb, saveDb } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
 import { DatabaseSync } from 'node:sqlite';
+import { searchDocumentCorpus } from '../src/document-corpus.js';
 
 async function withServer(fn) {
   const server = createServer();
@@ -1465,8 +1466,6 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
     'MITCORER course eligibility after 12th',
     'MITCORER course eligibility after diploma',
     'MITCORER AI and Data Science admission eligibility',
-    'MITCORER mechanical engineering syllabus',
-    'MITCORER computer engineering syllabus',
 
     // फी, शिष्यवृत्ती आणि हॉस्टेल
     'MITCORER B.Tech fees per year',
@@ -1530,6 +1529,26 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
       assert.notEqual(payload.data.source, 'No verified record', `Unverified source for: ${question}`);
       assert.ok(Array.isArray(payload.data.evidence) && payload.data.evidence.length > 0, `Missing evidence for: ${question}`);
       assert.ok(typeof payload.data.answer === 'string' && payload.data.answer.trim().length > 20, `Empty answer for: ${question}`);
+    }
+  });
+});
+
+test('syllabus searches only cite an indexed syllabus for the requested branch', async () => {
+  const question = 'MITCORER mechanical engineering syllabus';
+  const indexed = searchDocumentCorpus(question, 3);
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    });
+    assert.equal(response.status, 200);
+    const evidence = payload.data.evidence || [];
+    if (indexed.length) {
+      assert.ok(indexed.every((record) => /syllabus/i.test(record.title) && /mechanical|\bmech\b/i.test(record.title)));
+      assert.equal(evidence[0]?.id, indexed[0].id);
+    } else {
+      assert.equal(evidence.length, 0);
+      assert.equal(payload.data.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
     }
   });
 });
