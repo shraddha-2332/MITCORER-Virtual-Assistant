@@ -112,6 +112,8 @@ try {
   assert.match(await editor.getByRole('alert').innerText(), /confirm the review/);
   // Synthetic fixture approval exercises the UI; it is not production speaker approval.
   await editor.getByRole('checkbox', { name: 'I reviewed these translations against the current source text.' }).check();
+  await editor.locator('details > summary').click();
+  await editor.getByRole('checkbox', { name: 'I verified this content and its document references against the source.' }).check();
   await save('KB-20');
   await publicPage.goto(origin);
   if (!await publicPage.locator('.publicComposer').isVisible()) await publicPage.getByRole('button', { name: 'Open MIT Barshi admission assistant' }).click();
@@ -129,10 +131,12 @@ try {
   await openRecord('MITCORER library and digital resources');
   assert.equal(await editor.getByRole('checkbox', { name: 'I reviewed these translations against the current source text.' }).isChecked(), false);
   await editor.getByLabel('Verified text').fill('Library test record: digital resources are available. Timings and borrowing rules are not published.');
+  await editor.locator('details > summary').click();
+  await editor.getByRole('checkbox', { name: 'I verified this content and its document references against the source.' }).check();
   await save('KB-20');
   const stale = await ask('Tell me about the library.', 'hi');
   assert.equal(stale.localizationStatus, 'fallback');
-  assert.match(stale.answer, /borrowing rules are not published/);
+  assert.match(stale.answer, /borrowing rules.*(?:are not published|confirm operational details)/i);
   const before = await ask('What are the first-year Open category fees?');
   assert.match(before.answer, /1,12,345/);
   assert.equal(before.evidence[0].provenance.pageStart, 4);
