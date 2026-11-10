@@ -320,13 +320,6 @@ async function runEvaluation(datasetPath, datasetName) {
   const clarificationAccuracy = metrics.ambiguous.total > 0
     ? (metrics.ambiguous.clarified / metrics.ambiguous.total) : 0;
 
-  // Inter-rater agreement simulation (Reviewer 1 vs Reviewer 2)
-  // Reviewer 1 = deterministic ground-truth verification; Reviewer 2 = independent domain rater
-  // In our evaluation, across all cases:
-  const agreementMatches = cases.length; // full consensus under rubric
-  const percentAgreement = 100.0;
-  const cohensKappa = 0.96; // near perfect agreement under deterministic ground truth
-
   console.log(`\nEvaluation Summary for ${datasetName}:`);
   console.log(`- Answer Correctness Rate: ${(answerCorrectnessRate * 100).toFixed(1)}% (${metrics.answerable.correct}/${metrics.answerable.total})`);
   console.log(`- Source Grounding Rate:   ${(sourceGroundingRate * 100).toFixed(1)}% (${metrics.answerable.sourceSupported}/${metrics.answerable.total})`);
@@ -335,11 +328,13 @@ async function runEvaluation(datasetPath, datasetName) {
   console.log(`- False Answer Rate:       ${(falseAnswerRate * 100).toFixed(1)}% (${metrics.unanswerable.hallucinatedAnswers}/${metrics.unanswerable.total})`);
   console.log(`- False Refusal Rate:      ${(falseRefusalRate * 100).toFixed(1)}% (${metrics.answerable.falseRefusals}/${metrics.answerable.total})`);
   console.log(`- Referral Desk Accuracy:  ${(referralRoutingAccuracy * 100).toFixed(1)}% (${metrics.unanswerable.correctReferrals}/${metrics.unanswerable.totalReferrals})`);
-  console.log(`- Inter-Rater Agreement:   ${percentAgreement}% (Cohen's Kappa = ${cohensKappa})`);
-  console.log(`- Language Fidelity Means: EN=${(metrics.languageFidelity.en.sum/metrics.languageFidelity.en.count).toFixed(2)}/5, MR=${(metrics.languageFidelity.mr.sum/metrics.languageFidelity.mr.count).toFixed(2)}/5, HI=${(metrics.languageFidelity.hi.sum/metrics.languageFidelity.hi.count).toFixed(2)}/5`);
+  console.log(`- Script-Ratio Heuristic Means (not language-quality ratings): EN=${(metrics.languageFidelity.en.sum/metrics.languageFidelity.en.count).toFixed(2)}/5, MR=${(metrics.languageFidelity.mr.sum/metrics.languageFidelity.mr.count).toFixed(2)}/5, HI=${(metrics.languageFidelity.hi.sum/metrics.languageFidelity.hi.count).toFixed(2)}/5`);
 
   return {
     datasetName,
+    evaluationType: 'automated developer diagnostic',
+    humanRatings: 'not collected by this runner',
+    scoringNote: 'Language fidelity output is a script-ratio heuristic, not a human language-quality rating.',
     caseCount: cases.length,
     timestamp: new Date().toISOString(),
     metrics: {
@@ -351,9 +346,7 @@ async function runEvaluation(datasetPath, datasetName) {
         clarificationAccuracy: { numerator: metrics.ambiguous.clarified, denominator: metrics.ambiguous.total, percentage: Math.round(clarificationAccuracy * 1000) / 10 },
         falseAnswerRate: { numerator: metrics.unanswerable.hallucinatedAnswers, denominator: metrics.unanswerable.total, percentage: Math.round(falseAnswerRate * 1000) / 10 },
         falseRefusalRate: { numerator: metrics.answerable.falseRefusals, denominator: metrics.answerable.total, percentage: Math.round(falseRefusalRate * 1000) / 10 },
-        referralRoutingAccuracy: { numerator: metrics.unanswerable.correctReferrals, denominator: metrics.unanswerable.totalReferrals, percentage: Math.round(referralRoutingAccuracy * 1000) / 10 },
-        cohensKappa,
-        percentAgreement
+        referralRoutingAccuracy: { numerator: metrics.unanswerable.correctReferrals, denominator: metrics.unanswerable.totalReferrals, percentage: Math.round(referralRoutingAccuracy * 1000) / 10 }
       }
     },
     results

@@ -5,7 +5,7 @@ import { publicAnswerLinks, resolvePublicSourceUrl, matchesFeeSnapshot } from '.
 test('old library links in existing answers are corrected and deduplicated', () => {
   const old = 'https://www.mitcorer.edu.in/about-lib-details.html';
   const current = 'https://mitcorer.edu.in/about-lib-details.php';
-  assert.deepEqual(publicAnswerLinks({ sourceUrl: old, officialLinks: [{ label: 'Library', url: current }] }), [{ label: 'Official source', url: current }]);
+  assert.deepEqual(publicAnswerLinks({ sourceUrl: old, officialLinks: [{ label: 'Library', url: current }] }), [{ label: 'Related official page', url: current }]);
   assert.equal(resolvePublicSourceUrl('http://mitcorer.edu.in/about-lib-details.html'), current);
   assert.equal(resolvePublicSourceUrl('https://example.com/about-lib-details.html'), 'https://example.com/about-lib-details.html');
 });
@@ -26,7 +26,19 @@ test('provided fee snapshots are route-specific and disappear when maintained va
   assert.deepEqual(publicAnswerLinks({ ...message, text: 'No verified record' }, assets), []);
 });
 test('source links are deduplicated without replacing maintainer URLs', () => {
-  assert.deepEqual(publicAnswerLinks({ sourceUrl: 'https://mitcorer.edu.in/contact.php', officialLinks: [{ label: 'Contact', url: 'https://mitcorer.edu.in/contact.php' }] }), [{ label: 'Official source', url: 'https://mitcorer.edu.in/contact.php' }]);
+  assert.deepEqual(publicAnswerLinks({ sourceUrl: 'https://mitcorer.edu.in/contact.php', officialLinks: [{ label: 'Contact', url: 'https://mitcorer.edu.in/contact.php' }] }), [{ label: 'Related official page', url: 'https://mitcorer.edu.in/contact.php' }]);
+});
+
+test('evidence citations are separate from keyword-selected related pages', () => {
+  const links = publicAnswerLinks({
+    sourceUrl: 'https://mitcorer.edu.in/faq.php',
+    sourceLinks: [{ label: 'MITCORER Admissions FAQ', url: 'https://mitcorer.edu.in/faq.php' }],
+    relatedLinks: [{ label: 'Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' }],
+  });
+  assert.deepEqual(links, [
+    { label: 'Evidence: MITCORER Admissions FAQ', url: 'https://mitcorer.edu.in/faq.php' },
+    { label: 'Related: Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' },
+  ]);
 });
 
 test('compound fee answers retain the separately provided hostel notice', () => {

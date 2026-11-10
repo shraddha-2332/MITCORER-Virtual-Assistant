@@ -23,7 +23,8 @@ export function isDocumentSearchQuery(question) {
   const value = String(question || '');
   if (/\b(?:bus|transport|village|route|fare|stop)\b/i.test(value)
     && /\b(?:timetable|schedule|timing|fare|route|stop|from my village)\b/i.test(value)) return false;
-  return /\b(?:pdf|brochure|prospectus|syllabus|question\s*papers?|\bpaper\b|previous\s+(?:year|years|exam)\s+papers?|past\s+papers?|academic\s+calendar|departmental\s+calendar|timetable|mandatory\s+disclosure|placement\s+policy|internship\s+(?:policy|record)|mou|memorandum|annual\s+report|research\s+papers?|patents?|semester\s+schedule)\b/i.test(value);
+  return /\b(?:pdf|brochure|prospectus|syllabus|question\s*papers?|\bpaper\b|previous\s+(?:year|years|exam)\s+papers?|past\s+papers?|academic\s+calendar|departmental\s+calendar|timetable|mandatory\s+disclosure|placement\s+policy|internship\s+(?:policy|record)|mou|memorandum|annual\s+report|research\s+papers?|patents?|semester\s+schedule)\b/i.test(value)
+    || /\bsemester\s*(?:i|ii|1|2|first|second)\b/i.test(value) && /\b(?:exact\s+date|what\s+date|start(?:s|ing)?\s+date|when\s+(?:does|will).{0,35}start)\b/i.test(value);
 }
 
 export function searchDocumentCorpus(question, limit = 5) {

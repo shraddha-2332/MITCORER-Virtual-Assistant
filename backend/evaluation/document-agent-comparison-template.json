@@ -1,0 +1,17 @@
+[
+  {
+    "id": "DOC-EN-001",
+    "question": "Show the CSE academic calendar PDF for 2025-26 Semester I",
+    "expectedAction": "evidence",
+    "expectedTitleIncludes": "academic calendar",
+    "expectedBranch": "cse",
+    "expectedYear": "2025-26",
+    "expectedSemester": "I"
+  },
+  {
+    "id": "DOC-EN-002",
+    "question": "Show the academic calendar PDF",
+    "expectedAction": "clarify",
+    "clarificationIncludes": "academic year"
+  }
+]

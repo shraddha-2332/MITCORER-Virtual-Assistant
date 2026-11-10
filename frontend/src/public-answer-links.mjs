@@ -41,7 +41,14 @@ export function publicAnswerLinks(message, assets = {}) {
       if (matches && relevant) add(`${route === 'firstYear' ? 'First Year' : route === 'directSecondYear' ? 'Direct Second Year' : 'Hostel and mess'} fee table (AY 2026–27; provided notice)`, assets[route]);
     }
   }
-  add('Official source', message.sourceUrl);
-  for (const link of message.officialLinks || []) add(link.label, link.url);
+  const evidenceSources = message.sourceLinks?.length
+    ? message.sourceLinks
+    : (message.evidence || []).filter(record => record.sourceUrl).map(record => ({
+      label: [record.title, record.academicYear, record.provenance?.section].filter(Boolean).join(' · '),
+      url: record.sourceUrl,
+    }));
+  for (const link of evidenceSources) add(`Evidence: ${link.label || 'official record'}`, link.url);
+  if (!evidenceSources.length && message.sourceUrl) add('Related official page', message.sourceUrl);
+  for (const link of message.relatedLinks || message.officialLinks || []) add(`Related: ${link.label}`, link.url);
   return links;
 }

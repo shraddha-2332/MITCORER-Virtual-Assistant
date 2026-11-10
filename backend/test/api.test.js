@@ -102,7 +102,7 @@ test('admin changes update public factual answers, persist on disk reload and re
     const record = library.payload.data.items.find((item) => item.id === 'KB-2');
     const facts = structuredClone(record.facts); facts.firstYear.open = 111111;
     const edit = await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers,
-      body: JSON.stringify({ expectedRevision: 0, facts, source: 'New official circular', sourceUrl: 'https://example.edu/revised-fees' }) });
+      body: JSON.stringify({ expectedRevision: 0, facts, source: 'New official circular', sourceUrl: 'https://example.edu/revised-fees', verifySource: true }) });
     assert.equal(edit.response.status, 200);
     assert.equal(edit.payload.data.revision, 1);
     assert.match(edit.payload.data.text, /1,11,111/);
@@ -144,7 +144,7 @@ test('programme intake updates and annual fee year checks use the maintained can
     const record = list.payload.data.items.find((item) => item.id === 'KB-10');
     const facts = structuredClone(record.facts);
     facts.programs.find((item) => item.name === 'Computer Science and Engineering').intake = 150;
-    const update = await request(base, '/api/knowledge/KB-10', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 0, facts }) });
+    const update = await request(base, '/api/knowledge/KB-10', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 0, facts, verifySource: true }) });
     assert.equal(update.response.status, 200);
     const answer = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'What is the CSE B.Tech intake for 2026-27?' }) });
     assert.match(answer.payload.data.answer, /sanctioned intake 150/);
@@ -193,6 +193,13 @@ test('knowledge deletion is admin-only, revision-checked, audited, and limited t
     assert.equal(linked.payload.error.code, 'KNOWLEDGE_SOURCE_LINKED');
     delete getDb().knowledge.find((item) => item.id === id).sourceDocumentId;
 
+    const linkedByUrl = await request(base, '/api/knowledge', { method: 'POST', headers,
+      body: JSON.stringify({ title: 'ACAP helper note', category: 'Admissions', source: 'MITCORER ACAP notice', sourceUrl: 'https://mitcorer.edu.in/acap-institute-level-admission.php', text: 'Temporary ACAP helper note.' }) });
+    const urlDelete = await request(base, `/api/knowledge/${linkedByUrl.payload.data.id}`, { method: 'DELETE', headers,
+      body: JSON.stringify({ expectedRevision: 1 }) });
+    assert.equal(urlDelete.response.status, 409);
+    assert.equal(urlDelete.payload.error.code, 'KNOWLEDGE_SOURCE_LINKED');
+
     const published = await request(base, `/api/knowledge/${id}`, { method: 'PATCH', headers,
       body: JSON.stringify({ expectedRevision: 1, status: 'Published' }) });
     assert.equal(published.response.status, 200);
@@ -224,14 +231,14 @@ test('existing plain-text fee records can be edited and explicitly converted wit
     const admin = await login(base, 'admin@mitcorer.edu.in');
     const headers = { Authorization: `Bearer ${admin}` };
     const plain = await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers,
-      body: JSON.stringify({ expectedRevision: 0, text: 'For AY 2026-27, reviewed first year Open fee is INR 12,345.' }) });
+      body: JSON.stringify({ expectedRevision: 0, text: 'For AY 2026-27, reviewed first year Open fee is INR 12,345.', verifySource: true }) });
     assert.equal(plain.response.status, 200);
     const first = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'First year Open fee' }) });
     assert.match(first.payload.data.answer, /12,345/);
     assert.doesNotMatch(first.payload.data.answer, /1,05,000/);
     const facts = createSeedData().knowledge.find((item) => item.id === 'KB-2').facts;
     facts.firstYear.open = 23456;
-    const converted = await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 1, facts }) });
+    const converted = await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 1, facts, verifySource: true }) });
     assert.equal(converted.response.status, 200);
     closeDb();
     const second = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'First year Open fee' }) });
@@ -244,7 +251,7 @@ test('hostel totals and academic years are computed from edited fields', async (
   await withServer(async (base) => {
     const admin = await login(base, 'admin@mitcorer.edu.in');
     const edited = await request(base, '/api/knowledge/KB-3', { method: 'PATCH', headers: { Authorization: `Bearer ${admin}` },
-      body: JSON.stringify({ expectedRevision: 0, facts: { kind: 'accommodationFees', academicYear: '2027-28', hostel: 21000, refundableDeposit: 1000, messAnnual: 12000 } }) });
+      body: JSON.stringify({ expectedRevision: 0, facts: { kind: 'accommodationFees', academicYear: '2027-28', hostel: 21000, refundableDeposit: 1000, messAnnual: 12000 }, verifySource: true }) });
     assert.equal(edited.response.status, 200);
     const answer = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'What are hostel and mess fees for 2027-28?' }) });
     assert.match(answer.payload.data.answer, /hostel total of INR 22,000/);
@@ -354,7 +361,7 @@ test('admin-reviewed passage translations become unavailable after their English
     const headers = { Authorization: `Bearer ${admin}` };
     const text = 'The library has digital resources. Confirm borrowing rules and timings with the library.';
     const mr = 'ग्रंथालयात डिजिटल साधने उपलब्ध आहेत. पुस्तके घेण्याचे नियम व वेळा ग्रंथालयाकडून निश्चित करा.';
-    const edited = await request(base, '/api/knowledge/KB-20', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 0, text, translations: { mr } }) });
+    const edited = await request(base, '/api/knowledge/KB-20', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 0, text, translations: { mr }, verifySource: true }) });
     assert.equal(edited.response.status, 200);
     assert.equal(edited.payload.data.translations.mr.reviewedBy, 'admin@mitcorer.edu.in');
     closeDb();
@@ -362,7 +369,9 @@ test('admin-reviewed passage translations become unavailable after their English
     assert.equal(translated.payload.data.answer, mr);
     assert.equal(translated.payload.data.localizationStatus, 'maintainer-reviewed');
     assert.equal(translated.payload.data.evidence[0].id, 'KB-20');
-    await request(base, '/api/knowledge/KB-20', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 1, text: 'New library information. Confirm all timings with the library.' }) });
+    const changed = await request(base, '/api/knowledge/KB-20', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: edited.payload.data.revision, text: 'New library information. Confirm all timings with the library.', verifySource: true }) });
+    assert.equal(changed.response.status, 200, JSON.stringify(changed.payload));
+    assert.deepEqual(changed.payload.data.translations, {});
     const stale = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'ग्रंथालयाची माहिती सांगा.', language: 'mr' }) });
     assert.equal(stale.payload.data.localizationStatus, 'fallback');
     assert.match(stale.payload.data.answer, /मूळ इंग्रजी/);
@@ -459,7 +468,7 @@ test('public assistant formats scholarship, placement, fee, and contact informat
     const scholarship = await ask('What scholarships are available at MITCORER?');
     assert.match(scholarship.answer, /^- MITCORER lists/m);
     assert.match(scholarship.answer, /^- Open the official scholarship page/m);
-    assert.match(scholarship.sourceUrl, /scholarship\.php$/);
+    assert.equal(scholarship.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship');
     assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship and financial-aid guidance', 'MahaDBT scholarship portal']);
 
     const placement = await ask('What placement highlights and companies does MITCORER have?');
@@ -467,7 +476,7 @@ test('public assistant formats scholarship, placement, fee, and contact informat
     assert.match(placement.answer, /Training and Placement Cell supports internships/);
     assert.match(placement.answerPart2, /^Published recruiter records include\n\n/);
     assert.match(placement.answerPart2, /- TCS\n- Infosys\n- Cognizant/);
-    assert.ok(placement.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/placement-cell.php'));
+    assert.ok(placement.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/mitcorer/public/placements'));
 
     const fees = await ask('What are the first-year B.Tech fees?');
     assert.match(fees.answer, /1,05,000/);
@@ -490,7 +499,7 @@ test('public assistant serves verified About and Why MITCORER responses', async 
     assert.equal(fullName.response.status, 200);
     assert.match(fullName.payload.data.answer, /^The full name of MITCORER is MIT College of Railway Engineering and Research\.$/);
     assert.equal(fullName.payload.data.evidence[0]?.id, 'KB-34');
-    assert.ok(fullName.payload.data.officialLinks.some((link) => link.url === 'https://www.mitcorer.edu.in/mit-corer.php'));
+    assert.ok(fullName.payload.data.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/mitcorer/public/about'));
 
     const identity = await request(base, '/api/public-assistant/ask', {
       method: 'POST', body: JSON.stringify({ question: 'What is MITCORER?' }),
@@ -617,19 +626,55 @@ test('public assistant gives concise sourced facilities without internal brandin
 test('public facility topics link to the matching MITCORER pages', async () => {
   await withServer(async (base) => {
     const cases = [
-      ['What hostel and mess facilities does MITCORER provide?', /separate hostels for boys and girls/i, 'https://www.mitcorer.edu.in/hostel-amenities.php'],
-      ['What MITCORER bus facility information is published?', /bus facility/i, 'https://mitcorer.edu.in/bus-facility.php'],
-      ['Tell me about the MITCORER library and digital resources.', /library/i, 'https://mitcorer.edu.in/about-lib-details.php'],
-      ['What laboratories and workshops does MITCORER have?', /laboratories.*workshops/i, 'https://mitcorer.edu.in/workshops.php'],
-      ['Tell me about the MITCORER railway model room.', /railway model room/i, 'https://www.mitcorer.edu.in/railway-model-room.php'],
-      ['What campus facilities are available at MITCORER?', /campus facilities/i, 'https://www.mitcorer.edu.in/pdf/MITCORER-Brochure.pdf'],
+      ['What hostel and mess facilities does MITCORER provide?', /separate hostels for boys and girls/i],
+      ['What MITCORER bus facility information is published?', /bus facility/i],
+      ['Tell me about the MITCORER library and digital resources.', /library/i],
+      ['What laboratories and workshops does MITCORER have?', /laboratories.*workshops/i],
+      ['Tell me about the MITCORER railway model room.', /railway model room/i],
+      ['What campus facilities are available at MITCORER?', /campus facilities/i],
     ];
-    for (const [question, answerPattern, sourceUrl] of cases) {
+    for (const [question, answerPattern] of cases) {
       const { response, payload } = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question }) });
       assert.equal(response.status, 200, question);
       assert.match(payload.data.answer, answerPattern, question);
-      assert.equal(payload.data.sourceUrl, sourceUrl, question);
+      assert.equal(payload.data.sourceUrl, payload.data.evidence[0]?.sourceUrl || '', question);
+      assert.ok(payload.data.sourceLinks.some((link) => link.url === payload.data.sourceUrl), question);
     }
+  });
+});
+
+test('TPO questions use the placement committee record and its specific official source', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Who is the TPO of the college?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.data.answer, /Dr\. Sachin Khomane.*Training and Placement Officer/s);
+    assert.match(payload.data.answer, /tpo\.mitcorer@mitpune\.edu\.in/);
+    assert.equal(payload.data.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/placement/committee');
+    assert.ok(payload.data.sourceLinks.some((link) => link.url === payload.data.sourceUrl));
+    assert.ok(payload.data.officialLinks.some((link) => link.url === payload.data.sourceUrl));
+    assert.equal(payload.data.evidence[0].id, 'KB-53');
+  });
+});
+
+test('TPO query abstains with the committee page when its verified record is unavailable', async () => {
+  await withServer(async (base) => {
+    const record = getDb().knowledge.find((item) => item.id === 'KB-53');
+    record.status = 'Review';
+    saveDb();
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Who is the TPO of the college?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.data.answer, /do not have a currently published, verified Placement Committee record/i);
+    assert.equal(payload.data.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.deepEqual(payload.data.evidence, []);
+    assert.equal(payload.data.sourceUrl, '');
+    assert.ok(payload.data.relatedLinks.some((link) => link.url === 'https://mitcorer.edu.in/mitcorer/public/placement/committee'));
+    assert.ok(!payload.data.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/faq.php'));
   });
 });
 
@@ -668,7 +713,7 @@ test('assistant returns route-specific official admission links and saves them i
       ['What is the B.Tech CAP deadline?', 'https://fe2026.mahacet.org/StaticPages/HomePage'],
       ['What is the DSE admission schedule?', 'https://dse2026.mahacet.org.in/'],
       ['What is the Polytechnic admission deadline?', 'https://poly26.dtemaharashtra.gov.in/poly_26/home'],
-      ['Show the ACAP vacancy notice.', 'https://mitcorer.edu.in/acap-institute-level-admission.php'],
+      ['Show the ACAP vacancy notice.', 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission'],
     ];
     for (const [question, expectedUrl] of cases) {
       const result = await request(base, '/api/conversations/ask', { method: 'POST', headers, body: JSON.stringify({ question }) });
@@ -951,7 +996,7 @@ test('assistant retrieves current official program and contact records', async (
     });
     assert.equal(programs.response.status, 200);
     assert.equal(programs.payload.data.evidence[0].category, 'Programs');
-    assert.equal(programs.payload.data.sourceUrl, 'https://mitcorer.edu.in/fy-btech.php');
+    assert.equal(programs.payload.data.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions');
     assert.match(programs.payload.data.answer, /sanctioned intake 120/i);
 
     const contact = await request(base, '/api/assistant/ask', {
@@ -1012,7 +1057,7 @@ test('assistant explains the non-CAP workflow and keeps scholarship eligibility 
     assert.equal(payload.data.evidence[0]?.id, 'KB-14');
     assert.match(payload.data.answer, /institute-level/i);
     assert.match(payload.data.answer, /does not automatically qualify|admission alone does not establish scheme eligibility/i);
-    assert.ok(payload.data.officialLinks.some((item) => item.url.includes('acap-institute-level-admission')));
+    assert.ok(payload.data.officialLinks.some((item) => item.url === 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission'));
   });
 });
 
@@ -1235,7 +1280,7 @@ test('admin-reviewed extracted source text becomes published retrieval knowledge
 });
 
 test('multilingual assistant benchmark contains 360 cases', () => {
-  const benchmarkPath = [path.resolve(process.cwd(), 'evaluation', 'mitra-qa-360.json'), path.resolve(process.cwd(), 'evaluation', 'campusguard-qa-360.json')].find(fs.existsSync);
+  const benchmarkPath = [path.resolve(process.cwd(), 'evaluation', 'mitra-qa-360.json'), path.resolve(process.cwd(), 'evaluation', 'campusguard-qa-360.json'), path.resolve(process.cwd(), 'backend', 'evaluation', 'mitra-qa-360.json'), path.resolve(process.cwd(), 'backend', 'evaluation', 'campusguard-qa-360.json')].find(fs.existsSync);
   const benchmark = JSON.parse(fs.readFileSync(benchmarkPath, 'utf8'));
   assert.equal(benchmark.count, 360);
   assert.deepEqual(new Set(benchmark.records.map((item) => item.language)), new Set(['en', 'mr', 'hi', 'hinglish']));

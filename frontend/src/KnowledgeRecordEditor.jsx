@@ -42,6 +42,7 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
   };
   return <section className="formBlock" aria-label="Edit knowledge record">
     <h3>Edit {record.title}</h3>
+    {record.freshnessReview && <div className="decisionResult notice" role="status"><strong>This answer is withheld pending source review.</strong><p>The linked page {record.freshnessReview.reason === 'source-unavailable' ? 'could not be reached' : 'changed after this answer was published'}. Open the source, check that it still supports this exact answer, then confirm the source review before publishing.</p></div>}
     <form onSubmit={save} aria-busy={busy}>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, display: 'contents' }}>
         <label>Title<input required maxLength={180} value={form.title} onChange={(event) => update('title', event.target.value)} /></label>

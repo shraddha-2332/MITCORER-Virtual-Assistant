@@ -20,6 +20,7 @@ const INJECTION_PATTERNS = [
   /\b(?:ignore|disregard|forget)\s+(?:all\s+)?(?:your\s+|previous\s+|prior\s+|above\s+)?(?:instructions?|prompts?|rules?|directives?)\b/i,
   /\b(?:show|reveal|display|output|print|give\s*me)\s+(?:your\s+)?(?:system\s+prompt|developer\s+mode|base\s+instructions?|system\s+instructions?)\b/i,
   /\b(?:what\s+are\s+your\s+instructions|what\s+is\s+your\s+prompt|repeat\s+the\s+words\s+above)\b/i,
+  /\b(?:what\s+is|what's|show|reveal|print|repeat)\s+(?:in|inside|contained\s+in)\s+(?:your\s+)?(?:system|developer)\s+prompts?\b/i,
 ];
 
 const ROLEPLAY_PATTERNS = [
@@ -34,6 +35,13 @@ const PROMISSORY_PATTERNS = [
   /\b(?:can\s+you\s+guarantee|will\s+you\s+promise)\b/i,
   /\b(?:guarantee\s+me\s+a\s+seat|100%\s+guarantee\s+admission)\b/i,
   /\b(?:guarantee|promise)\s+(?:[\w\s]+\s+)?(?:admission|seat)\b/i,
+  /\b(?:definitely|surely|guarantee)\s+(?:get\s+a\s+seat|get\s+admission)\b/i,
+  /\b(?:reserve\s+(?:a\s+)?(?:cse\s+)?seat\s+for\s+me|hold\s+(?:a\s+)?seat\s+for\s+me)\b/i,
+  /(?:हमखास|खात्री|पक्का|गारंटी|निश्चित\s*रूप\s*से|नक्की)\s*(?:प्रवेश|अॅडमिशन|एडमिशन|सीट|जागा)/u,
+  /(?:प्रवेश|अॅडमिशन|एडमिशन|सीट|जागा)\s*(?:राखून\s*ठेवा|राखून\s*ठेवू|आरक्षित\s*कर|आरक्षित\s*हो|मिळेल\s*का|मिलेगा\s*क्या|नक्की|हमखास|पक्का)/u,
+  /(?:गारंटी|खात्री)\s*(?:द्या|दीजिए|दे\s*सकते)/u,
+  /(?:राखून\s*ठेवू\s*शकता\s*का|आरक्षित\s*कर\s*सकते\s*हैं)/u,
+  /(?:खात्री\s*देऊ\s*शकता\s*का|गारंटी\s*दे\s*सकते\s*हैं)/u,
 ];
 
 const PAYLOAD_PATTERNS = [
@@ -53,10 +61,11 @@ export function inspectPromptSafety(text) {
   }
 
   const clean = text.trim();
+  const educationalPromptInjectionMention = /\b(?:what\s+does|how\s+does|explain|define|meaning\s+of|phrase)\b.{0,100}\b(?:ignore\s+previous\s+instructions|prompt[- ]injection|system\s+prompt)\b/i.test(clean);
 
   // 1. Prompt Injection / System Prompt Leaks
   for (const pattern of INJECTION_PATTERNS) {
-    if (pattern.test(clean)) {
+    if (pattern.test(clean) && !educationalPromptInjectionMention) {
       return {
         safe: false,
         flag: SAFETY_FLAG.PROMPT_INJECTION,
@@ -93,18 +102,28 @@ export function inspectPromptSafety(text) {
   // 3. Promissory Admission Guarantees
   for (const pattern of PROMISSORY_PATTERNS) {
     if (pattern.test(clean)) {
+      const asksScholarship = /\b(?:scholarship|financial aid|concession)\b/i.test(clean);
+      const asksPlacement = /\b(?:placement|job|company|hire|package|salary|internship)\b/i.test(clean);
+      const message = asksScholarship
+        ? 'MITRA cannot guarantee an individual scholarship approval. Eligibility and awards are decided under each scheme’s current rules; check the scheme portal or its official helpdesk.'
+        : asksPlacement
+          ? 'MITRA cannot guarantee an individual placement, employer, job, internship, or salary. Published placement figures describe reported outcomes and do not determine an individual result.'
+          : 'MITRA cannot guarantee an individual admission or seat. Allotment follows the official eligibility, merit, preference, seat, and round rules; a past cutoff does not guarantee a future allotment.';
+      const officialLink = asksScholarship
+        ? { label: 'MITCORER scholarship information', url: 'https://mitcorer.edu.in/scholarship.php' }
+        : asksPlacement
+          ? { label: 'MITCORER placement information', url: 'https://mitcorer.edu.in/placements.php' }
+          : { label: 'State CET Cell CAP Portal', url: 'https://cetcell.mahacet.org/' };
       return {
         safe: false,
         flag: SAFETY_FLAG.PROMISSORY_GUARANTEE,
         response: {
-          source: 'Statutory Admission Regulations',
-          answer: 'Admissions to B.Tech programs at MITCORER are conducted based on merit ranks through the State CET Cell Centralized Admission Process (CAP) and published institutional cutoff scores. No guarantee of admission can be issued outside the official merit rounds.',
-          officialLinks: [
-            { label: 'State CET Cell CAP Portal', url: 'https://cetcell.mahacet.org/' },
-          ],
+          source: 'MITRA no-guarantee policy',
+          answer: message,
+          officialLinks: [officialLink],
           model: 'institutional-guardrail-filter',
-          outcomeStatus: 'ANSWERED',
-          next: 'Review past closing cutoffs for your branch and category to evaluate realistic preference options.',
+          outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+          next: asksScholarship ? 'Check the current rules for the exact scheme.' : asksPlacement ? 'Review published placement information as aggregate context only.' : 'Check the current official admission notice and rules.',
         },
       };
     }

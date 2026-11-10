@@ -151,8 +151,8 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(mous.answer, /Industry MoUs/);
     assert.match(mous.answer, /Corporate Readiness Program/);
     assert.match(mous.answer, /APTRON/);
-    assert.ok(mous.officialLinks.some(link => link.url.includes('mou.php') || link.url.includes('our-mou.php')));
-    assert.ok(mous.officialLinks.some(link => link.url.includes('placement-cell.php') || link.url.includes('training-and-placement-cell.php')));
+    assert.ok(mous.officialLinks.some(link => link.url.endsWith('/placement/mous')));
+    assert.ok(mous.officialLinks.some(link => link.url.endsWith('/placements')));
 
     const ragging = await ask('Is the campus ragging free and what anti-ragging measures are taken?');
     assert.equal(ragging.evidence[0]?.id, 'KB-44');
@@ -171,13 +171,13 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.equal(entc.evidence[0]?.id, 'KB-10');
     assert.match(entc.answer, /Electronics and Telecommunication Engineering/);
     assert.match(entc.answer, /0690137210/);
-    assert.ok(entc.officialLinks.some(link => link.url.includes('electronics-and-tele-communication-engineering.php')));
+    assert.ok(entc.officialLinks.some(link => link.url.endsWith('/department/electronic-telecommunication-engineering')));
 
     const nep = await ask('Does MITCORER follow NEP 2020?');
     assert.equal(nep.evidence[0]?.id, 'KB-45');
     assert.match(nep.answer, /NEP 2020/);
     assert.match(nep.answer, /Outcome-Based Education/i);
-    assert.ok(nep.officialLinks.some(link => link.url.includes('faq.php')));
+    assert.ok(nep.officialLinks.some(link => link.url.endsWith('/admissions/faqs')));
 
     const medium = await ask('What is the medium of instruction at MITCORER?');
     assert.equal(medium.evidence[0]?.id, 'KB-45');
@@ -187,7 +187,7 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.equal(officeHours.evidence[0]?.id, 'KB-46');
     assert.match(officeHours.answer, /9:30 AM to 5:30 PM/);
     assert.match(officeHours.answer, /Monday to Saturday/);
-    assert.ok(officeHours.officialLinks.some(link => link.url.includes('contact.php')));
+    assert.ok(officeHours.officialLinks.some(link => link.url.endsWith('/contact-us')));
 
     const admissionDesk = await ask('When is the admission enquiry desk open?');
     assert.equal(admissionDesk.evidence[0]?.id, 'KB-46');
@@ -199,7 +199,7 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(railwayDiplomas.answer, /Railway Track Technology/i);
     assert.match(railwayDiplomas.answer, /Rolling Stocks and Operations/i);
     assert.match(railwayDiplomas.answer, /Software Technology in Railway/i);
-    assert.ok(railwayDiplomas.officialLinks.some(link => link.url.includes('about-professional-diploma-railway.php')));
+    assert.ok(railwayDiplomas.officialLinks.some(link => link.url.endsWith('/department/professional-diploma-railway')));
 
     const trackTech = await ask('Tell me about the professional diploma in Railway Track Technology');
     assert.equal(trackTech.evidence[0]?.id, 'KB-47');
@@ -210,13 +210,13 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(sports.answer, /cricket/i);
     assert.match(sports.answer, /volleyball/i);
     assert.match(sports.answer, /gymnasium/i);
-    assert.ok(sports.officialLinks.some(link => link.url.includes('sports.php')));
+    assert.ok(sports.officialLinks.some(link => link.url.endsWith('/infrastructure/sports-gymnasium')));
 
     const cultural = await ask('What cultural events and annual gatherings take place?');
     assert.equal(cultural.evidence[0]?.id, 'KB-48');
     assert.match(cultural.answer, /Annual Cultural Gathering/i);
     assert.match(cultural.answer, /Shiv Jayanti/i);
-    assert.ok(cultural.officialLinks.some(link => link.url.includes('cultural-events.php')));
+    assert.ok(cultural.officialLinks.some(link => link.url.endsWith('/campus-life/cultural-events')));
 
     const polyCourses = await ask('What polytechnic diploma courses are offered under MSBTE?');
     assert.equal(polyCourses.evidence[0]?.id, 'KB-12');
@@ -226,7 +226,7 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(polyCourses.answer, /Mechanical Engineering/i);
     assert.match(polyCourses.answer, /Electronic & Telecom Engineering/i);
     assert.match(polyCourses.answer, /60/);
-    assert.ok(polyCourses.officialLinks.some(link => link.url.includes('fy-polytechnic.php')));
+    assert.ok(polyCourses.officialLinks.some(link => link.url.endsWith('/department/polytechnic')));
     assert.ok(polyCourses.officialLinks.some(link => link.url.includes('msbte.org.in')));
 
     const polyEligibility = await ask('What is the eligibility for polytechnic diploma at MITCORER?');
@@ -240,17 +240,79 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(workshop.answer, /Fitting Shop/i);
     assert.match(workshop.answer, /Welding Shop/i);
     assert.match(workshop.answer, /Carpentry Shop/i);
-    assert.ok(workshop.officialLinks.some(link => link.url.includes('workshops.php')));
+    assert.ok(workshop.officialLinks.some(link => link.url.endsWith('/infrastructure/workshops')));
 
     const computingAndSeminar = await ask('Tell me about the central computing center and seminar halls');
     assert.equal(computingAndSeminar.evidence[0]?.id, 'KB-49');
     assert.match(computingAndSeminar.answer, /100\+/i);
     assert.match(computingAndSeminar.answer, /audio-visual/i);
-    assert.ok(computingAndSeminar.officialLinks.some(link => link.url.includes('computer-center.php')));
-    assert.ok(computingAndSeminar.officialLinks.some(link => link.url.includes('seminar-hall.php')));
+    assert.ok(computingAndSeminar.officialLinks.some(link => link.url.endsWith('/infrastructure/computer-center')));
   } finally {
     closeDb();
     if (path.dirname(directory) !== path.resolve(os.tmpdir()) || !path.basename(directory).startsWith('mitra-query-test-')) throw new Error('Unsafe cleanup path');
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('regresses developer-review failures for clarification, scope, and unsupported asks', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-review-regression-'));
+  config.databaseFile = path.join(directory, 'test.sqlite');
+  config.geminiApiKey = '';
+  resetDbForTests(createSeedData());
+  const ask = async (question, language = 'en') => {
+    resetRuntimeStateForTests();
+    return answerAdmissionQuestion({ question, language }, null);
+  };
+  try {
+    for (const [language, question] of [
+      ['en', 'What is the full name of MITCORER?'],
+      ['mr', 'MITCORER या महाविद्यालयाचे पूर्ण नाव काय आहे?'],
+      ['hi', 'MITCORER महाविद्यालय का पूरा नाम क्या है?'],
+    ]) {
+      const response = await ask(question, language);
+      assert.equal(response.evidence[0]?.id, 'KB-34', question);
+      assert.match(response.answer, /MIT College of Railway Engineering and Research/i);
+    }
+
+    for (const [question, language] of [
+      ['How much is the fee?', 'en'], ['What documents do I need?', 'en'],
+      ['Am I eligible?', 'en'], ['Can I get a scholarship?', 'en'],
+    ]) {
+      const response = await ask(question, language);
+      assert.equal(response.clarification, true, question);
+      assert.equal(response.evidence.length, 0, question);
+    }
+
+    for (const [question, language] of [
+      ['How many CSE seats are vacant right now?', 'en'],
+      ['सध्या CSE च्या किती जागा रिक्त आहेत?', 'mr'],
+      ['अभी CSE की कितनी सीटें खाली हैं?', 'hi'],
+    ]) {
+      const response = await ask(question, language);
+      assert.match(response.answer, /vacanc|रिक्त|खाली|official records/i, question);
+      assert.doesNotMatch(response.answer, /sanctioned intake: 120|स्वीकृत प्रवेश क्षमता: 120|मंजूर प्रवेश क्षमता: 120/i, question);
+    }
+
+    const calendar = await ask('On what exact date does CSE Semester I start in academic year 2026-27?');
+    assert.equal(calendar.source, 'No matching indexed document');
+    assert.equal(calendar.evidence.length, 0);
+    assert.doesNotMatch(calendar.answer, /fee|sports|admission reporting/i);
+
+    const scholarshipDate = await ask('On what exact date will my scholarship money be deposited this year?');
+    assert.equal(scholarshipDate.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.match(scholarshipDate.answer, /do not establish an individual scholarship payment date/i);
+    assert.doesNotMatch(scholarshipDate.answer, /MahaDBT-linked schemes|AICTE Pragati/i);
+
+    const personalGuarantee = await ask('Which company will hire me next year, and can you guarantee me a 10 LPA package?');
+    assert.equal(personalGuarantee.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.match(personalGuarantee.answer, /cannot guarantee an individual/i);
+    assert.doesNotMatch(personalGuarantee.answer, /admission.*CAP|cutoff scores/i);
+
+    const placementMr = await ask('कंपन्यांच्या भेटी, नियुक्त विद्यार्थी, सर्वोच्च पॅकेज आणि सरासरी पॅकेजबाबत MITCORER कोणती आकडेवारी प्रकाशित करते?', 'mr');
+    assert.equal(placementMr.evidence[0]?.id, 'KB-16');
+  } finally {
+    closeDb();
+    if (path.dirname(directory) !== path.resolve(os.tmpdir()) || !path.basename(directory).startsWith('mitra-review-regression-')) throw new Error('Unsafe cleanup path');
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });

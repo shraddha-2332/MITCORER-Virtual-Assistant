@@ -116,7 +116,11 @@ async function main() {
         && (!expectsClarification || payload.data?.actionView === 'cap');
       const outcomeMatches = expectsClarification
         ? payload.data?.clarification === true && actualCategory === ''
-        : actualCategory === expectedCategory;
+        : item.intent === 'document_status'
+          // Applicant uploads are private account data, not institutional
+          // knowledge evidence. Verify the personal-record response surface.
+          ? actualCategory === '' && payload.data?.source === 'My document records' && payload.data?.actionView === 'documents'
+          : actualCategory === expectedCategory;
       if (response.status !== 200 || !outcomeMatches || !actionMatches || (expectedText && !answer.includes(expectedText))) {
         failures.push({ id: item.id, intent: item.intent, question, expectedCategory, actualCategory, status: response.status, action: payload.data?.actionView, expectedText });
       }

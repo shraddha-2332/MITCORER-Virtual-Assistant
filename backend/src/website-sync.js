@@ -120,7 +120,7 @@ export async function discoverOfficialWebsitePages({
 
   await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, maxPages)) }, () => worker()));
   const sources = [...pages].map(([url, html]) => sourceForPage(url, html));
-  return { sources, errors, discovered: queued.size, fetched: pages.size, maxPages };
+  return { sources, errors, discovered: queued.size, fetched: pages.size, maxPages, pageContents: pages };
 }
 
 export function cleanHtml(html) {
@@ -163,15 +163,97 @@ export function hashContent(text) {
 }
 
 export async function defaultFetcher(url, timeoutMs = 8000) {
+  const initial = new URL(url);
+  if (initial.protocol !== 'https:' || initial.username || initial.password || !isApprovedOfficialHost(initial.hostname)) {
+    throw new Error('Website sync only fetches approved official HTTPS hosts.');
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'MITRA-Admission-Sync-Bot/1.0 (+https://mitcorer.edu.in)' },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    return await res.text();
+    let target = initial;
+    for (let redirects = 0; redirects <= 5; redirects += 1) {
+      const res = await fetch(target, {
+        signal: controller.signal,
+        redirect: 'manual',
+        headers: { 'User-Agent': 'MITRA-Admission-Sync-Bot/1.0 (+https://mitcorer.edu.in)' },
+      });
+      if (res.status >= 300 && res.status <= 399) {
+        const location = res.headers.get('location');
+        res.body?.cancel().catch(() => {});
+        if (!location) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        if (redirects === 5) throw new Error('Website sync exceeded the redirect limit.');
+        const next = new URL(location, target);
+        if (next.protocol !== 'https:' || next.username || next.password || !isApprovedOfficialHost(next.hostname)) {
+          throw new Error('Website sync refused a redirect outside the approved official HTTPS host list.');
+        }
+        target = next;
+        continue;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      return await res.text();
+    }
+    throw new Error('Website sync exceeded the redirect limit.');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const officialSourceHostRoots = [
+  'mitcorer.edu.in', 'mitpune.edu.in', 'mahacet.org', 'mahacet.org.in',
+  'dtemaharashtra.gov.in', 'sus.ac.in', 'scholarships.gov.in',
+  'mahadbt.maharashtra.gov.in', 'msbte.org.in', 'aicte-india.org', 'aicte.gov.in',
+];
+
+function isApprovedOfficialHost(hostname) {
+  const host = String(hostname || '').toLowerCase().replace(/^www\./, '');
+  return officialSourceHostRoots.some((root) => host === root || host.endsWith(`.${root}`));
+}
+
+export async function defaultLinkChecker(value, timeoutMs = 8000) {
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.username || url.password || !isApprovedOfficialHost(url.hostname)) {
+    return { ok: false, skipped: true, error: 'URL is outside the approved official HTTPS host list.' };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const requestSafely = async (method, startUrl) => {
+      let target = new URL(startUrl);
+      for (let redirects = 0; redirects <= 5; redirects += 1) {
+        const response = await fetch(target, { method, signal: controller.signal, redirect: 'manual', headers: { 'User-Agent': 'MITRA-Source-Check/1.0', ...(method === 'GET' ? { Range: 'bytes=0-0' } : {}) } });
+        if (response.status < 300 || response.status > 399) return { response, target };
+        const location = response.headers.get('location');
+        response.body?.cancel().catch(() => {});
+        if (!location) return { response, target };
+        if (redirects === 5) return { response, target, redirectError: 'Official source exceeded the redirect limit.' };
+        const next = new URL(location, target);
+        if (next.protocol !== 'https:' || next.username || next.password || !isApprovedOfficialHost(next.hostname)) {
+          return { response, target, redirectError: 'The source redirected outside the approved official HTTPS host list.' };
+        }
+        target = next;
+      }
+      throw new Error('Official source exceeded the redirect limit.');
+    };
+    let checked = await requestSafely('HEAD', url);
+    let response = checked.response;
+    if (response.status === 403 || response.status === 405 || response.status === 501) {
+      response.body?.cancel().catch(() => {});
+      checked = await requestSafely('GET', checked.target);
+      response = checked.response;
+    }
+    const safeRedirect = !checked.redirectError;
+    const result = {
+      ok: response.ok && safeRedirect,
+      status: response.status,
+      finalUrl: safeRedirect ? canonicalPageUrl(checked.target.toString()) : '',
+      etag: response.headers.get('etag') || '',
+      lastModified: response.headers.get('last-modified') || '',
+      contentLength: response.headers.get('content-length') || '',
+      contentType: response.headers.get('content-type') || '',
+      ...(safeRedirect ? {} : { error: checked.redirectError }),
+    };
+    response.body?.cancel().catch(() => {});
+    return result;
   } finally {
     clearTimeout(timer);
   }
@@ -286,6 +368,7 @@ export async function syncMonitoredWebsiteSources({
   db,
   user = { email: 'system:website-sync', role: 'admin' },
   fetcher = defaultFetcher,
+  linkChecker = null,
   sources = monitoredWebsiteSources,
   save = true,
   saveFn = null,
@@ -298,6 +381,8 @@ export async function syncMonitoredWebsiteSources({
     changed: 0,
     baselined: 0,
     unchanged: 0,
+    linkChecks: 0,
+    skippedLinkChecks: 0,
     conflictCount: 0,
     suspendedRecords: 0,
     errors: [],
@@ -308,34 +393,128 @@ export async function syncMonitoredWebsiteSources({
   db.officialSources = db.officialSources || [];
 
   let sourceList = sources;
+  let pageContents = new Map();
+  let discoveryErrors = new Map();
   if (sources.length === 1 && canonicalPageUrl(sources[0].url) === canonicalPageUrl(officialWebsiteRoot)) {
     const crawl = await discoverOfficialWebsitePages({ root: sources[0].url, fetcher });
-    sourceList = crawl.sources;
+    pageContents = crawl.pageContents || new Map();
+    discoveryErrors = new Map(crawl.errors.map((item) => {
+      try { return [canonicalPageUrl(item.url), item.error]; } catch { return [item.url, item.error]; }
+    }));
+    const discoveredUrls = new Set(crawl.sources.map((item) => canonicalPageUrl(item.url)));
+    const knownSources = (db.officialSources || []).filter((item) => item.sourceUrl).map((item) => ({
+      title: item.title,
+      url: item.sourceUrl,
+      documentType: item.documentType || 'Website page',
+      academicYear: item.academicYear || 'Not specified',
+      sourceAuthority: item.sourceAuthority || 'MITCORER official website',
+    }));
+    const knownKnowledge = (db.knowledge || []).filter((item) => item.sourceUrl).map((item) => ({
+      title: item.title,
+      url: item.sourceUrl,
+      documentType: item.category || 'Website page',
+      academicYear: item.provenance?.academicYear || 'Not specified',
+      sourceAuthority: item.source || 'MITCORER official website',
+    }));
+    const monitoredRoot = new URL(officialWebsiteRoot);
+    const previouslyKnownPages = [...knownSources, ...knownKnowledge].filter((item) => {
+      try {
+        const url = new URL(item.url);
+        return url.origin === monitoredRoot.origin && url.pathname.startsWith(websitePathRoot) && !discoveredUrls.has(canonicalPageUrl(item.url));
+      } catch { return false; }
+    });
+    sourceList = [...crawl.sources, ...new Map(previouslyKnownPages.map((item) => [canonicalPageUrl(item.url), item])).values()];
     summary.discovered = crawl.discovered;
-    summary.errors.push(...crawl.errors);
+  }
+
+  function findExistingSource(url) {
+    return db.officialSources.find((item) => {
+      try { return item.sourceUrl && canonicalPageUrl(item.sourceUrl) === canonicalPageUrl(url); } catch { return item.sourceUrl === url; }
+    });
+  }
+
+  function withholdLinkedKnowledge(url, reason) {
+    let count = 0;
+    for (const record of db.knowledge || []) {
+      let matches = false;
+      try { matches = record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalPageUrl(url); } catch {}
+      if (!matches || record.status !== 'Published') continue;
+      record.status = 'Review';
+      record.freshnessReview = { detectedAt: now, changedSourceUrl: canonicalPageUrl(url), reason };
+      count += 1;
+      if (auditFn) auditFn('knowledge.freshness_review_required', 'knowledge', record.id, user, `Source ${reason}: ${url}`);
+    }
+    summary.suspendedRecords += count;
+    return count;
+  }
+
+  function stageUnavailableSource(source, error) {
+    const url = source.url;
+    const canonicalUrl = canonicalPageUrl(url);
+    let existing = findExistingSource(url);
+    const withheld = withholdLinkedKnowledge(url, 'source-unavailable');
+    if (!existing) {
+      existing = {
+        id: `SRC-WEB-${crypto.createHash('sha256').update(canonicalUrl).digest('hex').slice(0, 12).toUpperCase()}`,
+        title: source.title,
+        documentType: source.documentType,
+        academicYear: source.academicYear,
+        sourceAuthority: source.sourceAuthority,
+        originalFileName: `${new URL(url).pathname.split('/').filter(Boolean).at(-1) || 'page'}.html`,
+        storedFileName: null,
+        mimeType: 'text/html',
+        sourceUrl: canonicalUrl,
+        sizeBytes: 0,
+        status: 'Review',
+        extractionStatus: 'Source unavailable; linked answers withheld until the page is reachable and reviewed.',
+        extractedText: '',
+        contentHash: '',
+        linkedKnowledgeCount: withheld,
+        uploadedBy: user.email || 'system:website-sync',
+        createdAt: now,
+      };
+      db.officialSources.unshift(existing);
+    }
+    existing.status = 'Review';
+    existing.extractionStatus = 'Source unavailable; linked answers withheld until the page is reachable and reviewed.';
+    existing.updatedAt = now;
+    existing.linkedKnowledgeCount = (db.knowledge || []).filter((record) => {
+      try { return record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalUrl; } catch { return false; }
+    }).length;
+    existing.syncMeta = {
+      ...(existing.syncMeta || {}),
+      sourceUrl: canonicalUrl,
+      lastAttemptAt: now,
+      healthStatus: 'unreachable',
+      lastError: String(error || 'Source check failed').slice(0, 240),
+    };
+    existing.freshnessImpact = { withheldKnowledgeIds: (db.knowledge || []).filter((record) => record.freshnessReview?.changedSourceUrl === canonicalUrl).map((record) => record.id) };
+    summary.stagedSources.push({ id: existing.id, title: existing.title, sourceUrl: canonicalUrl, status: existing.status });
+    summary.errors.push({ url, error: String(error || 'Source check failed').slice(0, 240) });
+    if (auditFn) auditFn('official_source.unavailable', 'official_source', existing.id, user, `${url} (${error})`);
   }
 
   for (const source of sourceList) {
     summary.checked += 1;
     let html = '';
+    const canonicalSourceUrl = canonicalPageUrl(source.url);
     try {
-      html = await fetcher(source.url);
+      const discoveryError = discoveryErrors.get(canonicalSourceUrl);
+      if (discoveryError) throw new Error(discoveryError);
+      html = pageContents.has(canonicalSourceUrl) ? pageContents.get(canonicalSourceUrl) : await fetcher(source.url);
     } catch (err) {
-      summary.errors.push({ url: source.url, error: err.message });
+      stageUnavailableSource(source, err.message);
       continue;
     }
 
     const cleaned = cleanHtml(html);
     if (!cleaned || cleaned.length < 40) {
-      summary.errors.push({ url: source.url, error: 'Insufficient text extracted from page' });
+      stageUnavailableSource(source, 'Insufficient text extracted from page');
       continue;
     }
 
     const hash = hashContent(cleaned);
-    const canonicalSourceUrl = canonicalPageUrl(source.url);
-    const existing = db.officialSources.find((s) => {
-      try { return s.sourceUrl && canonicalPageUrl(s.sourceUrl) === canonicalSourceUrl; } catch { return s.sourceUrl === source.url; }
-    });
+    const existing = findExistingSource(source.url);
 
     if (!existing) {
       const existingKnowledge = (db.knowledge || []).filter((record) => {
@@ -362,7 +541,7 @@ export async function syncMonitoredWebsiteSources({
           uploadedBy: user.email || 'system:website-sync',
           createdAt: now,
           updatedAt: now,
-          syncMeta: { syncedAt: now, sourceUrl: canonicalSourceUrl, length: cleaned.length, baselineOnly: true },
+          syncMeta: { syncedAt: now, lastCheckedAt: now, sourceUrl: canonicalSourceUrl, length: cleaned.length, contentHash: hash, healthStatus: 'available', consecutiveFailures: 0, baselineOnly: true },
           driftAnalysis: analyzeContentDrift('', cleaned),
         };
         db.officialSources.unshift(baseline);
@@ -376,6 +555,7 @@ export async function syncMonitoredWebsiteSources({
     if (existing) {
       const existingHash = existing.contentHash || hashContent(existing.extractedText);
       if (existingHash === hash) {
+        existing.syncMeta = { ...(existing.syncMeta || {}), lastCheckedAt: now, lastAttemptAt: now, sourceUrl: canonicalSourceUrl, healthStatus: 'available', consecutiveFailures: 0, lastError: '' };
         summary.unchanged += 1;
         continue;
       }
@@ -384,23 +564,42 @@ export async function syncMonitoredWebsiteSources({
     const drift = analyzeContentDrift(existing?.extractedText || '', cleaned);
     const conflicts = detectNumericConflicts(cleaned, db.knowledge || [], source.url);
     const removedClaimRecordIds = detectRemovedNumericClaims(cleaned, db.knowledge || [], source.url);
-    const freshnessReviewIds = new Set([...conflicts.map((item) => item.recordId), ...removedClaimRecordIds]);
+    const directlyLinkedRecords = (db.knowledge || []).filter((record) => {
+      try { return record.status === 'Published' && record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalSourceUrl; } catch { return false; }
+    });
+    const freshnessReviewIds = new Set([
+      ...directlyLinkedRecords.map((record) => record.id),
+      ...conflicts.map((item) => item.recordId),
+      ...removedClaimRecordIds,
+    ]);
     for (const recordId of freshnessReviewIds) {
       const outdated = (db.knowledge || []).find((record) => record.id === recordId && record.status === 'Published');
       if (!outdated) continue;
       outdated.status = 'Review';
-      outdated.freshnessReview = { detectedAt: now, changedSourceUrl: canonicalSourceUrl, reason: conflicts.some((item) => item.recordId === recordId) ? 'numeric-conflict' : 'numeric-claim-removed' };
+      const reason = conflicts.some((item) => item.recordId === recordId)
+        ? 'numeric-conflict'
+        : removedClaimRecordIds.includes(recordId) ? 'numeric-claim-removed' : 'source-content-changed';
+      outdated.freshnessReview = { detectedAt: now, changedSourceUrl: canonicalSourceUrl, reason };
       summary.suspendedRecords += 1;
-      if (auditFn) auditFn('knowledge.freshness_review_required', 'knowledge', outdated.id, user, `Potential conflict with ${source.url}`);
+      if (auditFn) auditFn('knowledge.freshness_review_required', 'knowledge', outdated.id, user, `Source content changed at ${source.url}`);
     }
 
     let stagedRecord;
     if (existing && existing.status === 'Review') {
+      if (existing.extractedText && existing.contentHash !== hash) {
+        existing.previousVersion = {
+          sourceId: existing.id,
+          title: existing.title,
+          contentHash: existing.contentHash || hashContent(existing.extractedText),
+          text: existing.extractedText,
+          capturedAt: existing.updatedAt || existing.createdAt,
+        };
+      }
       existing.extractedText = cleaned;
       existing.contentHash = hash;
       existing.extractionStatus = `Automated website sync updated — pending maintainer review (${cleaned.length} chars)`;
       existing.updatedAt = now;
-      existing.syncMeta = { syncedAt: now, sourceUrl: source.url, length: cleaned.length };
+      existing.syncMeta = { ...(existing.syncMeta || {}), syncedAt: now, lastCheckedAt: now, sourceUrl: canonicalSourceUrl, length: cleaned.length, contentHash: hash, healthStatus: 'available', consecutiveFailures: 0, lastError: '' };
       existing.driftAnalysis = drift;
       existing.conflicts = conflicts;
       existing.freshnessImpact = { withheldKnowledgeIds: [...freshnessReviewIds], removedClaimRecordIds };
@@ -432,7 +631,7 @@ export async function syncMonitoredWebsiteSources({
         uploadedBy: user.email || 'system:website-sync',
         createdAt: now,
         updatedAt: now,
-        syncMeta: { syncedAt: now, sourceUrl: source.url, length: cleaned.length },
+        syncMeta: { syncedAt: now, lastCheckedAt: now, sourceUrl: canonicalSourceUrl, length: cleaned.length, contentHash: hash, healthStatus: 'available', consecutiveFailures: 0, lastError: '' },
         driftAnalysis: drift,
         ...(existing ? {
           previousVersion: {
@@ -465,6 +664,126 @@ export async function syncMonitoredWebsiteSources({
     summary.conflictCount += conflicts.length;
     if (auditFn) {
       auditFn('official_source.synced', 'official_source', stagedRecord.id, user, `${source.title} (${source.url})`);
+    }
+  }
+
+  // Check official URLs outside the new-site crawl as well. A positive HTTP check
+  // only establishes reachability; validator changes quarantine records for a
+  // human content review instead of claiming their meaning is unchanged.
+  const checkedPageUrls = new Set(sourceList.map((item) => canonicalPageUrl(item.url)));
+  const externalTargets = new Map();
+  for (const item of [...(db.officialSources || []), ...(db.knowledge || [])]) {
+    if (!item.sourceUrl) continue;
+    let url;
+    try { url = new URL(item.sourceUrl); } catch { continue; }
+    if (url.protocol !== 'https:' || !isApprovedOfficialHost(url.hostname)) continue;
+    const canonicalUrl = canonicalPageUrl(item.sourceUrl);
+    if (checkedPageUrls.has(canonicalUrl)) continue;
+    if (!externalTargets.has(canonicalUrl)) externalTargets.set(canonicalUrl, {
+      title: item.title,
+      url: canonicalUrl,
+      documentType: item.documentType || item.category || 'Official source',
+      academicYear: item.academicYear || item.provenance?.academicYear || 'Not specified',
+      sourceAuthority: item.sourceAuthority || item.source || 'Official source',
+    });
+  }
+
+  const checkOfficialLink = linkChecker || (fetcher === defaultFetcher
+    ? defaultLinkChecker
+    : async (url) => {
+      try { await fetcher(url); return { ok: true, status: 200 }; }
+      catch (error) { return { ok: false, error: error?.message || 'Source check failed' }; }
+    });
+  for (const source of externalTargets.values()) {
+    summary.checked += 1;
+    summary.linkChecks += 1;
+    let result;
+    try { result = await checkOfficialLink(source.url); }
+    catch (error) { result = { ok: false, error: error?.message || 'Source check failed' }; }
+    if (result?.skipped) {
+      summary.skippedLinkChecks += 1;
+      continue;
+    }
+    if (!result?.ok) {
+      stageUnavailableSource(source, result?.error || `HTTP ${result?.status || 'check failed'}`);
+      continue;
+    }
+
+    const canonicalUrl = canonicalPageUrl(source.url);
+    const existing = findExistingSource(source.url);
+    const linkedRecords = (db.knowledge || []).filter((record) => {
+      try { return record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalUrl; } catch { return false; }
+    });
+    const priorValidators = existing?.syncMeta?.remoteValidators
+      || linkedRecords.find((record) => record.sourceCheck?.remoteValidators)?.sourceCheck.remoteValidators
+      || {};
+    const currentValidators = {
+      etag: String(result.etag || ''),
+      lastModified: String(result.lastModified || ''),
+      contentLength: String(result.contentLength || ''),
+    };
+    const stableKeys = ['etag', 'lastModified', 'contentLength'].filter((key) => priorValidators[key] && currentValidators[key]);
+    const validatorChanged = stableKeys.some((key) => priorValidators[key] !== currentValidators[key]);
+    const hadBaseline = stableKeys.length > 0;
+    const checkedAt = new Date().toISOString();
+    for (const record of linkedRecords) {
+      record.sourceCheck = {
+        ...(record.sourceCheck || {}),
+        lastCheckedAt: checkedAt,
+        healthStatus: 'available',
+        statusCode: result.status || 200,
+        remoteValidators: currentValidators,
+        contentSupportStatus: record.verification?.contentHash ? 'review-recorded' : 'not-reviewed',
+      };
+    }
+    if (validatorChanged) {
+      const withheld = withholdLinkedKnowledge(source.url, 'source-version-changed');
+      let staged = existing;
+      if (staged) {
+        staged.previousVersion = {
+          sourceId: staged.id,
+          title: staged.title,
+          contentHash: staged.contentHash || '',
+          text: staged.extractedText || '',
+          capturedAt: staged.updatedAt || staged.createdAt,
+          remoteValidators: priorValidators,
+        };
+        staged.extractedText = '';
+        staged.contentHash = '';
+      }
+      if (!staged) {
+        staged = {
+          id: `SRC-WEB-${crypto.createHash('sha256').update(canonicalUrl).digest('hex').slice(0, 12).toUpperCase()}`,
+          title: source.title,
+          documentType: source.documentType,
+          academicYear: source.academicYear,
+          sourceAuthority: source.sourceAuthority,
+          originalFileName: `${new URL(canonicalUrl).pathname.split('/').filter(Boolean).at(-1) || 'source'}.html`,
+          storedFileName: null,
+          mimeType: result.contentType || 'application/octet-stream',
+          sizeBytes: Number(result.contentLength) || 0,
+          sourceUrl: canonicalUrl,
+          extractedText: '',
+          contentHash: '',
+          linkedKnowledgeCount: linkedRecords.length,
+          uploadedBy: user.email || 'system:website-sync',
+          createdAt: checkedAt,
+        };
+        db.officialSources.unshift(staged);
+      }
+      staged.status = 'Review';
+      staged.extractionStatus = 'Remote source version changed; compare the current official source with each linked answer before republishing.';
+      staged.updatedAt = checkedAt;
+      staged.syncMeta = { ...(staged.syncMeta || {}), sourceUrl: canonicalUrl, lastCheckedAt: checkedAt, lastAttemptAt: checkedAt, healthStatus: 'available', remoteValidators: currentValidators, validatorBaseline: true };
+      staged.freshnessImpact = { withheldKnowledgeIds: linkedRecords.map((record) => record.id), validatorChanged: true };
+      summary.changed += 1;
+      summary.stagedSources.push({ id: staged.id, title: staged.title, sourceUrl: canonicalUrl, status: staged.status });
+      if (auditFn) auditFn('official_source.remote_version_changed', 'official_source', staged.id, user, canonicalUrl);
+    } else {
+      if (existing) {
+        existing.syncMeta = { ...(existing.syncMeta || {}), sourceUrl: canonicalUrl, lastCheckedAt: checkedAt, lastAttemptAt: checkedAt, healthStatus: 'available', remoteValidators: currentValidators, validatorBaseline: hadBaseline || Boolean(existing.syncMeta?.validatorBaseline) };
+      }
+      summary.unchanged += 1;
     }
   }
 

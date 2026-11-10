@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "status": "developer-authored-development-review-not-independent",
+  "createdAt": "2026-11-10T17:36:30.122047+00:00",
+  "caseCount": 90,
+  "countsByLanguageAndAnswerability": {
+    "en": {
+      "answerable": 18,
+      "clarify": 6,
+      "unsupported": 6
+    },
+    "mr": {
+      "answerable": 18,
+      "clarify": 6,
+      "unsupported": 6
+    },
+    "hi": {
+      "answerable": 18,
+      "clarify": 6,
+      "unsupported": 6
+    }
+  },
+  "corpusSha256": "0538021490d757d3682304df6b9fe4a4f60b0df51a9e8729dfa359d1f9743703",
+  "caseFileSha256": "4459e27f6d7dcf74c1db83b08e3a79dc3860040f2de5d829d9af4368cc3b6b08",
+  "authorCode": "AI-DEV",
+  "independent": false,
+  "nativeLanguageReview": "pending; no Marathi/Hindi quality claim is made",
+  "limitations": [
+    "Questions and labels were created by the assistant after it had inspected the project; this is not independent or blinded evaluation.",
+    "Marathi and Hindi phrasing is unverified by fluent human reviewers.",
+    "Case scenarios are synthetic and do not estimate real visitor question frequencies.",
+    "Answerability is scoped to the frozen published corpus, not all information that may exist outside it."
+  ]
+}

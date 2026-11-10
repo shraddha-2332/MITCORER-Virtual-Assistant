@@ -16,6 +16,7 @@ coverage/
 __pycache__/
 *.py[cod]
 backend/evaluation/reports/
+backend/evaluation/corpora/
 docs/answer-audit/report.json
 docs/answer-audit/browser-results.json
 

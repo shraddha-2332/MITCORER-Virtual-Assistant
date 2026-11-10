@@ -16,6 +16,16 @@ test('generation retries transient failures once then identifies the actual fall
   assert.deepEqual(result, { text: 'Evidence-grounded draft', model: 'fallback', attempts: 3 });
 });
 
+test('Gemini usage metadata is exposed only when provider returns valid token counts', async () => {
+  const diagnostics = [];
+  const result = await requestGeneration({ ...options, onDiagnostic: event => diagnostics.push(event), fetchImpl: async () => ({
+    ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Grounded answer' }] } }],
+      usageMetadata: { promptTokenCount: 21, candidatesTokenCount: 8, totalTokenCount: 29 } }),
+  }) });
+  assert.deepEqual(result.usage, { inputTokens: 21, outputTokens: 8, totalTokens: 29 });
+  assert.deepEqual(diagnostics[0].usageTokens, result.usage);
+});
+
 test('bad credentials, billing, safety and insufficient evidence do not cascade', async () => {
   for (const status of [400, 401, 402, 403, 404]) {
     let calls = 0;
@@ -52,6 +62,15 @@ test('Groq retries transient failures and identifies the fallback model', async 
   assert.ok(calls.every(call => call.url.includes('api.groq.com')));
   assert.deepEqual(calls.map(call => call.body.model), ['primary', 'fallback']);
   assert.deepEqual(result, { text: 'Grounded draft.', model: 'groq:fallback', attempts: 2 });
+});
+
+test('Groq usage metadata is exposed when returned and omitted when unavailable', async () => {
+  const result = await requestGroqGeneration({ apiKey: 'test-key', primaryModel: 'primary', fallbackModel: '',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'Grounded draft.' } }], usage: { prompt_tokens: 13, completion_tokens: 5, total_tokens: 18 } }) }) });
+  assert.deepEqual(result.usage, { inputTokens: 13, outputTokens: 5, totalTokens: 18 });
+  const withoutUsage = await requestGroqGeneration({ apiKey: 'test-key', primaryModel: 'primary', fallbackModel: '',
+    fetchImpl: async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'Grounded draft.' } }] }) }) });
+  assert.equal(Object.hasOwn(withoutUsage, 'usage'), false);
 });
 
 test('Groq does not retry non-transient provider errors', async () => {

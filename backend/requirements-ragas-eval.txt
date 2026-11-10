@@ -1,0 +1,5 @@
+# Isolated offline evaluation tooling; do not install into the serving runtime.
+ragas==0.4.3
+openai>=1.0,<3.0
+google-genai>=1.0,<2.0
+python-dotenv>=1.0,<2.0

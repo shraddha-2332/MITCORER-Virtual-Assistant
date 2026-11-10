@@ -120,7 +120,7 @@
     {
       "id": "PUB-020", "language": "en", "category": "dse_programmes", "answerability": "supported",
       "question": "Which Direct Second Year B.Tech courses are offered at MITCORER?",
-      "expectedStatus": 200, "evidenceGroups": [["KB-11"]], "claimGroups": [["Civil Engineering"], ["Computer Science and Engineering"], ["690124210"]],
+      "expectedStatus": 200, "evidenceGroups": [["KB-11"]], "claimGroups": [["Civil Engineering"], ["Computer Science and Engineering"], ["0690124210"]],
       "behaviorGroups": [], "forbiddenPhrases": [], "expectNoEvidence": false, "expectDevanagari": false
     },
     {

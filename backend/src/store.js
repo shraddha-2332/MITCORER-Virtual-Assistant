@@ -5,10 +5,30 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.js';
 import { createSeedData, seedKnowledge } from './seed.js';
+import { resolveSourceUrl } from './source-links.js';
 
 let db = null;
 let sqlite = null;
 const ENTC_HOD_MIGRATION = 'seed-entc-hod-kb52';
+const PLACEMENT_COMMITTEE_MIGRATION = 'seed-placement-committee-kb53';
+const PLACEMENT_COMMITTEE_REFRESH_MIGRATION = 'refresh-placement-committee-kb53-v2';
+const OFFICIAL_SOURCE_ROUTE_MIGRATION = 'map-seeded-records-to-current-official-routes-v1';
+const DSE_CHOICE_CODE_MIGRATION = 'normalize-dse-choice-codes-v1';
+const seededSpecificRouteCorrections = {
+  'KB-15': 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
+  'KB-16': 'https://mitcorer.edu.in/mitcorer/public/placement/record',
+  'KB-21': 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
+  'KB-22': 'https://mitcorer.edu.in/mitcorer/public/infrastructure/engineering-labs',
+  'KB-23': 'https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations',
+  'KB-24': 'https://mitcorer.edu.in/mitcorer/public/placements',
+  'KB-25': 'https://mitcorer.edu.in/mitcorer/public/admissions/faqs',
+  'KB-26': 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+  'KB-27': 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+  'KB-28': 'https://mitcorer.edu.in/mitcorer/public/department/professional-diploma-railway',
+  'KB-35': 'https://mitcorer.edu.in/mitcorer/public/about',
+  'KB-41': 'https://mitcorer.edu.in/mitcorer/public/about',
+  'KB-45': 'https://mitcorer.edu.in/mitcorer/public/admissions/faqs',
+};
 
 function openDatabase() {
   if (sqlite) return sqlite;
@@ -134,13 +154,79 @@ export function loadDb() {
     // seeded record would be silently restored on every process restart.
     const entcHodRecord = seedKnowledge.find((record) => record.id === 'KB-52');
     const migrations = new Set(db.migrations);
+    let didMigrate = false;
     if (!migrations.has(ENTC_HOD_MIGRATION)) {
       if (entcHodRecord && !db.knowledge.some((record) => record.id === entcHodRecord.id)) {
         db.knowledge.push({ ...structuredClone(entcHodRecord), updatedAt: new Date().toISOString() });
       }
       db.migrations.push(ENTC_HOD_MIGRATION);
+      didMigrate = true;
     }
-    if (hadDemoInquiries || hadDemoDocuments || !migrations.has(ENTC_HOD_MIGRATION)) {
+    if (!migrations.has(PLACEMENT_COMMITTEE_MIGRATION)) {
+      const placementRecord = seedKnowledge.find((record) => record.id === 'KB-53');
+      if (placementRecord && !db.knowledge.some((record) => record.id === placementRecord.id)) {
+        db.knowledge.push({ ...structuredClone(placementRecord), updatedAt: new Date().toISOString() });
+      }
+      const genericPlacementRecord = db.knowledge.find((record) => record.id === 'KB-24');
+      if (genericPlacementRecord) genericPlacementRecord.tags = (genericPlacementRecord.tags || []).filter((tag) => tag !== 'tpo');
+      db.migrations.push(PLACEMENT_COMMITTEE_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(PLACEMENT_COMMITTEE_REFRESH_MIGRATION)) {
+      const placementRecord = seedKnowledge.find((record) => record.id === 'KB-53');
+      const existingPlacement = db.knowledge.find((record) => record.id === 'KB-53');
+      if (placementRecord && !existingPlacement && !migrations.has(PLACEMENT_COMMITTEE_MIGRATION)) {
+        db.knowledge.push({ ...structuredClone(placementRecord), updatedAt: new Date().toISOString() });
+      } else if (placementRecord && existingPlacement && (existingPlacement.text !== placementRecord.text || existingPlacement.sourceUrl !== placementRecord.sourceUrl)) {
+        const status = existingPlacement.status;
+        const revision = (existingPlacement.revision ?? 0) + 1;
+        const createdAt = existingPlacement.createdAt;
+        Object.assign(existingPlacement, structuredClone(placementRecord), {
+          status,
+          revision,
+          ...(createdAt ? { createdAt } : {}),
+          updatedAt: new Date().toISOString(),
+        });
+        delete existingPlacement.verification;
+      }
+      const genericPlacementRecord = db.knowledge.find((record) => record.id === 'KB-24');
+      if (genericPlacementRecord) genericPlacementRecord.tags = (genericPlacementRecord.tags || []).filter((tag) => tag !== 'tpo');
+      db.migrations.push(PLACEMENT_COMMITTEE_REFRESH_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(OFFICIAL_SOURCE_ROUTE_MIGRATION)) {
+      for (const record of db.knowledge) {
+        const recordSpecificRoute = seededSpecificRouteCorrections[record.id];
+        const sourceUrl = recordSpecificRoute && ['https://mitcorer.edu.in/faq.php', 'https://mitcorer.edu.in/'].includes(record.sourceUrl)
+          ? recordSpecificRoute
+          : resolveSourceUrl(record.sourceUrl || '');
+        // Resolve only explicitly mapped official legacy routes. Keep custom
+        // admin URLs and all content/status fields untouched.
+        if (!sourceUrl || sourceUrl === record.sourceUrl) continue;
+        record.sourceUrl = sourceUrl;
+        record.revision = (record.revision ?? 0) + 1;
+        record.updatedAt = new Date().toISOString();
+      }
+      db.migrations.push(OFFICIAL_SOURCE_ROUTE_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(DSE_CHOICE_CODE_MIGRATION)) {
+      const dse = db.knowledge.find((item) => item.id === 'KB-11');
+      if (dse?.text) {
+        let text = dse.text;
+        for (const [oldCode, currentCode] of [['690119110', '0690119110'], ['690124210', '0690124210'], ['690184410', '0690184410'], ['690137210', '0690137210'], ['690161210', '0690161210']]) {
+          text = text.replace(new RegExp(`(?<!\\d)${oldCode}(?!\\d)`, 'g'), currentCode);
+        }
+        if (text !== dse.text) {
+          dse.text = text;
+          dse.revision = (dse.revision ?? 0) + 1;
+          dse.updatedAt = new Date().toISOString();
+        }
+      }
+      db.migrations.push(DSE_CHOICE_CODE_MIGRATION);
+      didMigrate = true;
+    }
+    if (hadDemoInquiries || hadDemoDocuments || didMigrate) {
       saveDb();
     }
     return db;
@@ -148,6 +234,10 @@ export function loadDb() {
 
   db = normalizeDb(createSeedData());
   db.migrations.push(ENTC_HOD_MIGRATION);
+  db.migrations.push(PLACEMENT_COMMITTEE_MIGRATION);
+  db.migrations.push(PLACEMENT_COMMITTEE_REFRESH_MIGRATION);
+  db.migrations.push(OFFICIAL_SOURCE_ROUTE_MIGRATION);
+  db.migrations.push(DSE_CHOICE_CODE_MIGRATION);
   saveDb();
   return db;
 }
@@ -177,4 +267,12 @@ export function closeDb() {
 export function resetDbForTests(nextDb = createSeedData()) {
   closeDb();
   db = normalizeDb(nextDb);
+  // Test fixtures represent a database after its one-time seeds and migrations
+  // have completed; this keeps close/reopen cycles from applying live upgrades
+  // in the middle of an API test.
+  for (const migration of [ENTC_HOD_MIGRATION, PLACEMENT_COMMITTEE_MIGRATION,
+    PLACEMENT_COMMITTEE_REFRESH_MIGRATION, OFFICIAL_SOURCE_ROUTE_MIGRATION,
+    DSE_CHOICE_CODE_MIGRATION]) {
+    if (!db.migrations.includes(migration)) db.migrations.push(migration);
+  }
 }

@@ -53,6 +53,12 @@ test('verifyGeneratedAnswer accepts generations strictly grounded in evidence', 
   assert.strictEqual(result.status, 'VERIFIED');
 });
 
+test('verifyGeneratedAnswer rejects an abstention marker even when it appears after generated prose', () => {
+  const evidence = [{ id: 'KB-24', title: 'Placement', text: 'Placement cell supports training.' }];
+  const result = verifyGeneratedAnswer('The placement cell supports students. INSUFFICIENT_EVIDENCE', evidence);
+  assert.deepEqual(result, { verified: false, status: 'INSUFFICIENT_EVIDENCE' });
+});
+
 test('verifyGeneratedAnswer rejects generations with hallucinated numbers, dates, or fees', () => {
   const evidence = [
     {

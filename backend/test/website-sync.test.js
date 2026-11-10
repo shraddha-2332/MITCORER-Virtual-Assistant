@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanHtml, hashContent, syncMonitoredWebsiteSources, analyzeContentDrift } from '../src/website-sync.js';
+import { cleanHtml, hashContent, syncMonitoredWebsiteSources, analyzeContentDrift, defaultFetcher, defaultLinkChecker } from '../src/website-sync.js';
 import { createServer } from '../src/server.js';
 import { config } from '../src/config.js';
-import { resetDbForTests } from '../src/store.js';
+import { getDb, resetDbForTests } from '../src/store.js';
 
 async function withServer(fn, serverOptions) {
   resetDbForTests();
@@ -187,5 +187,115 @@ test('analyzeContentDrift detects metric changes, academic year updates, and cha
   assert.ok(yearMetric);
   assert.deepEqual(yearMetric.previous, ['2025-26']);
   assert.deepEqual(yearMetric.current, ['2026-27']);
+});
+
+test('changed page content withholds every directly linked published answer', async () => {
+  const url = 'https://mitcorer.edu.in/mitcorer/public/admissions/programmes';
+  const db = {
+    officialSources: [],
+    knowledge: [{ id: 'KB-PROGRAMMES', title: 'Programmes', sourceUrl: url, text: 'The approved programme list is available.', status: 'Published' }],
+  };
+  let content = '<html><body><main><h1>Programmes</h1><p>Official programme information for the current academic year.</p></main></body></html>';
+  await syncMonitoredWebsiteSources({ db, sources: [{ title: 'Programmes', url }], fetcher: async () => content, save: false });
+  content = '<html><body><main><h1>Programmes updated</h1><p>Official programme information and revised current academic year details.</p></main></body></html>';
+  const result = await syncMonitoredWebsiteSources({ db, sources: [{ title: 'Programmes', url }], fetcher: async () => content, save: false });
+  assert.equal(result.changed, 1);
+  assert.equal(db.knowledge[0].status, 'Review');
+  assert.equal(db.knowledge[0].freshnessReview.reason, 'source-content-changed');
+  assert.equal(result.suspendedRecords, 1);
+});
+
+test('unreachable official source is marked and its linked published answers are withheld', async () => {
+  const url = 'https://mitcorer.edu.in/legacy/programmes.php';
+  const db = {
+    officialSources: [{ id: 'SRC-LEGACY', title: 'Programmes', sourceUrl: url, status: 'Published', extractedText: 'Old official content.' }],
+    knowledge: [{ id: 'KB-LEGACY', title: 'Programmes', sourceUrl: url, text: 'Old official answer.', status: 'Published' }],
+  };
+  const result = await syncMonitoredWebsiteSources({
+    db, sources: [], fetcher: async () => '', save: false,
+    linkChecker: async () => ({ ok: false, status: 404, error: 'HTTP 404' }),
+  });
+  assert.equal(result.linkChecks, 1);
+  assert.equal(result.suspendedRecords, 1);
+  assert.equal(db.officialSources[0].syncMeta.healthStatus, 'unreachable');
+  assert.equal(db.knowledge[0].status, 'Review');
+  assert.equal(db.knowledge[0].freshnessReview.reason, 'source-unavailable');
+});
+
+test('changed remote validators quarantine linked answers and discard stale extracted text', async () => {
+  const url = 'https://mitcorer.edu.in/faq.php';
+  const db = {
+    officialSources: [{ id: 'SRC-FAQ', title: 'FAQ', sourceUrl: url, status: 'Published', extractedText: 'Old FAQ text.', contentHash: hashContent('Old FAQ text.'), syncMeta: { remoteValidators: { etag: 'old-tag' } } }],
+    knowledge: [{ id: 'KB-FAQ', title: 'FAQ answer', sourceUrl: url, text: 'Answer from old FAQ.', status: 'Published' }],
+  };
+  const result = await syncMonitoredWebsiteSources({
+    db, sources: [], fetcher: async () => '', save: false,
+    linkChecker: async () => ({ ok: true, status: 200, etag: 'new-tag', contentLength: '250', contentType: 'text/html' }),
+  });
+  assert.equal(result.changed, 1);
+  assert.equal(db.knowledge[0].status, 'Review');
+  assert.equal(db.knowledge[0].freshnessReview.reason, 'source-version-changed');
+  assert.equal(db.officialSources[0].status, 'Review');
+  assert.equal(db.officialSources[0].extractedText, '');
+  assert.equal(db.officialSources[0].previousVersion.text, 'Old FAQ text.');
+  assert.equal(db.officialSources[0].freshnessImpact.validatorChanged, true);
+});
+
+test('default link checker skips unapproved hosts without making a network request', async () => {
+  const result = await defaultLinkChecker('https://example.com/source.pdf');
+  assert.equal(result.ok, false);
+  assert.equal(result.skipped, true);
+});
+
+test('default link checker refuses redirects outside approved hosts before following them', async () => {
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    return new Response(null, { status: 302, headers: { location: 'http://127.0.0.1/private' } });
+  };
+  try {
+    const result = await defaultLinkChecker('https://mitcorer.edu.in/official.pdf');
+    assert.equal(result.ok, false);
+    assert.match(result.error, /redirected outside/i);
+    assert.equal(requests, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('default page fetcher refuses redirects outside approved hosts before following them', async () => {
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    return new Response(null, { status: 302, headers: { location: 'https://example.com/redirected' } });
+  };
+  try {
+    await assert.rejects(defaultFetcher('https://mitcorer.edu.in/mitcorer/public/index.php'), /refused a redirect/i);
+    assert.equal(requests, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('API refuses to republish answers from a source still marked unreachable', async () => {
+  await withServer(async (base) => {
+    getDb().officialSources.unshift({
+      id: 'SRC-UNREACHABLE', title: 'Unavailable source', sourceUrl: 'https://mitcorer.edu.in/removed.php',
+      status: 'Review', extractedText: 'Stale extracted text.', syncMeta: { healthStatus: 'unreachable' },
+    });
+    const login = await request(base, '/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@mitcorer.edu.in', password: 'mitra' }),
+    });
+    const token = login.payload.data.token;
+    const publish = await request(base, '/api/official-sources/SRC-UNREACHABLE/publish', {
+      method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verifiedText: 'Stale extracted text.', sourceUrl: 'https://mitcorer.edu.in/replacement.php' }),
+    });
+    assert.equal(publish.response.status, 409);
+    assert.equal(publish.payload.error.code, 'SOURCE_UNAVAILABLE');
+  });
 });
 

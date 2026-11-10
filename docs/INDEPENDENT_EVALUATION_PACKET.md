@@ -1,6 +1,8 @@
 # Independent evaluation packet
 
-Status: preparation only. No independent questions, reviewer approvals or final results have been collected. Read with [the research scope](RESEARCH_SCOPE_AND_EVALUATION_PLAN.md).
+For a step-by-step reviewer recruitment, question collection, corpus approval and return checklist, see [evaluation reviewer handoff](EVALUATION_REVIEWER_HANDOFF.md).
+
+Status: source corpus frozen locally; independent questions, reviewer roster and adjudicated labels have not yet been collected. The project lead can arrange 90 cases and approved external processing for a sanitized 12-case Groq/Gemini pilot. No provider run or independent result exists yet. The repository-held 30/90-case pilot is an automated development diagnostic; it is not an independent human evaluation. Read with [the research scope](RESEARCH_SCOPE_AND_EVALUATION_PLAN.md) and [reviewer handoff](EVALUATION_REVIEWER_HANDOFF.md).
 
 ## Roles and separation
 

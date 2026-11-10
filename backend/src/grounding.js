@@ -240,7 +240,7 @@ export function verifyGeneratedAnswer(generatedText, evidenceList) {
   if (typeof generatedText !== 'string' || !generatedText.trim()) {
     return { verified: false, status: 'EMPTY_GENERATION' };
   }
-  if (generatedText.startsWith('INSUFFICIENT_EVIDENCE')) {
+  if (/\bINSUFFICIENT_EVIDENCE\b/i.test(generatedText)) {
     return { verified: false, status: 'INSUFFICIENT_EVIDENCE' };
   }
   if (!Array.isArray(evidenceList) || evidenceList.length === 0) {

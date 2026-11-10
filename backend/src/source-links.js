@@ -1,4 +1,6 @@
-// Verified replacements and missing references. Do not replace arbitrary maintainer URLs.
+import { newWebsiteRouteMap } from './website-routes.js';
+
+// Verified aliases and missing references. Do not replace arbitrary URLs.
 const libraryOld = 'https://www.mitcorer.edu.in/about-lib-details.html';
 const libraryCurrent = 'https://mitcorer.edu.in/about-lib-details.php';
 
@@ -8,14 +10,10 @@ export const verifiedUrlRewrites = {
   'https://www.mitcorer.edu.in/dse.php': 'https://mitcorer.edu.in/d-sy-btech.php',
   'https://mitcorer.edu.in/electronics-and-computer-engineering.php': 'https://mitcorer.edu.in/electronic-computer-engineering.php',
   'https://www.mitcorer.edu.in/electronics-and-computer-engineering.php': 'https://mitcorer.edu.in/electronic-computer-engineering.php',
-  'https://mitcorer.edu.in/our-mou.php': 'https://mitcorer.edu.in/mou.php',
-  'https://www.mitcorer.edu.in/our-mou.php': 'https://mitcorer.edu.in/mou.php',
   'https://mitcorer.edu.in/training-and-placement-cell.php': 'https://mitcorer.edu.in/placement-cell.php',
   'https://www.mitcorer.edu.in/training-and-placement-cell.php': 'https://mitcorer.edu.in/placement-cell.php',
   'https://mitcorer.edu.in/training-placement.php': 'https://mitcorer.edu.in/placement-cell.php',
   'https://www.mitcorer.edu.in/training-placement.php': 'https://mitcorer.edu.in/placement-cell.php',
-  'https://mitcorer.edu.in/campus-life.php': 'https://mitcorer.edu.in/hostel-amenities.php',
-  'https://www.mitcorer.edu.in/campus-life.php': 'https://mitcorer.edu.in/hostel-amenities.php',
 };
 
 const missingReferences = {
@@ -25,7 +23,8 @@ const missingReferences = {
 
 export function resolveSourceUrl(url) {
   if (!url) return '';
-  return verifiedUrlRewrites[url] ?? url;
+  const resolved = verifiedUrlRewrites[url] ?? url;
+  return newWebsiteRouteMap[resolved] ?? resolved;
 }
 
 export function sourceRecord(record) {

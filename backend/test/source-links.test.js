@@ -15,11 +15,11 @@ test('sources follow answer topics and unsupported routes never use engineering 
   resetDbForTests(createSeedData());
   const ask = async question => { resetRuntimeStateForTests(); return answerAdmissionQuestion({ question }, null); };
   try {
-    assert.equal((await ask('Tell me about the library.')).sourceUrl, 'https://mitcorer.edu.in/about-lib-details.php');
+    assert.equal((await ask('Tell me about the library.')).sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/infrastructure');
     assert.equal((await ask('What is the railway model room?')).evidence[0].id, 'KB-42');
     const placement = await ask('Who are the recruiters?');
-    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placement-cell.php')));
-    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/our-recruiters.php')));
+    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placements')));
+    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placement/ourrecruiters')));
     assert.ok(!placement.officialLinks.some(link => link.url.includes('youtube')));
     const fees = await ask('What are DSE fees?');
     assert.ok(!fees.officialLinks.some(link => link.url.includes('FRA_Fee')));
@@ -29,8 +29,8 @@ test('sources follow answer topics and unsupported routes never use engineering 
     const bus = await ask('What bus routes and fees are available?');
     assert.deepEqual(bus.evidence.map(record => record.id), ['KB-19']);
     assert.doesNotMatch(bus.answer, /1,05,000/);
-    const docs = await ask('What documents are required for admission?');
-    assert.equal(docs.sourceUrl, 'https://mitcorer.edu.in/fy-btech-documents.php');
+    const docs = await ask('What documents are required for First Year admission?');
+    assert.equal(docs.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions/documents');
     assert.deepEqual(docs.evidence.map(record => record.id), ['KB-1']);
     const acap = await ask('Can a non-CAP student get a scholarship?');
     assert.ok(!acap.officialLinks.some(link => link.url.includes('fe2026')));

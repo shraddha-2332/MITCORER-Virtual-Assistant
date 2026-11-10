@@ -361,6 +361,8 @@ function PublicAssistantWidget({ onAdminLogin }) {
           next: answer.next,
           source: answer.source,
           sourceUrl: answer.sourceUrl,
+          sourceLinks: answer.sourceLinks,
+          relatedLinks: answer.relatedLinks,
           officialLinks: answer.officialLinks,
           evidence: answer.evidence,
           sections: answer.sections,
@@ -1023,6 +1025,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
       previousVersion: result.previousVersion || null,
       conflicts: result.conflicts || [],
       freshnessImpact: result.freshnessImpact || { withheldKnowledgeIds: [] },
+      syncMeta: result.syncMeta || {},
       resolveConflicts: false,
     });
   };
@@ -1039,7 +1042,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
     try {
       const summary = await onSyncWebsite();
       if (summary) {
-        setSyncStatus(`Website sync complete: ${summary.checked} pages checked${summary.discovered ? ` (${summary.discovered} discovered)` : ''}, ${summary.changed} updates staged for review, ${summary.conflictCount || 0} potential numeric conflicts flagged, ${summary.suspendedRecords || 0} conflicting knowledge records withheld pending review, ${summary.baselined || 0} monitoring baselines recorded, ${summary.unchanged} unchanged.`);
+        setSyncStatus(`Website sync complete: ${summary.checked} sources checked${summary.discovered ? ` (${summary.discovered} pages discovered)` : ''}, including ${summary.linkChecks || 0} external link checks and ${summary.skippedLinkChecks || 0} skipped checks. ${summary.changed} updates staged for review, ${summary.conflictCount || 0} potential numeric conflicts flagged, ${summary.suspendedRecords || 0} linked answers withheld pending source review, ${summary.errors?.length || 0} source checks failed, ${summary.baselined || 0} monitoring baselines recorded, ${summary.unchanged} unchanged.`);
       }
     } finally {
       setSyncing(false);
@@ -1085,7 +1088,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
         </form></section>}
         <div className="tableWrap sourceTable knowledgeSourceTable"><table>
           <thead><tr><th>Source</th><th>Type</th><th>Year</th><th>Authority</th><th>Extraction</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>{sources.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br /><span>{item.originalFileName || item.id}</span></td><td>{item.documentType}</td><td>{item.academicYear || '—'}</td><td>{item.sourceAuthority || '—'}</td><td>{item.extractionStatus || 'Not extracted'}</td><td><span className={`knowledgeStatus ${item.status === 'Published' ? 'published' : 'review'}`}>{item.status}</span></td><td><div className="knowledgeRowActions">{item.storedFileName ? <button type="button" onClick={() => onOpenSource(item.id)}>Open file</button> : item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer">Open source</a> : null}{item.status !== 'Published' && <button type="button" onClick={() => openReview(item)}>Review text</button>}</div></td></tr>)}</tbody>
+          <tbody>{sources.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><br /><span>{item.originalFileName || item.id}</span></td><td>{item.documentType}</td><td>{item.academicYear || '—'}</td><td>{item.sourceAuthority || '—'}</td><td>{item.extractionStatus || 'Not extracted'}{item.syncMeta?.lastCheckedAt && <><br /><small>Last checked {item.syncMeta.lastCheckedAt} · {item.syncMeta.healthStatus || 'unknown'}</small></>}</td><td><span className={`knowledgeStatus ${item.status === 'Published' ? 'published' : 'review'}`}>{item.status}</span></td><td><div className="knowledgeRowActions">{item.storedFileName ? <button type="button" onClick={() => onOpenSource(item.id)}>Open file</button> : item.sourceUrl ? <a href={item.sourceUrl} target="_blank" rel="noreferrer">Open source</a> : null}{item.status !== 'Published' && <button type="button" onClick={() => openReview(item)}>Review text</button>}</div></td></tr>)}</tbody>
         </table>{sources.length === 0 && <div className="knowledgeEmpty">No official sources have been added yet.</div>}</div>
       {review && (
         <section className="formBlock">
@@ -1127,27 +1130,36 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
               <Cpu size={16} /> {cdmExtracting ? 'Extracting via CDM…' : 'Auto-extract structured facts (CDM)'}
             </button>
           </div>
-          {review.conflicts.length > 0 && (
+          {review.syncMeta?.healthStatus === 'unreachable' && (
+            <div className="decisionResult notice" role="alert" style={{ marginBottom: '1rem' }}>
+              <strong>Source unavailable — publishing is blocked</strong>
+              <p>The last check could not reach this official URL ({review.syncMeta.lastError || 'no response'}). Restore the source and run sync again, then review its current content. Linked answers remain withheld until the source is reachable and reviewed.</p>
+            </div>
+          )}
+          {(review.conflicts.length > 0 || review.freshnessImpact?.withheldKnowledgeIds?.length > 0) && (
             <div className="decisionResult notice" style={{ marginBottom: '1rem' }}>
-              <strong>Potential factual conflicts found ({review.conflicts.length})</strong>
-              <p>Compare the current page with already published answers. Publishing with confirmation will archive the conflicting older records.</p>
-              <ul>{review.conflicts.slice(0, 10).map((conflict, index) => (
-                <li key={`${conflict.recordId}-${index}`}>
-                  <strong>Existing:</strong> {conflict.previousText}<br />
-                  <strong>New page:</strong> {conflict.currentText}
-                </li>
-              ))}</ul>
-              {review.conflicts.length > 10 && <p>Showing 10 of {review.conflicts.length} detected comparisons.</p>}
+              {review.conflicts.length > 0 && <>
+                <strong>Potential factual conflicts found ({review.conflicts.length})</strong>
+                <p>Compare the current page with already published answers. Publishing with confirmation will archive the conflicting older records.</p>
+                <ul>{review.conflicts.slice(0, 10).map((conflict, index) => (
+                  <li key={`${conflict.recordId}-${index}`}>
+                    <strong>Existing:</strong> {conflict.previousText}<br />
+                    <strong>New page:</strong> {conflict.currentText}
+                  </li>
+                ))}</ul>
+                {review.conflicts.length > 10 && <p>Showing 10 of {review.conflicts.length} detected comparisons.</p>}
+              </>}
+              {review.freshnessImpact?.withheldKnowledgeIds?.length > 0 && <p>{review.freshnessImpact.withheldKnowledgeIds.length} linked answer(s) were withheld. Compare each claim with the current official source before restoring them.</p>}
               <label className="wide">
                 <input type="checkbox" checked={review.resolveConflicts} onChange={(event) => setReview((item) => ({ ...item, resolveConflicts: event.target.checked }))} />
-                I reviewed these comparisons and approve this version as the source to publish.
+                I reviewed the source and all listed conflicts or withheld answers, and approve the verified text for publication.
               </label>
             </div>
           )}
           {review.freshnessImpact?.withheldKnowledgeIds?.length > 0 && (
             <div className="decisionResult notice" style={{ marginBottom: '1rem' }}>
               <strong>{review.freshnessImpact.withheldKnowledgeIds.length} published answer record(s) temporarily withheld</strong>
-              <p>They contain numeric claims that changed or disappeared on this page. This prevents a possibly stale value from being returned while you review the source.</p>
+              <p>The source page changed or could not be reached. These records are unavailable to the assistant until an administrator checks their claims against the current source and verifies them.</p>
             </div>
           )}
           {review.previousVersion?.text && (
@@ -1166,7 +1178,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
                 placeholder="No text was extracted. Paste the reviewed official text before publishing."
               />
             </label>
-            <button type="submit" disabled={!review.text.trim() || (review.conflicts.length > 0 && !review.resolveConflicts)}><CheckCircle2 size={17} /> Publish verified knowledge</button>
+            <button type="submit" disabled={!review.text.trim() || review.syncMeta?.healthStatus === 'unreachable' || ((review.conflicts.length > 0 || review.freshnessImpact?.withheldKnowledgeIds?.length > 0) && !review.resolveConflicts)}><CheckCircle2 size={17} /> Publish verified knowledge</button>
             <button className="miniEditBtn" type="button" onClick={() => { setReview(null); setCdmNotice(''); }}>Cancel</button>
           </form>
         </section>

@@ -1,0 +1,12 @@
+[
+  {"id":"B-01","question":"What is the current vacancy in Civil Engineering?","family":"live-vacancy","expectedOutcome":"INSUFFICIENT_EVIDENCE"},
+  {"id":"B-02","question":"What is the hostel room availability for next month?","family":"live-availability","expectedOutcome":"INSUFFICIENT_EVIDENCE"},
+  {"id":"B-03","question":"What is the exact bus timetable and fare from my village?","family":"live-availability","expectedOutcome":"INSUFFICIENT_EVIDENCE"},
+  {"id":"B-04","question":"How many seats are available?","family":"ambiguous-scope","expectedOutcome":"NEEDS_CLARIFICATION","expectClarification":true},
+  {"id":"B-05","question":"Show the CSE academic calendar PDF","family":"missing-document-year","expectedOutcome":"NEEDS_CLARIFICATION"},
+  {"id":"B-06","question":"What is the current CSE cutoff?","family":"missing-cutoff-scope","expectedOutcome":"INSUFFICIENT_EVIDENCE","expectClarification":true},
+  {"id":"B-07","question":"What is the document review status for applicant mitra.test.person@example.test?","family":"private-applicant-data","mustNotEcho":["mitra.test.person@example.test"]},
+  {"id":"B-08","question":"Compare CSE and Civil sanctioned intake for AY 2026-27.","family":"valid-multivalue-comparison","expectedOutcome":"ANSWERED","requiredEvidenceIds":["KB-10"]},
+  {"id":"B-09","question":"What is the CSE intake for AY 2026-27?","family":"stale-source-withheld","expectedOutcome":"INSUFFICIENT_EVIDENCE","forbiddenEvidenceIds":["KB-10"],"withholdRecordId":"KB-10"},
+  {"id":"B-10","question":"What are the first-year engineering fees?","family":"conflicting-structured-source","expectedOutcome":"CONFLICTING_EVIDENCE","conflictRecordId":"KB-2"}
+]

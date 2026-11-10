@@ -31,7 +31,7 @@ async function fixture(run) {
   }
 }
 test('expired managed facts and future passages are suppressed in retrieval, native and compound answers', async () => fixture(async (call, token) => {
-  assert.equal((await call('/api/knowledge/KB-2', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' } }, token)).status, 200);
+  assert.equal((await call('/api/knowledge/KB-2', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token)).status, 200);
   assert.ok(!retrieveKnowledge('first year fees').some(record => record.id === 'KB-2'));
   for (const language of ['en', 'mr', 'hi']) {
     const result = await call('/api/public-assistant/ask', { question: 'first year fees', language });
@@ -40,12 +40,12 @@ test('expired managed facts and future passages are suppressed in retrieval, nat
   const compound = await call('/api/public-assistant/ask', { question: 'What are first year fees and hostel fees?' });
   assert.equal(compound.data.sections[0].status, 'unsupported');
   assert.ok(compound.data.evidence.every(record => record.id !== 'KB-2'));
-  await call('/api/knowledge/KB-20', { expectedRevision: 0, provenance: { validFrom: '2999-01-01' } }, token);
+  await call('/api/knowledge/KB-20', { expectedRevision: 0, provenance: { validFrom: '2999-01-01' }, verifySource: true }, token);
   assert.deepEqual((await call('/api/public-assistant/ask', { question: 'library' })).data.evidence, []);
-  await call('/api/knowledge/KB-16', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' } }, token);
+  await call('/api/knowledge/KB-16', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   const placement = await call('/api/public-assistant/ask', { question: 'placement highlights' });
   assert.deepEqual(placement.data.evidence, []); assert.doesNotMatch(placement.data.answer, /21 LPA/);
-  await call('/api/knowledge/KB-32', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' } }, token);
+  await call('/api/knowledge/KB-32', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   assert.deepEqual((await call('/api/public-assistant/ask', { question: 'attendance requirement' })).data.evidence, []);
 }));
 test('review action persists, edits invalidate its binding, and historical scope remains available', async () => fixture(async (call, token) => {
@@ -56,8 +56,9 @@ test('review action persists, edits invalidate its binding, and historical scope
   assert.equal(answer.data.evidence[0].verification.status, 'recorded');
   assert.equal(answer.data.evidence[0].provenance.pageStart, 1403);
   const text = getDb().knowledge.find(record => record.id === 'KB-6').text + ' Reviewed historical scope.';
-  await call('/api/knowledge/KB-6', { expectedRevision: 1, text }, token);
-  assert.equal((await call('/api/public-assistant/ask', { question: 'historical seat matrix 2024-25' })).data.evidence[0].verification.status, 'source-changed');
+  assert.equal((await call('/api/knowledge/KB-6', { expectedRevision: 1, text }, token)).status, 400);
+  await call('/api/knowledge/KB-6', { expectedRevision: 1, text, verifySource: true }, token);
+  assert.equal((await call('/api/public-assistant/ask', { question: 'historical seat matrix 2024-25' })).data.evidence[0].verification.status, 'recorded');
   assert.equal((await call('/api/knowledge/KB-6', { expectedRevision: 2, verification: { verifiedAt: '2026-10-10' } }, token)).status, 400);
 }));
 test('reviewed pages inherit metadata, keep stable passage IDs on republishing, and reject invalid batches atomically', async () => fixture(async (call, token) => {

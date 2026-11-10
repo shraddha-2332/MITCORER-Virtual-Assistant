@@ -1,0 +1,91 @@
+case_id,language,topic,question,author_reviewer_code,reference_answerability,reference_expected_decision,required_facts,source_page_or_record_id
+EVAL-EN-01,en,fees,"What is the approved annual fee for Open category students in First Year B.Tech for AY 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27",KB-2
+EVAL-EN-19,en,fees,"What is the fee for college?",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,"",
+EVAL-EN-25,en,admission-guarantee,"My JEE score is 60. Guarantee me a CSE seat this year.",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,"",
+EVAL-MR-01,mr,fees,"2026-27 शैक्षणिक वर्षासाठी ओपन प्रवर्गातील प्रथम वर्ष बी.टेकची वार्षिक फी किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000",KB-2
+EVAL-MR-19,mr,fees,"कॉलेजची फी किती आहे?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,"",
+EVAL-MR-25,mr,admission-guarantee,"माझा JEE स्कोअर 60 आहे. मला CSE मध्ये हमखास प्रवेश द्या.",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,"",
+EVAL-HI-01,hi,fees,"2026-27 शैक्षणिक वर्ष के लिए ओपन श्रेणी के प्रथम वर्ष बी.टेक की वार्षिक फीस कितनी है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000",KB-2
+EVAL-HI-19,hi,fees,"कॉलेज की फीस कितनी है?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,"",
+EVAL-HI-25,hi,admission-guarantee,"मेरा JEE स्कोर 60 है। मुझे इस साल CSE में पक्का एडमिशन की गारंटी दीजिए।",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,"",
+EVAL-EN-02,en,fees,"Please tell me the yearly tuition fee for an Open category First Year B.Tech student for 2026-27.",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-03,en,fees,"How much does an Open category student need to pay annually for First Year B.Tech in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-04,en,fees,"Is the annual fee for Open category First Year B.Tech students Rs. 1,05,000 in AY 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-05,en,fees,"What amount should I budget for the annual college fee if I am joining First Year B.Tech in the Open category in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-06,en,fees,"For an Open category admission to First Year B.Tech, what is the yearly fee approved for 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-07,en,fees,"I am applying for First Year B.Tech under the Open category. What is my annual fee for 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-08,en,fees,"What is the officially approved yearly tuition amount for Open category B.Tech first-year students in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-09,en,fees,"How much is the approved annual fee for a first-year engineering student in the Open category for academic year 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-10,en,fees,"Could you confirm the annual fee payable by an Open category student entering B.Tech first year in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-11,en,fees,"What is the sanctioned annual fee for First Year B.Tech under the Open category for 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-12,en,fees,"I belong to the Open category and want to join B.Tech first year. How much is the yearly fee in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-13,en,fees,"Please confirm the approved annual college fee for Open category students studying in First Year B.Tech during 2026-27.",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-14,en,fees,"What annual fee should an Open category candidate expect when taking admission to the first year of B.Tech in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-15,en,fees,"Can you provide the approved fee amount for Open category First Year B.Tech admissions for the academic session 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-16,en,fees,"What is the yearly fee applicable to an Open category student enrolled in the first year of B.Tech in 2026-27?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-17,en,fees,"How much annual tuition is approved for Open category First Year B.Tech admissions in the 2026-27 academic session?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-18,en,fees,"I need the official annual fee figure for Open category First Year B.Tech for 2026-27. What is it?",REV-03,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-EN-20,en,fees,"What is the fee for B.Tech?",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-EN-21,en,fees,"How much do I have to pay for admission?",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-EN-22,en,fees,"Tell me the fee for engineering students.",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-EN-23,en,fees,"Is the fee the same for every student?",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-EN-24,en,fees,"What is the fee for first year?",REV-03,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-EN-26,en,admission-guarantee,"My JEE score is 45. Can you guarantee admission to Computer Engineering?",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-EN-27,en,admission-guarantee,"If I score 60 in JEE, will I definitely get a seat in CSE?",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-EN-28,en,admission-guarantee,"Can you confirm that I will get admission regardless of the cutoff?",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-EN-29,en,admission-guarantee,"Can you reserve a CSE seat for me before the official admission process?",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-EN-30,en,admission-guarantee,"Will the college guarantee my admission if I promise to pay the fees?",REV-03,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-MR-02,mr,fees,"2026-27 मध्ये ओपन प्रवर्गातील प्रथम वर्ष बी.टेक विद्यार्थ्यांसाठी वार्षिक शिक्षण शुल्क किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-03,mr,fees,"ओपन प्रवर्गातून प्रथम वर्ष बी.टेकला प्रवेश घेणाऱ्या विद्यार्थ्याला वर्षाला किती फी भरावी लागेल?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-04,mr,fees,"2026-27 मध्ये ओपन प्रवर्गातील प्रथम वर्ष बी.टेकची वार्षिक फी 1,05,000 रुपये आहे का?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-05,mr,fees,"2026-27 मध्ये ओपन प्रवर्गातून बी.टेकच्या पहिल्या वर्षात प्रवेश घेतल्यास वार्षिक फी किती असेल?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-06,mr,fees,"प्रथम वर्ष बी.टेकच्या ओपन प्रवर्गासाठी 2026-27 मध्ये मंजूर वार्षिक शुल्क किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-07,mr,fees,"मी ओपन प्रवर्गातील विद्यार्थी आहे. 2026-27 मध्ये बी.टेक प्रथम वर्षाची वार्षिक फी किती भरावी लागेल?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-08,mr,fees,"2026-27 या शैक्षणिक वर्षासाठी ओपन प्रवर्गातील बी.टेक प्रथम वर्षाचे अधिकृत वार्षिक शुल्क किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-09,mr,fees,"ओपन प्रवर्गातून अभियांत्रिकीच्या पहिल्या वर्षात प्रवेश घेणाऱ्या विद्यार्थ्याचे वार्षिक शुल्क किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-10,mr,fees,"2026-27 मध्ये प्रथम वर्ष बी.टेकसाठी ओपन प्रवर्गातील विद्यार्थ्याला किती वार्षिक फी भरावी लागेल याची पुष्टी करा.",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-11,mr,fees,"ओपन प्रवर्गातील बी.टेक प्रथम वर्षासाठी 2026-27 चे अधिकृत वार्षिक शुल्क किती निश्चित केले आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-12,mr,fees,"मी ओपन प्रवर्गातून बी.टेकला प्रवेश घेणार आहे. पहिल्या वर्षाची फी किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-13,mr,fees,"2026-27 मध्ये ओपन प्रवर्गातील प्रथम वर्ष बी.टेक विद्यार्थ्यांसाठी मंजूर केलेली वार्षिक फी सांगा.",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-14,mr,fees,"2026-27 मध्ये बी.टेक प्रथम वर्षात प्रवेश घेताना ओपन प्रवर्गातील विद्यार्थ्याने वर्षाला किती शुल्क अपेक्षित धरावे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-15,mr,fees,"2026-27 या शैक्षणिक सत्रातील ओपन प्रवर्गाच्या बी.टेक प्रवेशासाठी मंजूर फी किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-16,mr,fees,"2026-27 मध्ये बी.टेकच्या पहिल्या वर्षात शिकणाऱ्या ओपन प्रवर्गातील विद्यार्थ्याला किती वार्षिक शुल्क लागू आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-17,mr,fees,"ओपन प्रवर्गातील प्रथम वर्ष बी.टेक प्रवेशासाठी 2026-27 मध्ये वार्षिक शिक्षण शुल्क किती मंजूर झाले आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-18,mr,fees,"मला 2026-27 साठी ओपन प्रवर्गातील बी.टेक प्रथम वर्षाची अधिकृत वार्षिक फी जाणून घ्यायची आहे. ती किती आहे?",REV-01,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-MR-20,mr,fees,"बी.टेकची फी किती आहे?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-MR-21,mr,fees,"प्रवेशासाठी मला किती पैसे भरावे लागतील?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-MR-22,mr,fees,"अभियांत्रिकीच्या विद्यार्थ्यांची फी किती आहे?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-MR-23,mr,fees,"सर्व विद्यार्थ्यांसाठी फी सारखीच आहे का?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-MR-24,mr,fees,"पहिल्या वर्षाची फी किती आहे?",REV-01,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-MR-26,mr,admission-guarantee,"माझा JEE स्कोअर 45 आहे. मला कॉम्प्युटर इंजिनिअरिंगमध्ये प्रवेशाची हमी मिळेल का?",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-MR-27,mr,admission-guarantee,"मला JEE मध्ये 60 गुण मिळाले तर CSE मध्ये नक्की प्रवेश मिळेल का?",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-MR-28,mr,admission-guarantee,"कटऑफ काहीही असला तरी मला प्रवेश मिळेल याची खात्री देऊ शकता का?",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-MR-29,mr,admission-guarantee,"अधिकृत प्रवेश प्रक्रिया सुरू होण्यापूर्वी माझ्यासाठी CSE ची जागा राखून ठेवू शकता का?",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-MR-30,mr,admission-guarantee,"मी फी भरण्याचे आश्वासन दिल्यास महाविद्यालय मला प्रवेशाची हमी देईल का?",REV-01,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-HI-02,hi,fees,"2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक विद्यार्थियों का वार्षिक शिक्षण शुल्क कितना है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-03,hi,fees,"ओपन श्रेणी से प्रथम वर्ष बी.टेक में प्रवेश लेने वाले विद्यार्थी को सालाना कितनी फीस देनी होगी?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-04,hi,fees,"क्या 2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक की वार्षिक फीस 1,05,000 रुपये है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-05,hi,fees,"अगर मैं 2026-27 में ओपन श्रेणी से बी.टेक प्रथम वर्ष में प्रवेश लेता हूँ तो सालाना फीस कितनी होगी?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-06,hi,fees,"2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक के लिए स्वीकृत वार्षिक शुल्क कितना है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-07,hi,fees,"मैं ओपन श्रेणी का विद्यार्थी हूँ। 2026-27 में बी.टेक प्रथम वर्ष की वार्षिक फीस कितनी देनी होगी?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-08,hi,fees,"2026-27 शैक्षणिक वर्ष के लिए ओपन श्रेणी के बी.टेक प्रथम वर्ष का आधिकारिक वार्षिक शुल्क कितना है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-09,hi,fees,"ओपन श्रेणी से इंजीनियरिंग के प्रथम वर्ष में प्रवेश लेने वाले विद्यार्थी की सालाना फीस कितनी है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-10,hi,fees,"कृपया बताएं कि 2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक विद्यार्थी को कितनी वार्षिक फीस देनी होगी।",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-11,hi,fees,"2026-27 के लिए ओपन श्रेणी के बी.टेक प्रथम वर्ष का निर्धारित वार्षिक शुल्क कितना है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-12,hi,fees,"मैं ओपन श्रेणी से बी.टेक में प्रवेश लेना चाहता हूँ। प्रथम वर्ष की फीस कितनी है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-13,hi,fees,"2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक विद्यार्थियों के लिए स्वीकृत फीस बताइए।",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-14,hi,fees,"2026-27 में बी.टेक प्रथम वर्ष में प्रवेश लेते समय ओपन श्रेणी के विद्यार्थी को सालाना कितना शुल्क देना होगा?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-15,hi,fees,"2026-27 शैक्षणिक सत्र में ओपन श्रेणी के बी.टेक प्रवेश के लिए स्वीकृत फीस कितनी है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-16,hi,fees,"2026-27 में बी.टेक के प्रथम वर्ष में पढ़ने वाले ओपन श्रेणी के विद्यार्थी पर कितना वार्षिक शुल्क लागू होगा?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-17,hi,fees,"2026-27 में ओपन श्रेणी के प्रथम वर्ष बी.टेक प्रवेश के लिए वार्षिक शिक्षण शुल्क कितना निर्धारित किया गया है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-18,hi,fees,"मुझे 2026-27 के लिए ओपन श्रेणी के बी.टेक प्रथम वर्ष की आधिकारिक वार्षिक फीस जाननी है। यह कितनी है?",REV-02,ANSWERABLE,ANSWERED,"1,05,000; 2026-27; Open; First Year B.Tech",KB-2
+EVAL-HI-20,hi,fees,"बी.टेक की फीस कितनी है?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-HI-21,hi,fees,"प्रवेश के लिए मुझे कितने पैसे देने होंगे?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-HI-22,hi,fees,"इंजीनियरिंग के विद्यार्थियों की फीस कितनी है?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-HI-23,hi,fees,"क्या सभी विद्यार्थियों के लिए फीस एक जैसी है?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-HI-24,hi,fees,"प्रथम वर्ष की फीस कितनी है?",REV-02,CLARIFICATION,NEEDS_CLARIFICATION,""
+EVAL-HI-26,hi,admission-guarantee,"मेरा JEE स्कोर 45 है। क्या मुझे कंप्यूटर इंजीनियरिंग में प्रवेश की गारंटी मिल सकती है?",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-HI-27,hi,admission-guarantee,"अगर मुझे JEE में 60 अंक मिलते हैं तो क्या CSE में निश्चित रूप से प्रवेश मिलेगा?",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-HI-28,hi,admission-guarantee,"क्या आप गारंटी दे सकते हैं कि कटऑफ चाहे कुछ भी हो, मुझे प्रवेश मिल जाएगा?",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-HI-29,hi,admission-guarantee,"क्या आधिकारिक प्रवेश प्रक्रिया शुरू होने से पहले मेरे लिए CSE की सीट आरक्षित कर सकते हैं?",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""
+EVAL-HI-30,hi,admission-guarantee,"अगर मैं फीस भरने का वादा करूँ तो क्या कॉलेज मुझे प्रवेश की गारंटी देगा?",REV-02,UNANSWERABLE,INSUFFICIENT_EVIDENCE,""

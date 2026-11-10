@@ -1,10 +1,10 @@
 # MITRA evaluation record kit
 
-This is a blank record kit, not completed research data. Ninety ID rows per CSV are capacity only; no questions, answers, ratings, reviewers or approvals are supplied.
+This directory contains the repository-held 30- and 90-case pilot questions and automated score report, along with blank rating/adjudication templates and an unfilled run manifest. The pilot outputs are automated development diagnostics, not independent human evaluation. The runner does not collect human ratings or compute inter-rater agreement; earlier agreement values were simulated and are no longer emitted. No reviewer approvals or completed independent ratings are present.
 
-1. Copy this kit into a new private run directory, for example backend/evaluation/reports/independent-run-01 (already ignored by Git). Back it up privately; do not rely on Git for private raw records.
+1. Create a new private run directory, for example backend/evaluation/reports/independent-run-01 (already ignored by Git). Use new independently authored questions; do not reuse the existing pilot questions as held-out cases. Copy only blank templates and the manifest, not the pilot report. Back it up privately; do not rely on Git for private raw records.
 2. Read docs/INDEPENDENT_EVALUATION_STRENGTHENING_REVIEW.md and agree the protocol before collecting questions.
-3. Fill run-manifest.json. Faculty labels cases.csv against frozen documentary sources before seeing MITRA answers. Use actual author/reviewer codes; keep personal identity mappings private.
+3. Fill run-manifest.json. Independent reviewers label the new case file against frozen documentary sources before seeing MITRA answers. Use actual author/reviewer codes; keep personal identity mappings private.
 4. Save exact UI responses or API payloads under raw/, one file per case/turn/attempt, and index them in responses.csv. Save hashes, sources and timestamps. Screenshots supplement rather than replace text. A browser run and API run are different capture modes.
 5. Give separate copies of ratings-template.csv to reviewer R1 and reviewer R2. They enter their own reviewer IDs and real response/case IDs. The same template rating IDs may be reused only within separate files; use composite reviewer+rating IDs in adjudication.csv. Preserve returned original files.
 6. Complete adjudication.csv after both ratings, preserving disagreement and rationale. Summarize only real eligible scored responses with explicit denominators. Exclude blank stubs from all counts.
@@ -25,4 +25,4 @@ CSV files are UTF-8 with a BOM for Excel and Marathi/Hindi support. Use Excel Da
 
 For a file hash in PowerShell: Get-FileHash -Algorithm SHA256 -LiteralPath <file>. Store the result with the exact file/version. Never rewrite transcripts after hashing. SHA-256 detects changes; it does not prove reviewer independence or truth. Preserve raw scores, adjudication and analysis as different files. No automatic result formulas or fabricated totals are included.
 
-Keep the old 30-question aggregate report separate. Re-running those exposed cases produces a new recorded pilot, not a retrospective original dataset or a new held-out set.
+Keep the existing 30/90-case automated pilot report separate from any independent run. Re-running those exposed cases produces a new development diagnostic, not a retrospective original dataset or a new held-out set.

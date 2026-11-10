@@ -32,4 +32,5 @@ export const config = {
   publicAssistantRateLimitMax: Number(process.env.PUBLIC_ASSISTANT_RATE_LIMIT_MAX || process.env.ASSISTANT_RATE_LIMIT_MAX || 30),
   trustProxy: process.env.TRUST_PROXY === 'true',
   publicConversationTtlMs: 30 * 60 * 1000,
+  evidenceNavigatorEnabled: process.env.EVIDENCE_GAP_NAVIGATOR_ENABLED === 'true',
 };

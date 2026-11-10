@@ -50,9 +50,20 @@ export function normalizeQuery(input) {
     [/प्लेसमेंट|नोकरी/gu, ' placement '], [/संगणक\s?अभियांत्रिकी|कंप्यूटर\s?साइंस/gu, ' cse '],
     [/तारखा|मुदत|तिथियां|अंतिम\s*समय|तारीख|अंतिम\s*तारीख/gu, ' deadline '],
     [/परिवहन/gu, ' transport '], [/संपर्क|फोन|पत्ता/gu, ' contact '],
+    [/रिक्त\s*(?:जागा|सीटें|सीट)|खाली\s*सीटें|रिक्तियों/gu, ' vacancy '],
+    [/सध्या|अभी|वर्तमान(?: में)?/gu, ' current '],
+    [/कंपन्यांच्या\s*भेटी|कंपनियों\s*(?:के\s*)?दौरे|कंपनी\s*विज़िट/gu, ' placement companies visiting '],
+    [/नियुक्त\s*विद्यार्थी|नियुक्त\s*छात्र|प्लेस्ड\s*स्टूडेंट्स/gu, ' students placed '],
+    [/सर्वोच्च\s*पॅकेज|उच्चतम\s*पैकेज/gu, ' highest package '],
+    [/सरासरी\s*पॅकेज|औसत\s*पैकेज/gu, ' average package '],
+    [/जागा\s*रिक्त|सीटें\s*खाली|खाली\s*हैं/gu, ' vacancy '],
+    [/हमी|गारंटी|हमखास|पक्का\s*प्रवेश/gu, ' guarantee '],
+    [/पूर्ण\s*नाव|पूरा\s*नाम/gu, ' full name '],
+    [/जमा\s*(?:होईल|होगी|होगा)|रक्कम\s*जमा|राशि\s*जमा/gu, ' scholarship deposited '],
+    [/तारखेला|तारीख\s*को|किस\s*तारीख|कौन\s*सी\s*तारीख/gu, ' exact date '],
 
     // Devanagari facility, sports, transit, and affiliation terms
-    [/खेळांसाठी|खेळ|क्रीडा|मैदाने|मैदान|खेल/gu, ' sports grounds '],
+    [/(?<![\p{L}\p{M}])(?:खेळांसाठी|खेळ|क्रीडा|मैदाने|मैदान|खेल)(?![\p{L}\p{M}])/gu, ' sports grounds '],
     [/जिम|व्यायामशाळा/gu, ' campus gym '],
     [/क्रिकेट/gu, ' cricket '],
     [/व्हॉलीबॉल|वॉलीबॉल/gu, ' volleyball '],
@@ -118,7 +129,7 @@ export function normalizeQuery(input) {
 
 const fields = {
   route: { firstYear: /\bfirst year\b|\bfy\b|\b1st year\b/g, directSecondYear: /\bdirect second year\b|\bdse\b|\blateral entry\b/g },
-  category: { scst: /\bsc\b|\bst\b|\bscheduled caste\b|\bscheduled tribe\b/g, vjnt: /\bvjnt\b|\bvj\b|\bnt\b|\bsbc\b|\btfws\b/g, concession: /\bebc\b|\bews\b|\bobc\b|\bsebc\b/g, open: /\bopen\b|\boms\b|\bgeneral category\b/g },
+  category: { scst: /\bsc\b|\bst\b|\bscheduled caste\b|\bscheduled tribe\b/g, vjnt: /\bvjnt\b|\bvj\b|\bnt\b|\bsbc\b|\btfws\b/g, concession: /\bebc\b|\bews\b|\bobc\b|\bsebc\b/g, open: /\bopen\b|\boms\b|\bgeneral category\b|(?:ओपन|खुला)\s*(?:प्रवर्ग|श्रेणी|कॅटेगरी|वर्ग)/gu },
   gender: { boy: /\bboy\b|\bmale\b|\bson\b/g, girl: /\bgirl\b|\bfemale\b|\bwoman\b|\bdaughter\b/g },
   branch: branchPatterns,
   service: servicePatterns,
@@ -134,7 +145,9 @@ export function understandQuery(input) {
   const { years: academicYears, invalid: invalidYears } = extractAcademicYears(normalized);
   const topics = [];
   if (/\bseat matrix\b/.test(normalized)) topics.push('seatMatrix');
-  const fee = /\b(?:fee|payment|amount|semester|charge|cost|deposit|installments?)\b/.test(normalized);
+  const fee = /\b(?:fee|payment|amount|charge|cost|deposit|installments?|pay)\b/.test(normalized)
+    && (!/\b(?:scholarship|pragati|mahadbt|nsp|financial aid)\b/.test(normalized)
+      || /\b(?:fee|fees|tuition|charge|cost|deposit|pay)\b/.test(normalized));
   const services = values.service.positive;
   if (fee) topics.push(services.some(service => ['hostel', 'mess'].includes(service)) ? 'accommodationFees' : services.includes('transport') ? 'transport' : 'academicFees');
   if (/\b(?:intake|choice code|programme|program|course|branch)\b/.test(normalized)) topics.push('programmes');
@@ -149,13 +162,47 @@ export function understandQuery(input) {
 
 export function queryClarification(query) {
   const q = understandQuery(query);
-  const table = /\b(?:all|every|table|structure|category-wise|compare|comparison|versus|vs|both)\b/.test(q.normalized);
+  const asksUniformity = /\b(?:same for every|same for all|identical for all)\b/.test(q.normalized)
+    || /(?:सारखीच|एक जैसी|समान)/u.test(String(query));
+  const table = !asksUniformity && /\b(?:all|every|table|structure|category-wise|compare|comparison|versus|vs|both)\b/.test(q.normalized);
   if (q.invalidYears.length) return { kind: 'year', message: 'Please specify a valid consecutive academic year and admission route.' };
   if (q.topics.includes('academicFees') && !table) {
+    if (!q.category.positive.length && !q.category.excluded.length && !/\b(?:structure|schedule|breakdown|category-wise)\b/.test(q.normalized)
+      && (/\b(?:same for every|same for all|fee for engineering|fee for first year|how much.*pay for admission)\b/.test(q.normalized)
+        || asksUniformity
+        || /(?:पहिल्या वर्षाची|प्रथम वर्ष की).*(?:fee|फी|शुल्क)/u.test(String(query))
+        || /(?:पहिल्या वर्षाची|प्रथम वर्ष की).*(?:fee|फी|शुल्क)/u.test(q.normalized))) {
+      return { kind: 'feeCategory', message: 'Which category or concession applies to you (Open, EBC, OBC, SC, ST, VJNT)? Fees vary significantly by category and gender.' };
+    }
+    const feeScopeAllowed = (!/^(?:what (?:is|are) )?b\.?tech fees?\??$/i.test(String(query).trim())
+      && !/^what is the fee for b\.?tech\??$/i.test(String(query).trim()))
+      && (/\b(?:academic|engineering|b\.tech|tuition|first year|direct second|dse|polytechnic|college fees?|payment process)\b/.test(q.normalized)
+        || q.branch.positive.length > 0);
+    if (!q.admissionRoute && !q.route.positive.length && !q.category.positive.length && !q.category.excluded.length
+      && !q.service.positive.length && !feeScopeAllowed) {
+      return { kind: 'feeScope', message: 'Which fee do you mean—academic, hostel, mess, or transport? Please also specify First Year or Direct Second Year and the applicable category.' };
+    }
     if (q.service.excluded.length && !q.service.positive.length && !q.admissionRoute && !/\bacademic\b|\bengineering\b|\btuition\b/.test(q.normalized)) return { kind: 'feeScope', message: 'Which fee do you mean: academic, hostel, mess or transport? Please specify the fee and admission route.' };
     if (q.category.excluded.length && !q.category.positive.length) return { kind: 'category', message: 'Please specify the applicable category or concession; an excluded category does not identify your fee amount.' };
     if (q.category.positive.length === 1 && q.category.positive[0] === 'concession' && q.gender.positive.length !== 1) return { kind: 'feeGender', message: 'For EBC/EWS/OBC/SEBC fees, please specify boys or girls and the admission route so I can select the applicable amount.' };
     if (q.category.positive.length > 1 && /\bi am\b|\bmy category\b/.test(q.normalized)) return { kind: 'category', message: 'Please confirm the single category or concession applicable to your fee question.' };
+  }
+  if (/\b(?:document|certificate)\w*\b/.test(q.normalized)
+    && !q.category.positive.length
+    && !q.route.positive.length && !/\b(?:general checklist|all routes|all categories|document checklist|admission reporting|open category|required admission documents?|admission documents? required)\b/.test(q.normalized)) {
+    return { kind: 'documents', message: 'Are you applying for First Year or Direct Second Year, and which category or concession should I check? Document requirements can differ by route and claim.' };
+  }
+  if ((/\b(?:am i|can i|will i|my)\b[^?]{0,50}\b(?:eligible|eligibility|qualify)\b/.test(q.normalized)
+      || /(?:मी|मैं).{0,35}(?:पात्र|योग्य)|(?:am i|मी).{0,30}eligible/u.test(String(query)))
+    && !/\b(?:scholarship|ebc|tfws|concession)\b/.test(q.normalized)
+    && !/\b(?:subjects?|marks?|score|percentile|percent|category|route|first year|direct second|dse|polytechnic)\b/.test(q.normalized)
+    && !/\b\d+\s*(?:percent|%|marks?)\b/.test(q.normalized)) {
+    return { kind: 'personalEligibility', message: 'Which programme and admission route are you asking about? Eligibility depends on your qualifying subjects and marks, entrance exam, and candidature. Please do not share personal identifiers.' };
+  }
+  if ((/\b(?:can i|will i|am i|my)\b[^?]{0,65}\b(?:get|receive|eligible for|qualify for)\b[^?]{0,35}\bscholarship\b/.test(q.normalized)
+      || /(?:मला|मुझे|क्या मैं).{0,45}(?:शिष्यवृत्ती|छात्रवृत्ति).{0,35}(?:मिळ|मिल|पात्र|योग्य)|(?:शिष्यवृत्ती|छात्रवृत्ति).{0,45}(?:मिळेल|मिलेगी|मिल सकती)/u.test(String(query)))
+    && !/\b(?:pragati|mahadbt|nsp|specific scheme|scheme name)\b/.test(q.normalized)) {
+    return { kind: 'scholarshipScope', message: 'Which scholarship scheme do you mean, and what broad category or eligibility condition should I check? Eligibility is scheme-specific; please do not share personal documents or identifiers.' };
   }
   if (q.topics.includes('programmes') && q.branch.excluded.length && !q.branch.positive.length && !table) return { kind: 'programme', message: 'Which programme do you mean? Please specify the branch and admission route.' };
   if (/\bsecond year\b/.test(q.normalized) && !q.route.positive.length && /\bfee\b/.test(q.normalized)) return { kind: 'route', message: 'Do you mean Direct Second Year admission or fees for a continuing second-year student? Please specify the admission route.' };
@@ -163,7 +210,14 @@ export function queryClarification(query) {
 }
 
 export function splitQueryClauses(query) {
-  const names = ['computer science and engineering', 'artificial intelligence and data science', 'electronics and computer engineering', 'electronics and telecommunication engineering', 'mechanical and rail engineering'];
+  const names = [
+    'computer science and engineering',
+    'artificial intelligence and data science',
+    'ai and data science',
+    'electronics and computer engineering',
+    'electronics and telecommunication engineering',
+    'mechanical and rail engineering',
+  ];
   let protectedText = query;
   names.forEach((name, index) => { protectedText = protectedText.replaceAll(name, `__branch_${index}__`); });
   return protectedText.split(/\s+(?:and|also|plus|as well as)\s+|[?;।]+\s*|[.!]\s+(?=(?:what|which|how|tell|show|list|does|is|can)\b)|,\s*(?=(?:what|which|how|tell|show|list|does|is|can)\b)/i)
