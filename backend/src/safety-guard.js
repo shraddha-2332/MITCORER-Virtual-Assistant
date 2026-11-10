@@ -108,7 +108,7 @@ export function inspectPromptSafety(text) {
         ? 'MITRA cannot guarantee an individual scholarship approval. Eligibility and awards are decided under each scheme’s current rules; check the scheme portal or its official helpdesk.'
         : asksPlacement
           ? 'MITRA cannot guarantee an individual placement, employer, job, internship, or salary. Published placement figures describe reported outcomes and do not determine an individual result.'
-          : 'MITRA cannot guarantee an individual admission or seat. Allotment follows the official eligibility, merit, preference, seat, and round rules; a past cutoff does not guarantee a future allotment.';
+          : 'MITRA cannot guarantee an individual admission or seat. Admissions follow official CAP merit, preference, seat matrix, and cutoff rules; past cutoff does not guarantee future allotment.';
       const officialLink = asksScholarship
         ? { label: 'MITCORER scholarship information', url: 'https://mitcorer.edu.in/scholarship.php' }
         : asksPlacement

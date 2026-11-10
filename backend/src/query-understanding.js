@@ -177,6 +177,7 @@ export function queryClarification(query) {
     const feeScopeAllowed = (!/^(?:what (?:is|are) )?b\.?tech fees?\??$/i.test(String(query).trim())
       && !/^what is the fee for b\.?tech\??$/i.test(String(query).trim()))
       && (/\b(?:academic|engineering|b\.tech|tuition|first year|direct second|dse|polytechnic|college fees?|payment process)\b/.test(q.normalized)
+        || /non-cap|acap|institute.level|applying after\s+cap/.test(q.normalized)
         || q.branch.positive.length > 0);
     if (!q.admissionRoute && !q.route.positive.length && !q.category.positive.length && !q.category.excluded.length
       && !q.service.positive.length && !feeScopeAllowed) {
