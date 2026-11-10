@@ -41,6 +41,8 @@ export function matchesIntent(text, phrase) {
 export function normalizeQuery(input) {
   let text = normalizeLocalTerms(input || '').normalize('NFKC').toLowerCase();
   const native = [
+    [/प्रवर्गानुसार|श्रेणी\s*के\s*अनुसार|कॅटेगरीनुसार|category\s*wise/gu, ' category-wise '],
+    [/प्रवेशासाठी\s*आवश्यक\s*कागदपत्रे?|प्रवेश\s*के\s*आवश्यक\s*दस्तावेज|admission\s*documents?/gu, ' required admission documents '],
     [/फेरी|राउंड/gu, ' round '],
     [/तसेच|तसंच|तथा|साथ ही|इसके अलावा/gu, ' and '],
     [/मुली|लड़कियों|लड़कियां|महिलाओं/gu, ' girl '], [/मुलगे|लड़कों/gu, ' boy '],
@@ -189,6 +191,7 @@ export function queryClarification(query) {
     if (q.category.positive.length > 1 && /\bi am\b|\bmy category\b/.test(q.normalized)) return { kind: 'category', message: 'Please confirm the single category or concession applicable to your fee question.' };
   }
   if (/\b(?:document|certificate)\w*\b/.test(q.normalized)
+    && !/\bscholarship\b/.test(q.normalized)
     && !q.category.positive.length
     && !q.route.positive.length && !/\b(?:general checklist|all routes|all categories|document checklist|admission reporting|open category|required admission documents?|admission documents? required)\b/.test(q.normalized)) {
     return { kind: 'documents', message: 'Are you applying for First Year or Direct Second Year, and which category or concession should I check? Document requirements can differ by route and claim.' };
