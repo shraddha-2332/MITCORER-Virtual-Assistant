@@ -32,10 +32,7 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
-      - run: |
-          for i in 1 2 3; do
-            npx --no-install playwright-core install --with-deps chrome && break || sleep 5
-          done
+      - run: npx --no-install playwright-core install chrome
         working-directory: frontend
       - run: npm run test:public-session-browser
         working-directory: frontend
