@@ -10,6 +10,18 @@ The public assistant uses Node.js, persisted SQLite knowledge, weighted keyword/
 
 `query-scope.js` shares branch/service scope and consecutive academic-year parsing across English facts and native templates. The maintained answer builder and compound-question planner consume these fields. Hindi/Marathi conjunctions split relevant facets while official multiword programme names stay intact. Missing or contradictory personal fee details and ambiguous routes receive clarification using the existing response path. A supported compound section can still answer while another asks for clarification.
 
+The shared parser now also extracts an `admissionPathway` field for CAP versus institute-level routes. Non-CAP, ACAP, Against-CAP and institute-level wording is routed to the maintained ACAP passage instead of the generic B.Tech/CAP answer. This determines the requested path; it does not establish current seat availability.
+
+Institution-status queries (college/institute type, aided versus unaided, autonomy, and minority classification) route separately from admission-pathway queries. Selected Marathi/Hindi words for college type, autonomy, aided/unaided, and private/government are normalized to the same bounded intent. The current MITCORER classification record is explicitly scoped to AY 2026-27 and cites the Maharashtra CET Cell institute summary. A question about another year abstains and links to the CET Cell portal instead of reusing the old status. Routing tests do not establish fluent answer translation.
+
+Admission quota terms are treated as a separate intent from general CAP vs institute-level routing. The answer distinguishes year/programme-specific CAP seat categories from institutional quota and post-CAP vacancy processes, links to CET Cell and MITCORER notices, and avoids inferring a fixed quota percentage or availability. Exact seat counts require the relevant programme/year seat matrix. Parent/student phrasing aliases were added to the existing programme, DSE, diploma, fees, facilities, placement, contact and timing records; an additive startup migration merges aliases into existing persisted records without replacing their maintained text or custom tags.
+
+During verification, the CET Cell institute summary and MITCORER's First Year B.Tech page were found to list different AY 2026-27 AI & Data Science choice codes. Choice-code questions disclose both official values and link to both sources; users are directed to confirm the code in the live CAP option form. This source discrepancy remains unresolved.
+
+Marathi and Hindi phrases for institute-level admission are normalized to the same route and regression-tested against the ACAP evidence record. These checks establish intent routing for the listed phrases only; a fluent speaker still needs to review the language quality of the answer.
+
+Uploaded-document review-status questions are handled separately from document-requirement questions. The public assistant does not inspect an applicant's private document records; it directs the user to the official admissions contact page. Authenticated status summaries remain scoped to the requesting account. This route is covered with English, Marathi, Hindi and Hinglish diagnostic prompts, but the native-language phrasing has not had fluent-speaker review.
+
 Examples covered by regression checks:
 
 | Question | Required behavior |

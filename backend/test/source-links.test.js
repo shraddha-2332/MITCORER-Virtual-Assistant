@@ -32,6 +32,9 @@ test('sources follow answer topics and unsupported routes never use engineering 
     const docs = await ask('What documents are required for First Year admission?');
     assert.equal(docs.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions/documents');
     assert.deepEqual(docs.evidence.map(record => record.id), ['KB-1']);
+    const seatMatrix = await ask('What is CSE seat matrix and intake?');
+    assert.deepEqual(seatMatrix.evidence.map(record => record.id), ['KB-6']);
+    assert.ok(seatMatrix.officialLinks.some(link => link.url === 'https://fe2024.mahacet.org/StaticPages/HomePage'));
     const acap = await ask('Can a non-CAP student get a scholarship?');
     assert.ok(!acap.officialLinks.some(link => link.url.includes('fe2026')));
     for (const question of ['What are DSE fees for AY 2030-31?', 'What are Polytechnic fees for AY 2025-26?']) {

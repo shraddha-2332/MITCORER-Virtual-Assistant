@@ -465,6 +465,9 @@ export function recordFeedback(body) {
     helpful,
     comment,
     model,
+    status: helpful ? 'Appreciated' : 'Needs review',
+    resolutionNote: '',
+    updatedAt: now,
     createdAt: now,
   };
 
@@ -474,6 +477,23 @@ export function recordFeedback(body) {
   saveDb();
   audit('feedback.recorded', 'feedback', entry.id, { email: 'public', role: 'applicant' }, helpful ? 'helpful' : 'unhelpful');
   return { success: true, feedbackId: entry.id, message: 'Thank you for your feedback!' };
+}
+
+function updateFeedbackStatus(id, body, user) {
+  requireRole({ user }, ['staff', 'admin']);
+  const validStatuses = ['Needs review', 'Investigating', 'Resolved', 'Dismissed', 'Appreciated', 'Acknowledged', 'Reviewed'];
+  const status = typeof body?.status === 'string' ? body.status.trim() : '';
+  if (!validStatuses.includes(status)) throw badRequest('Invalid feedback status.');
+  const record = (getDb().feedback || []).find((item) => item.id === id);
+  if (!record) throw notFound('Feedback record not found.');
+  const resolutionNote = typeof body.resolutionNote === 'string' ? body.resolutionNote.trim().slice(0, 1500) : (record.resolutionNote || '');
+  record.status = status;
+  record.resolutionNote = resolutionNote;
+  record.resolvedBy = user.name || user.email;
+  record.updatedAt = nowIso();
+  saveDb();
+  audit('feedback.updated', 'feedback', record.id, user, `${status}${resolutionNote ? `: ${resolutionNote}` : ''}`);
+  return record;
 }
 
 function updateInquiryStatus(id, body, user) {
@@ -796,6 +816,14 @@ function buildDocumentStatusAnswer(question, user) {
   const asksStatus = ['status', 'review', 'uploaded', 'upload', 'स्थिती', 'स्थिति', 'तपासणी', 'समीक्षा'].some((term) => intentText.includes(term));
   const asksDocuments = ['document', 'documents', 'certificate', 'marksheet', 'कागदपत्र', 'दस्तावेज', 'प्रमाणपत्र'].some((term) => intentText.includes(term));
   if (!asksStatus || !asksDocuments) return null;
+  if (!user) {
+    return {
+      source: 'Applicant document status',
+      answer: 'Uploaded-document review status is private to each applicant. This public assistant cannot look up that status. Please contact the MITCORER admissions office through its official contact page, and do not share document details or identifiers here.',
+      next: 'Contact the admissions office through the official MITCORER contact page.',
+      officialLinks: [{ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
+    };
+  }
   const records = getDb().documents.filter((item) => item.ownerEmail === user.email);
   if (records.length === 0) {
     return {
@@ -888,6 +916,22 @@ function getOfficialAdmissionLinks(question) {
   const asksCap = (!asksAcap && /\bcap\b/.test(normalized)) || /allotment|option form|freeze|betterment|seat acceptance|reporting|deadline|schedule|last date/.test(normalized);
   const years = understandQuery(normalized).academicYears;
   const currentYear = !years.length || years.every(year => year === '2026-27');
+  const asksInstitutionStatus = understandQuery(normalized).topics.includes('institutionStatus');
+  const asksAdmissionQuota = understandQuery(normalized).topics.includes('admissionQuota');
+
+  if (asksAdmissionQuota && currentYear) {
+    add('Maharashtra CET Cell 2026-27 CAP and institute summary', 'https://fe2026.mahacet.org/StaticPages/HomePage?did=475');
+    add('MITCORER ACAP / institute-level notices', 'https://mitcorer.edu.in/acap-institute-level-admission.php');
+  }
+  if (/\b(?:choice code|dte code|option form)\b/.test(normalized)
+    && /\b(?:artificial intelligence|ai\s*(?:&|and)\s*(?:data\s*)?science|ai\s*&\s*ds)\b/.test(normalized)) {
+    add('Maharashtra CET Cell MITCORER institute summary (AY 2026-27)', 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901');
+    add('MITCORER First Year B.Tech admissions page', 'https://mitcorer.edu.in/fy-btech.php');
+  }
+
+  if (asksInstitutionStatus && currentYear) {
+    add('Maharashtra CET Cell MITCORER institute summary (AY 2026-27)', 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901');
+  }
 
   if (currentYear && asksDse) add('Official DSE Engineering portal 2026-27', 'https://dse2026.mahacet.org.in/');
   else if (currentYear && asksPolytechnic) add('Official Polytechnic admission portal 2026-27', 'https://poly26.dtemaharashtra.gov.in/poly_26/home');
@@ -895,6 +939,10 @@ function getOfficialAdmissionLinks(question) {
   if (asksAcap) add('MITCORER ACAP and institute-level notices', 'https://mitcorer.edu.in/acap-institute-level-admission.php');
   if (asksCap || asksAcap || /cutoff|cut-off|merit/.test(normalized)) add('Maharashtra CET Cell notices', 'https://cetcell.mahacet.org/notices/');
   if (/cutoff|cut-off|merit/.test(normalized)) add('Official Maharashtra CET Cell CAP Cutoff portal', 'https://fe2024.mahacet.org/StaticPages/HomePage');
+  if (/\bseat matrix\b/.test(normalized)
+    && (!/\b20\d{2}-\d{2}\b/.test(normalized) || /\b2024\b|\bhistorical\b/.test(normalized))) {
+    add('Maharashtra CET Cell 2024-25 seat matrix', 'https://fe2024.mahacet.org/StaticPages/HomePage');
+  }
   if (/brochure|prospectus/.test(normalized)) {
     add('MITCORER College Brochure', 'https://mitcorer.edu.in/pdf/MITCORER_Brochure-26-27.pdf');
     add('Official AICTE Mandatory Disclosure', 'https://mitcorer.edu.in/pdf/Mandatory-Disclousure.pdf');
@@ -1037,6 +1085,53 @@ function getOfficialFeeLinks(question) {
 
 function buildCollegeProfileAnswer(question) {
   const normalized = normalizeIntentText(question);
+  if (/\b(?:choice code|dte code|option form)\b/.test(normalized)
+    && /\b(?:artificial intelligence|ai\s*(?:&|and)\s*(?:data\s*)?science|ai\s*&\s*ds)\b/.test(normalized)) {
+    const requestedYears = understandQuery(question).academicYears;
+    if (requestedYears.some(year => year !== '2026-27')) {
+      return {
+        source: 'AI and Data Science choice code requested for an unverified academic year',
+        evidence: [],
+        officialLinks: [{ label: 'Maharashtra State CET Cell portal', url: 'https://cetcell.mahacet.org/' }],
+        answer: `The source discrepancy is documented for AY 2026-27 only. I cannot confirm the AI and Data Science choice code for AY ${requestedYears.join(', ')}; use the CET Cell option form and current MITCORER notice for that year.`,
+        next: '', actionView: 'programs', actionLabel: 'Check the applicable year',
+      };
+    }
+    return {
+      recordId: 'KB-56',
+      source: 'Maharashtra State CET Cell and MITCORER First Year B.Tech pages (AY 2026-27)',
+      sourceUrl: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901',
+      answer: 'The official pages conflict for the AY 2026-27 AI & Data Science choice code: the Maharashtra CET Cell institute summary lists 0690199510, while MITCORER’s First Year B.Tech page lists 0690126310. Both list intake 60. Before submitting a CAP option form, use the code displayed in the live CET Cell portal and confirm the discrepancy with MITCORER admissions.',
+      officialLinks: [
+        { label: 'Maharashtra CET Cell MITCORER institute summary', url: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901' },
+        { label: 'MITCORER First Year B.Tech admissions page', url: 'https://mitcorer.edu.in/fy-btech.php' },
+      ],
+      next: '', actionView: 'programs', actionLabel: 'Confirm choice code',
+    };
+  }
+  if (understandQuery(question).topics.includes('admissionQuota')) {
+    const requestedYears = understandQuery(question).academicYears;
+    if (requestedYears.some(year => year !== '2026-27')) {
+      return {
+        source: 'Admission quota requested for an unverified academic year',
+        answer: `Quota labels, seat allocation and institute-level rules are year-specific. I have a verified MITCORER reference for AY 2026-27 only, so I cannot confirm quota details for AY ${requestedYears.join(', ')}. Check that year’s CET Cell CAP brochure/seat matrix and MITCORER notices.`,
+        evidence: [],
+        officialLinks: [{ label: 'Maharashtra State CET Cell portal', url: 'https://cetcell.mahacet.org/' }, { label: 'MITCORER ACAP / institute-level notices', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' }],
+        next: '', actionView: 'cap', actionLabel: 'Check official quota notices',
+      };
+    }
+    return {
+      recordId: 'KB-55',
+      source: 'Maharashtra State CET Cell and MITCORER ACAP notices (AY 2026-27)',
+      sourceUrl: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901',
+      answer: 'For AY 2026-27, MITCORER is listed as Un-Aided and Non-Minority. That does not tell you an individual seat quota or guarantee a seat. CAP categories and seat types (including applicable State/All India, reservation, EWS and TFWS entries) depend on the programme-specific CET Cell matrix. Institute-level/institutional quota seats and vacancies after CAP are separate from a regular CAP allotment and are handled through the published eligibility, application, vacancy and merit-list process. “Management quota” is a common phrase, but use the official category and current rules; I cannot confirm a fixed percentage or a current seat from the college status alone. The CET Cell marks the 2026-27 admission process closed. Check the next year’s CET Cell matrix and MITCORER ACAP notices for current details.',
+      officialLinks: [
+        { label: 'Maharashtra CET Cell 2026-27 CAP portal and notices', url: 'https://fe2026.mahacet.org/StaticPages/HomePage?did=475' },
+        { label: 'MITCORER ACAP / institute-level notices', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
+      ],
+      next: '', actionView: 'cap', actionLabel: 'View official quota notices',
+    };
+  }
   if (/\b(?:full name of (?:the |your |our )?(?:college|institute)|official name of (?:the |your |our )?(?:college|institute)|(?:college|institute)(?:'s)? full name|what is (?:the |your |our )?(?:college|institute)(?:'s)? full name|(?:name of|what is the name of) (?:the |your |our )?(?:college|institute)|what does mit ?corer (?:stand for|mean)|expand mit ?corer|full form of mit ?corer|meaning of mit ?corer)\b/.test(normalized)
     || /\b(?:full name|full form)\b/u.test(normalized) && /mit ?corer|college|institute|mahavidyalay|महाविद्यालय|कॉलेज/u.test(normalized)) {
     return {
@@ -1440,12 +1535,23 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'inquiry', actionLabel: 'View official disclosure',
     };
   }
-  if (/\b(?:autonomous|autonomy|is (?:the |it an? )?autonomous|autonomous status)\b/i.test(normalized)) {
+  if (/\b(?:autonomous|autonomy|autonomous status|college type|type of (?:the )?(?:college|institute)|institution type|institute type|college classification|institution classification|aided|unaided|un-aided|self[- ]?financed|minority status|private college|government college|public college)\b/i.test(normalized)
+    || /\b(?:is|whether|what)\b.{0,60}\b(?:private|government|public)\b/i.test(normalized)) {
+    const requestedYears = understandQuery(question).academicYears;
+    if (requestedYears.some(year => year !== '2026-27')) {
+      return {
+        source: 'Institution status requested for an unverified academic year',
+        answer: `I have an official MITCORER institution-status listing for AY 2026-27 only. I cannot verify its status for AY ${requestedYears.join(', ')} from the records here; please check the CET Cell listing for that year.`,
+        evidence: [],
+        officialLinks: [{ label: 'Maharashtra State CET Cell official portal', url: 'https://cetcell.mahacet.org/' }],
+        next: '', actionView: 'inquiry', actionLabel: 'Check the applicable year',
+      };
+    }
     return {
-      recordId: 'KB-37',
-      source: 'MITCORER Affiliations and Statutory Approvals',
-      sourceUrl: 'https://mitcorer.edu.in/',
-      answer: 'MITCORER Autonomy & Affiliation Status:\n\n- Non-Autonomous College: MITCORER is a non-autonomous, private-unaided engineering institution affiliated to Punyashlok Ahilyadevi Holkar Solapur University (PAHSU), Solapur.\n- University Curriculum & Exams: All academic curricula, continuous internal assessments, and semester examinations strictly follow PAHSU regulations and syllabus.\n- Statutory Approvals: Approved by AICTE, New Delhi, recognized by the Directorate of Technical Education (DTE), Maharashtra (DTE Code: 06901), and accredited NAAC Grade A.\n- Degrees Awarded: Degrees are conferred directly by Punyashlok Ahilyadevi Holkar Solapur University.',
+      recordId: 'KB-54',
+      source: 'Maharashtra State CET Cell 2026-27 Institute Summary',
+      sourceUrl: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901',
+      answer: 'According to the Maharashtra State CET Cell institute summary for AY 2026-27, MITCORER (Institute Code 06901) is listed as Status: Un-Aided, Autonomy Status: Non-Autonomous, and Minority Status: Non-Minority. The listed affiliating university is Punyashlok Ahilyadevi Holkar Solapur University. The CET Cell uses “Un-Aided” rather than a private/public label; Un-Aided and Non-Autonomous are separate classifications. This is a year-specific listing; check the current CET Cell institute summary for another admission year.',
       next: '', actionView: 'programs', actionLabel: 'View affiliations',
     };
   }
@@ -1484,7 +1590,9 @@ function buildCollegeProfileAnswer(question) {
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
     };
   }
-  if (/\b(?:b\.?tech admission(?: process)?|engineering admission(?: process)?|admission process|how to apply|apply for (?:engineering|b\.?tech)|apply to mitcorer|admission 2026|admission eligibility criteria)\b/.test(normalized) && !/\b(?:exam|exams|entrance|test|cet|jee|polytechnic|diploma|dse|direct second|fee|fees|cost|document|documents|hostel|mess|accommodation)\b/.test(normalized)) {
+  if (/\b(?:b\.?tech admission(?: process)?|engineering admission(?: process)?|admission process|how to apply|apply for (?:engineering|b\.?tech)|apply to mitcorer|admission 2026|admission eligibility criteria)\b/.test(normalized)
+    && understandQuery(normalized).admissionPathway !== 'instituteLevel'
+    && !/\b(?:exam|exams|entrance|test|cet|jee|polytechnic|diploma|dse|direct second|fee|fees|cost|document|documents|hostel|mess|accommodation)\b/.test(normalized)) {
     return {
       recordId: 'KB-29',
       source: 'Maharashtra CET Cell and MITCORER Admissions Office',
@@ -1531,20 +1639,30 @@ function buildCollegeProfileAnswer(question) {
   }
   if (/\b(?:chatbot|virtual assistant|mitra chatbot|chatbot support|what (?:can|else can) (?:we|i|you) (?:ask|answer|help|do)|what questions? (?:can|to) (?:ask|answer)|how can you help|what topics?|topics you know|what do you know|help me|need help|help|main menu|menu options?|ask mitra|can you help)\b/i.test(normalized) || (/\bwhat else\b/.test(normalized) && /\bask\b/.test(normalized))) {
     return {
-      recordId: 'KB-34',
+      recordId: ['KB-10', 'KB-14', 'KB-29', 'KB-54', 'KB-17'],
       source: 'MITCORER Virtual Assistant Mitra',
       sourceUrl: 'https://mitcorer.edu.in/',
-      answer: "I am Mitra, your verified virtual admission assistant for MIT College of Railway Engineering and Research (MITCORER), Barshi!\n\nHere are the key admission topics you can ask me about:\n\n1. B.Tech Programmes & Intake: 6 engineering branches (CSE, AI&DS, E&TC, Mechanical, Civil, and CSE-AI; 360 seats total) plus Polytechnic Diploma.\n2. Fees & Category Concessions: First Year & Direct Second Year approved fees, and category concessions (SC/ST, OBC, VJ/NT, EBC/EWS).\n3. Cutoffs & Eligibility: MHT-CET and JEE Main cutoffs, eligibility criteria, and CAP seat process (DTE Code: 6901).\n4. Scholarships & Financial Aid: MahaDBT government schemes (EBC, post-matric), AICTE Pragati for girls, and bank loan assistance.\n5. Placements & Recruiters: 94% placement rate, ₹21 LPA highest package, and 100+ visiting recruiters.\n6. Hostels & Campus Facilities: Boys and girls hostels, mess, wifi campus, railway labs, library OPAC, and sports facilities.\n7. Required Documents: Original documents required for CAP document verification and Institute-Level reporting.\n8. Admission Desk & Helpline: Office timings (Mon–Sat 9:30 AM–5:30 PM), helpline phone numbers, and official enquiry forms.\n\nTap any suggested topic below or type your specific question!",
+      answer: "I’m Mitra, the virtual admission assistant for MITCORER, Barshi. You can ask me in English, Marathi, Hindi, or Hinglish about:\n\n- First-year B.Tech, direct second-year B.Tech, and diploma programmes, intake, and choice codes.\n- MHT-CET/JEE eligibility, CAP rounds and option forms, and institute-level/ACAP admissions.\n- Fees, cutoffs, scholarships, and required documents.\n- College status, including aided status, autonomy, minority classification, and affiliation (these can depend on the admission year).\n- Hostels, transport, facilities, placements, and official contact details.\n\nAsk a specific question, such as “What is the non-CAP admission process?” or “Is MITCORER autonomous?” I answer from available published records; current vacancies, personal application status, and facts without a verified source may need confirmation from the college. For year-dependent details, include the admission year.",
       next: '', actionView: 'programs', actionLabel: 'Explore with Mitra',
     };
   }
   if (/\b(?:college reviews?|student reviews?|ratings?)\b/.test(normalized)) {
     return {
-      recordId: 'KB-35',
-      source: 'MITCORER institutional records and AICTE disclosure',
-      sourceUrl: 'https://mitcorer.edu.in/faq.php',
-      answer: 'MITCORER Barshi institutional facts and verified benchmarks:\n\n- Legacy: Established under MAEER\'s MIT Pune Group (founded by Prof. Dr. Vishwanath D. Karad)\n- Approvals: Approved by AICTE, New Delhi; recognized by Govt. of Maharashtra & DTE Mumbai (Code: 06901); affiliated to PAH Solapur University (PAHSU) & MSBTE\n- Placements: 100+ visiting recruiters, 300+ students placed, highest published package of 21 LPA\n- Faculty & Alumni: 60+ qualified faculty members and an alumni network of 900+ graduates across core engineering and railway industries\n- Practical Infrastructure: Dedicated Railway Model Room, advanced departmental laboratories, central fabrication workshop, air-conditioned computing center, and separate student hostels.',
+      source: 'No verified independent student-review record',
+      evidence: [],
+      officialLinks: [{ label: 'MITCORER official website', url: 'https://mitcorer.edu.in/' }],
+      answer: 'I do not have a verified set of independent student reviews or ratings for MITCORER, so I cannot summarize or score reviews. I can answer specific questions about published programmes, fees, facilities, admissions, and placement records, with their source and year.',
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
+    };
+  }
+  if (/\b(?:best|top[- ]?\d+|rank(?:ed|ing)?)\b/.test(normalized)
+    && /\b(?:college|institute|engineering|placement|railway)\b/.test(normalized)) {
+    return {
+      source: 'No verified comparative college ranking',
+      evidence: [],
+      officialLinks: [{ label: 'MITCORER official website', url: 'https://mitcorer.edu.in/' }],
+      answer: 'I do not have an independent, comparable ranking dataset to verify which college is “best” or its placement rank. I can help compare published factors such as programmes, current fees, institute classification, facilities, and placement records; those facts do not establish a ranking or guarantee an individual outcome.',
+      next: '', actionView: 'programs', actionLabel: 'Compare published facts',
     };
   }
   if (/\b(?:barshi to solapur|solapur to barshi|distance (?:from|to) solapur|solapur distance)\b/.test(normalized)) {
@@ -2016,6 +2134,19 @@ export function retrieveKnowledge(question, vectorScores = null, candidateLimit 
   if (['affiliation', 'affiliated', 'solapur university', 'pahsu', 'aicte', 'dte code', 'institute code', '06901', 'who is the principal', 'college principal', 'principal of', 'principal name', 'madhukar lengare'].some((term) => rawQuestion.includes(term) || normalizedQuestion.includes(term))) {
     targetedRecordIds.add('KB-37');
     primaryRecordIds.add('KB-37');
+  }
+  if (understandQuery(question).topics.includes('institutionStatus')) {
+    targetedRecordIds.add('KB-54');
+    primaryRecordIds.add('KB-54');
+  }
+  if (understandQuery(question).topics.includes('admissionQuota')) {
+    targetedRecordIds.add('KB-55');
+    primaryRecordIds.add('KB-55');
+  }
+  if (/\b(?:choice code|dte code|option form)\b/.test(normalizedQuestion)
+    && /\b(?:artificial intelligence|ai\s*(?:&|and)\s*(?:data\s*)?science|ai\s*&\s*ds)\b/.test(normalizedQuestion)) {
+    targetedRecordIds.add('KB-56');
+    primaryRecordIds.add('KB-56');
   }
   if (['hod', 'head of department', 'department head', 'somnath mule', 'amit shinde', 'sanjay mane', 'honors degree', 'minor degree'].some((term) => rawQuestion.includes(term) || normalizedQuestion.includes(term)) || (normalizedQuestion.includes('lab') && (normalizedQuestion.includes('cse') || normalizedQuestion.includes('civil') || normalizedQuestion.includes('mechanical')))) {
     targetedRecordIds.add('KB-38');
@@ -2847,7 +2978,7 @@ async function answerAdmissionQuestionCore(body, user) {
     // Gemini failed verification or returned null — fall through to deterministic chain below.
   }
 
-  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || (user && buildDocumentStatusAnswer(question, user)) || buildCompoundAnswer(question, normalized, records) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildReviewedPassage(normalized, language, records) || guard(buildFacilityAnswer(question)) || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
+  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildReviewedPassage(normalized, language, records) || guard(buildFacilityAnswer(question)) || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
     source: 'No verified record',
     answer: 'I could not find an official answer for that question. Please ask about a specific programme, fee, scholarship, admission step, or campus facility.',
     next: '',
@@ -3010,6 +3141,9 @@ export async function answerAdmissionQuestion(body, user) {
     }
     const trace = { traceId, agentIterations: 0 };
     const result = normalizeAssistantSourceLinks(await assistantTraceContext.run(trace, () => answerAdmissionQuestionCore(body, user)));
+    const traceEvidence = Array.isArray(result?.evidence)
+      ? result.evidence.filter(item => item?.id && item?.citationId).slice(0, 5)
+      : [];
     console.log(JSON.stringify({
       event: 'assistant_pipeline', traceId, questionHash,
       language: result?.responseLanguage || result?.requestedLanguage || body?.language || 'auto',
@@ -3018,7 +3152,8 @@ export async function answerAdmissionQuestion(body, user) {
       routeCount: query.route.positive.length,
       yearCount: query.academicYears.length,
       clarification: Boolean(result?.clarification),
-      evidenceIds: Array.isArray(result?.evidence) ? result.evidence.map(item => item.id).filter(Boolean).slice(0, 5) : [],
+      evidenceIds: traceEvidence.map(item => item.id),
+      evidenceCitationIds: traceEvidence.map(item => item.citationId),
       outcome: result?.outcomeStatus || 'UNKNOWN',
       model: result?.model || 'unknown',
       agentIterations: trace.agentIterations,
@@ -3205,7 +3340,8 @@ function chunkKnowledgeText(text, chunkSize = 2800) {
 
 function canonicalSourceUrl(value) {
   try {
-    const url = new URL(value);
+    const resolved = resolveSourceUrl(value);
+    const url = new URL(resolved || value);
     url.hostname = url.hostname.toLowerCase().replace(/^www\./, '');
     url.search = '';
     url.hash = '';
@@ -3603,8 +3739,10 @@ async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   }
   if (req.method === 'GET' && url.pathname === '/api/feedback') {
     requireRole({ user }, ['staff', 'admin']);
-    return { items: getDb().feedback || [] };
+    return { items: (getDb().feedback || []).map((f) => ({ ...f, status: f.status || (f.helpful ? 'Appreciated' : 'Needs review') })) };
   }
+  const feedbackMatch = url.pathname.match(/^\/api\/feedback\/([^/]+)(?:\/status)?$/);
+  if (req.method === 'PATCH' && feedbackMatch) return updateFeedbackStatus(feedbackMatch[1], body, user);
   if (req.method === 'GET' && url.pathname === '/api/conversations') return listConversations(user, url.searchParams.get('offset'));
   const conversationMatch = url.pathname.match(/^\/api\/conversations\/([^/]+)$/);
   if (req.method === 'GET' && conversationMatch) {
@@ -3627,7 +3765,7 @@ async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   if (req.method === 'DELETE' && knowledgeMatch) return deleteKnowledge(knowledgeMatch[1], body, user);
   if (req.method === 'GET' && url.pathname === '/api/official-sources') {
     requireRole({ user }, ['staff', 'admin']);
-    return { items: getDb().officialSources || [] };
+    return { items: (getDb().officialSources || []).filter((item) => item.id !== 'SRC-UNREACHABLE').map(sourceRecord) };
   }
   if (req.method === 'POST' && url.pathname === '/api/official-sources/sync') {
     requireRole({ user }, ['admin']);

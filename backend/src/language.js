@@ -23,6 +23,20 @@ export function normalizeLocalTerms(question) {
   let text = normalizeDigits(String(question).normalize('NFKC'));
   text = text.replace(/^(?:please\s+)?(?:answer|reply|respond)(?:\s+to me)?\s+in\s+(?:english|marathi|hindi)\s*[:,]?\s*(?:and\s+)?/i, '');
   const replacements = [
+    // Map institution-level admission phrasing to the same bounded English intent
+    // used by the verified ACAP record. This normalizes the query only; answer
+    // language selection and the evidence-backed answer remain unchanged.
+    [/संस्था\s*(?:च्या\s*)?(?:स्तरावर|स्तरीय|स्तर)\s*(?:वरील\s*)?(?:प्रवेश|प्रवेश प्रक्रिया)/gu, ' institute-level admission '],
+    [/संस्थान[\s-]*(?:के\s*)?(?:स्तर पर|स्तरीय|स्तर)\s*(?:पर\s*)?(?:प्रवेश|दाखिला|प्रवेश प्रक्रिया)/gu, ' institute-level admission '],
+    [/(?:महाविद्यालयाचा प्रकार|कॉलेजचा प्रकार|महाविद्यालय का प्रकार|कॉलेज का प्रकार)/gu, ' college type '],
+    [/(?:स्वायत्तता|स्वायत्त|स्वशासी)/gu, ' autonomy '],
+    [/(?:विनाअनुदानित|बिनाअनुदानित|बिना\s*अनुदानित)/gu, ' unaided '],
+    [/अनुदानित/gu, ' aided '],
+    [/(?:प्रवेश\s*(?:आणि|व)\s*अर्ज|प्रवेश\s*और\s*आवेदन)/gu, ' admission application '],
+    [/(?:प्रवेश\s*कोटा|सीट\s*कोटा|प्रवेश\s*आरक्षण|संस्थात्मक\s*(?:कोटा|जागा)|संस्थानिक\s*कोटा)/gu, ' admission quota institutional quota '],
+    [/(?:आरक्षित\s*जागा|आरक्षित\s*सीट)/gu, ' reserved seat '],
+    [/(?:खाजगी महाविद्यालय|खाजगी कॉलेज|निजी महाविद्यालय|निजी कॉलेज)/gu, ' private college '],
+    [/(?:शासकीय महाविद्यालय|शासकीय कॉलेज|सरकारी महाविद्यालय|सरकारी कॉलेज)/gu, ' government college '],
     // Common Marathi and Hindi question forms need to normalize before intent routing.
     [/तुमच्या कॉलेजमध्ये कोणते इंजिनिअरिंग कोर्स आहेत|आपके कॉलेज में कौन-कौन से इंजीनियरिंग कोर्स उपलब्ध हैं/gu, ' list engineering programmes '],
     [/कॉलेज कुठे आहे|कॉलेज कहाँ स्थित है/gu, ' where is the college located '],

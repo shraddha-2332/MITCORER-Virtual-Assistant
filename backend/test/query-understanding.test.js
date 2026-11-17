@@ -37,6 +37,28 @@ test('extracted fields preserve scope, negation, academic years and protected na
   assert.equal(matchesIntent('coffee or fellowship', 'fee'), false);
   assert.equal(normalizeIntentText('Eligible coffee costs 0690124210. hostle and lbrary.'), 'eligible coffee cost 0690124210. hostel and library.');
   assert.deepEqual(splitQueryClauses(normalizeIntentText('Artificial Intelligence and Data Science courses and hostel fees')), ['artificial intelligence and data science course', 'hostel fee']);
+  for (const wording of ['non cap', 'non-cap', 'noncap', 'ACAP', 'against CAP', 'institute-level', 'institute level']) {
+    assert.equal(understandQuery(`What is the ${wording} admission process?`).admissionPathway, 'instituteLevel', wording);
+  }
+  for (const wording of ['संस्था स्तर प्रवेश', 'संस्थास्तरीय प्रवेश', 'संस्थान स्तर पर प्रवेश', 'संस्थान-स्तरीय दाखिला']) {
+    assert.equal(understandQuery(`MITCORER ${wording} प्रक्रिया क्या है?`).admissionPathway, 'instituteLevel', wording);
+  }
+  assert.equal(understandQuery('What is the CAP admission process?').admissionPathway, 'cap');
+  for (const question of ['What is the admission quota?', 'Does MITCORER have management quota seats?', 'How do institute quota seats work?']) {
+    assert.ok(understandQuery(question).topics.includes('admissionQuota'), question);
+  }
+  assert.ok(understandQuery('MITCORER प्रवेश कोटा काय आहे?').topics.includes('admissionQuota'));
+  for (const question of [
+    'What type of college is MITCORER?',
+    'Is MITCORER autonomous or non-autonomous?',
+    'Is MITCORER private or government?',
+    'Is the institute aided or unaided?',
+    'MITCORER महाविद्यालयाचा प्रकार काय?',
+    'क्या MITCORER स्वायत्त है?',
+    'क्या MITCORER निजी कॉलेज है?',
+  ]) {
+    assert.ok(understandQuery(question).topics.includes('institutionStatus'), question);
+  }
 });
 
 test('public queries interpret plurals, paraphrases, typos, native conjunctions and ambiguity', async () => {
@@ -56,6 +78,19 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
       assert.equal((await ask(question)).evidence[0]?.id, 'KB-20', question);
     }
     assert.equal((await ask('What scholrships are available?')).evidence[0]?.id, 'KB-18');
+    const nonCap = await ask('What is the non cap admission process?');
+    assert.equal(nonCap.evidence[0]?.id, 'KB-14');
+    assert.match(nonCap.answer, /submit the current institute form/i);
+    assert.doesNotMatch(nonCap.answer, /Centralized Admission Process|MHT-CET 2026|JEE Main Paper-I|option forms/i);
+    for (const [question, language] of [
+      ['संस्था स्तर प्रवेश प्रक्रिया काय आहे?', 'mr'],
+      ['संस्थान स्तर पर प्रवेश प्रक्रिया क्या है?', 'hi'],
+    ]) {
+      const pathway = await answerAdmissionQuestion({ question, language }, null);
+      assert.equal(pathway.evidence[0]?.id, 'KB-14', question);
+      assert.match(pathway.answer, /submit the current institute form/i, question);
+      assert.doesNotMatch(pathway.answer, /Centralized Admission Process|MHT-CET 2026|JEE Main Paper-I|option forms/i, question);
+    }
     const hindi = await ask('प्रथम वर्ष की फीस तथा छात्रावास की फीस बताइए।');
     assert.deepEqual(new Set(hindi.sections?.map(section => section.topic)), new Set(['academicFees', 'accommodationFees']));
     const marathi = await ask('प्रथम वर्ष शुल्क तसेच वसतिगृह शुल्क सांगा.');

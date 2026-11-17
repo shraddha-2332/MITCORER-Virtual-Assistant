@@ -42,6 +42,84 @@ test('placement committee migration repairs stale persisted TPO record without c
   }
 });
 
+test('institution status migration adds KB-54 once to an existing database', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-institution-status-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.knowledge = persisted.knowledge.filter((record) => record.id !== 'KB-54');
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    assert.equal(migrated.knowledge.filter((record) => record.id === 'KB-54').length, 1);
+    assert.ok(migrated.migrations.includes('seed-institution-status-kb54-v1'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('institution status migration does not restore a deliberately deleted record after its marker exists', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-institution-status-deletion-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = [...(persisted.migrations || []), 'seed-institution-status-kb54-v1'];
+    persisted.knowledge = persisted.knowledge.filter((record) => record.id !== 'KB-54');
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+    assert.ok(!loadDb().knowledge.some((record) => record.id === 'KB-54'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('admission quota and search migration adds KB-55 and only appends missing aliases', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-admission-quota-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.knowledge = persisted.knowledge.filter((record) => !['KB-55', 'KB-56'].includes(record.id));
+    const programmes = persisted.knowledge.find((record) => record.id === 'KB-10');
+    programmes.tags = ['admin-maintained custom alias'];
+    programmes.text = 'Keep this maintained programme text.';
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    const record = migrated.knowledge.find((item) => item.id === 'KB-10');
+    assert.equal(record.text, 'Keep this maintained programme text.');
+    assert.ok(record.tags.includes('admin-maintained custom alias'));
+    assert.ok(record.tags.includes('MITCORER B.Tech courses'));
+    assert.ok(migrated.knowledge.some((item) => item.id === 'KB-55'));
+    assert.ok(migrated.knowledge.some((item) => item.id === 'KB-56'));
+    assert.ok(migrated.migrations.includes('seed-admission-quota-and-search-aliases-v1'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('placement migration does not restore an intentionally removed record after the original migration ran', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-placement-deletion-'));
   const previousDatabaseFile = config.databaseFile;

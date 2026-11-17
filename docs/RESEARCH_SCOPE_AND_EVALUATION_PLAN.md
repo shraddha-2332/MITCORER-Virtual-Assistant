@@ -97,7 +97,7 @@ Offline RAGAS and LLM-judge runners, labeled development guardrail diagnostics, 
 #### LLMOps and observability
 
 - Keep evaluation execution separate from public request handling. Version and hash the corpus snapshot, code revision, prompts, provider/model identifiers, decoding settings, guardrail thresholds and evaluation dataset for every run.
-- Privacy-minimized request traces now use a generated trace ID to correlate pipeline, provider-attempt and draft-validation events. They include selected evidence IDs and latency without question/answer text. Source revision IDs, per-stage retrieval timing, provider token usage and cost are not yet captured and must not be reported as measured.
+- Privacy-minimized request traces use a generated trace ID to correlate pipeline, provider-attempt and draft-validation events. Successful pipeline events include up to five selected evidence IDs and their citation IDs without question/answer text. Citation IDs identify returned record revisions and passage hashes; they do not replace a frozen corpus manifest or verify answer correctness. Per-stage retrieval timing and actual cost remain unmeasured; provider token counts are logged when returned.
 - Define safe degradation: a timeout, provider error, invalid draft, failed grounding check or unavailable source falls back to a grounded deterministic answer or a clear abstention. Monitor error/timeout rate, verifier rejection rate, unsupported-answer acceptance from reviewed samples, citation failures, latency and cost. Missing provider usage data must be recorded as unavailable, not estimated as measured usage.
 
 #### Guardrails to evaluate

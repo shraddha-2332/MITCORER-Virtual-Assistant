@@ -175,7 +175,7 @@ export async function defaultFetcher(url, timeoutMs = 8000) {
       const res = await fetch(target, {
         signal: controller.signal,
         redirect: 'manual',
-        headers: { 'User-Agent': 'MITRA-Admission-Sync-Bot/1.0 (+https://mitcorer.edu.in)' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/pdf,*/*' },
       });
       if (res.status >= 300 && res.status <= 399) {
         const location = res.headers.get('location');
@@ -204,6 +204,17 @@ const officialSourceHostRoots = [
   'mahadbt.maharashtra.gov.in', 'msbte.org.in', 'aicte-india.org', 'aicte.gov.in',
 ];
 
+const portalChallengeHosts = ['sus.ac.in', 'scholarships.gov.in', 'mahacet.org', 'mahacet.org.in'];
+function isPortalChallenge(url, status) {
+  if (status !== 403 && status !== 429) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+    return portalChallengeHosts.some((p) => host === p || host.endsWith(`.${p}`));
+  } catch {
+    return false;
+  }
+}
+
 function isApprovedOfficialHost(hostname) {
   const host = String(hostname || '').toLowerCase().replace(/^www\./, '');
   return officialSourceHostRoots.some((root) => host === root || host.endsWith(`.${root}`));
@@ -220,7 +231,7 @@ export async function defaultLinkChecker(value, timeoutMs = 8000) {
     const requestSafely = async (method, startUrl) => {
       let target = new URL(startUrl);
       for (let redirects = 0; redirects <= 5; redirects += 1) {
-        const response = await fetch(target, { method, signal: controller.signal, redirect: 'manual', headers: { 'User-Agent': 'MITRA-Source-Check/1.0', ...(method === 'GET' ? { Range: 'bytes=0-0' } : {}) } });
+        const response = await fetch(target, { method, signal: controller.signal, redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36', 'Accept': 'text/html,application/xhtml+xml,application/pdf,*/*' } });
         if (response.status < 300 || response.status > 399) return { response, target };
         const location = response.headers.get('location');
         response.body?.cancel().catch(() => {});
@@ -670,7 +681,11 @@ export async function syncMonitoredWebsiteSources({
   // Check official URLs outside the new-site crawl as well. A positive HTTP check
   // only establishes reachability; validator changes quarantine records for a
   // human content review instead of claiming their meaning is unchanged.
-  const checkedPageUrls = new Set(sourceList.map((item) => canonicalPageUrl(item.url)));
+  const checkedPageUrls = new Set(sourceList.flatMap((item) => {
+    const urls = [canonicalPageUrl(item.url)];
+    try { urls.push(canonicalPageUrl(resolveSourceUrl(item.url))); } catch {}
+    return urls;
+  }));
   const externalTargets = new Map();
   for (const item of [...(db.officialSources || []), ...(db.knowledge || [])]) {
     if (!item.sourceUrl) continue;
@@ -678,7 +693,9 @@ export async function syncMonitoredWebsiteSources({
     try { url = new URL(item.sourceUrl); } catch { continue; }
     if (url.protocol !== 'https:' || !isApprovedOfficialHost(url.hostname)) continue;
     const canonicalUrl = canonicalPageUrl(item.sourceUrl);
-    if (checkedPageUrls.has(canonicalUrl)) continue;
+    let resolvedUrl = canonicalUrl;
+    try { resolvedUrl = canonicalPageUrl(resolveSourceUrl(item.sourceUrl)); } catch {}
+    if (checkedPageUrls.has(canonicalUrl) || checkedPageUrls.has(resolvedUrl)) continue;
     if (!externalTargets.has(canonicalUrl)) externalTargets.set(canonicalUrl, {
       title: item.title,
       url: canonicalUrl,
@@ -705,6 +722,10 @@ export async function syncMonitoredWebsiteSources({
       continue;
     }
     if (!result?.ok) {
+      if (isPortalChallenge(source.url, result?.status)) {
+        summary.skippedLinkChecks += 1;
+        continue;
+      }
       stageUnavailableSource(source, result?.error || `HTTP ${result?.status || 'check failed'}`);
       continue;
     }

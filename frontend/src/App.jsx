@@ -42,6 +42,7 @@ function App() {
   const [knowledge, setKnowledge] = useState([]);
   const [officialSources, setOfficialSources] = useState([]);
   const [knowledgeInitialTab, setKnowledgeInitialTab] = useState('records');
+  const [reviewInitialTab, setReviewInitialTab] = useState('inquiries');
   const [appError, setAppError] = useState('');
 
   const navigateTo = (nextView) => {
@@ -233,9 +234,9 @@ function App() {
         {navOpen && <button className="mobileScrim" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)}><X size={18} /></button>}
         <section className="workspaceBody">
           {appError && <div className="errorBanner">{appError}</div>}
-          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onSyncWebsite={syncOfficialSources} />}
+          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} onSyncWebsite={syncOfficialSources} />}
           {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onSyncWebsite={syncOfficialSources} onExtractStructuredSource={extractStructuredOfficialSource} />}
-          {view === 'inquiries' && <ReviewInbox token={token} />}
+          {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
         </section>
       </main>
     </div>
@@ -751,8 +752,8 @@ function linkOfficialContact(text) {
   return parts.length ? parts : value;
 }
 
-function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onSyncWebsite }) {
-  const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null });
+function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenInquiries, onOpenFeedback, onSyncWebsite }) {
+  const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0 });
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
@@ -761,14 +762,25 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     let active = true;
     Promise.all([api.getInquiries(token), api.getFeedback(token)])
       .then(([inquiryResult, feedbackResult]) => {
-        if (active) setReviewCounts({ inquiries: inquiryResult.items?.length || 0, feedback: feedbackResult.items?.length || 0 });
+        if (!active) return;
+        const inqItems = inquiryResult.items || [];
+        const fdbItems = feedbackResult.items || [];
+        const unhelpful = fdbItems.filter(f => !f.helpful && f.status !== 'Resolved' && f.status !== 'Dismissed').length;
+        const pendingInq = inqItems.filter(i => i.status !== 'Resolved').length;
+        setReviewCounts({
+          inquiries: inqItems.length,
+          feedback: fdbItems.length,
+          unhelpfulFeedback: unhelpful,
+          pendingInquiries: pendingInq,
+        });
       })
-      .catch(() => { if (active) setReviewCounts({ inquiries: null, feedback: null }); })
+      .catch(() => { if (active) setReviewCounts({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0 }); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token]);
 
   const publishedKnowledge = knowledge.filter(item => item.status === 'Published').length;
+  const reviewKnowledge = knowledge.filter(item => item.status === 'Review');
   const needsReview = sources.filter(item => {
     const state = `${item.status || ''} ${item.extractionStatus || ''}`.toLowerCase();
     return /review|staged|conflict|pending|extract/.test(state);
@@ -793,22 +805,53 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     <section className="adminMetricGrid" aria-label="Workspace summary">
       <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
       <article><span>Sources to review</span><strong>{needsReview}</strong><small>staged pages, files or conflicts</small></article>
-      <article><span>Visitor requests</span><strong>{loading ? '…' : reviewCounts.inquiries ?? '—'}</strong><small>saved in the review inbox</small></article>
-      <article><span>Answer ratings</span><strong>{loading ? '…' : reviewCounts.feedback ?? '—'}</strong><small>visitor helpful / not helpful votes</small></article>
+      <article><span>Visitor requests</span><strong>{loading ? '…' : reviewCounts.inquiries ?? '—'}</strong><small>{reviewCounts.pendingInquiries ? `${reviewCounts.pendingInquiries} need reply` : 'saved in inbox'}</small></article>
+      <article><span>Answer ratings</span><strong>{loading ? '…' : reviewCounts.feedback ?? '—'}</strong><small>{reviewCounts.unhelpfulFeedback ? `${reviewCounts.unhelpfulFeedback} need investigation` : 'visitor helpful / unhelpful'}</small></article>
     </section>
     <section className="adminDashboardGrid">
       <article className="adminActionPanel">
         <div className="sectionHead"><span className="eyebrow">Daily work</span><h2>Workspace shortcuts</h2><p>Start with the tasks that maintain answer quality.</p></div>
         <div className="adminShortcutList">
           <button type="button" onClick={() => setView('knowledge')}><FileText size={19} /><span><strong>Manage verified knowledge</strong><small>Edit records and review official sources</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => setView('inquiries')}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => setView('inquiries')}><ThumbsDown size={19} /><span><strong>Inspect answer feedback</strong><small>Find answers visitors marked unhelpful</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}><ThumbsDown size={19} /><span><strong>Inspect answer feedback</strong><small>Find answers visitors marked unhelpful</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={onOpenSources}><FileText size={19} /><span><strong>Review official sources</strong><small>Check indexed pages, files and source updates</small></span><ArrowRight size={16} /></button>
         </div>
       </article>
       <article className="adminActionPanel">
-        <div className="sectionHead"><span className="eyebrow">Source review</span><h2>Needs attention</h2><p>Review staged website changes and document extraction before they become trusted answers.</p></div>
-        {pendingSources.length ? <div className="adminPendingList">{pendingSources.map(item => <div key={item.id}><span className="statusDot" /><span><strong>{item.title}</strong><small>{item.status || item.extractionStatus || 'Needs review'}</small></span></div>)}<button type="button" onClick={onOpenSources}>Open source review <ArrowRight size={15} /></button></div> : <div className="adminAllClear"><CheckCircle2 size={20} /><span><strong>No staged sources found</strong><small>New source changes will appear here for review.</small></span></div>}
+        <div className="sectionHead"><span className="eyebrow">Quality & Governance</span><h2>Needs attention</h2><p>Review staged website changes, withheld knowledge, and visitor issue reports.</p></div>
+        {reviewKnowledge.length > 0 || pendingSources.length > 0 || reviewCounts.unhelpfulFeedback > 0 ? (
+          <div className="adminPendingList">
+            {reviewKnowledge.slice(0, 3).map(item => (
+              <div key={item.id}>
+                <span className="statusDot" style={{ background: '#d97706' }} />
+                <span><strong>{item.title}</strong><small>Knowledge withheld ({item.freshnessReview?.reason || 'Pending verification'})</small></span>
+              </div>
+            ))}
+            {pendingSources.slice(0, 3).map(item => (
+              <div key={item.id}>
+                <span className="statusDot" />
+                <span><strong>{item.title}</strong><small>{item.status || item.extractionStatus || 'Staged for review'}</small></span>
+              </div>
+            ))}
+            {reviewCounts.unhelpfulFeedback > 0 && (
+              <div>
+                <span className="statusDot" style={{ background: '#dc2626' }} />
+                <span><strong>{reviewCounts.unhelpfulFeedback} visitor feedback issue{reviewCounts.unhelpfulFeedback > 1 ? 's' : ''} reported</strong><small>Answers flagged unhelpful by visitors</small></span>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
+              {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review staged sources ({pendingSources.length}) <ArrowRight size={15} /></button>}
+              {reviewKnowledge.length > 0 && <button type="button" onClick={onOpenKnowledge || (() => setView('knowledge'))}>Review withheld knowledge ({reviewKnowledge.length}) <ArrowRight size={15} /></button>}
+              {reviewCounts.unhelpfulFeedback > 0 && <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}>Inspect feedback issues ({reviewCounts.unhelpfulFeedback}) <ArrowRight size={15} /></button>}
+            </div>
+          </div>
+        ) : (
+          <div className="adminAllClear">
+            <CheckCircle2 size={20} />
+            <span><strong>All official sources & answers verified</strong><small>No staged source changes, withheld knowledge, or unaddressed issue reports require attention.</small></span>
+          </div>
+        )}
       </article>
     </section>
     <footer className="adminWorkspaceNote"><ShieldCheck size={16} /><span>Only published, verified records are used for official answers. Staff assignments and review actions in this workspace do not send automatic email or SMS notifications.</span></footer>
@@ -846,12 +889,12 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
   );
 }
 
-function ReviewInbox({ token }) {
+function ReviewInbox({ token, initialTab = 'inquiries' }) {
   const [inquiries, setInquiries] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [selected, setSelected] = useState(null);
   const selectedRef = useRef(null);
-  const [tab, setTab] = useState('inquiries');
+  const [tab, setTab] = useState(initialTab);
   const [status, setStatus] = useState('Needs reply');
   const [assignedTo, setAssignedTo] = useState('');
   const [staffNote, setStaffNote] = useState('');
@@ -880,7 +923,14 @@ function ReviewInbox({ token }) {
         }
         setSelected(initial);
         selectedRef.current = initial;
-        if (initial?.type === 'inquiry') { setStatus(initial.status || 'Needs reply'); setAssignedTo(initial.assignedTo || ''); }
+        if (initial?.type === 'inquiry') {
+          setStatus(initial.status || 'Needs reply');
+          setAssignedTo(initial.assignedTo || '');
+          setStaffNote('');
+        } else if (initial?.type === 'feedback') {
+          setStatus(initial.status || (initial.helpful ? 'Appreciated' : 'Needs review'));
+          setStaffNote(initial.resolutionNote || '');
+        }
         setError('');
       }).catch(loadError => setError(loadError.message || 'Could not load the review inbox.'))
       .finally(() => { if (active) setLoading(false); });
@@ -888,10 +938,18 @@ function ReviewInbox({ token }) {
   }, [token, refreshCount]);
   const allRows = [
     ...inquiries.map(item => ({ ...item, type: 'inquiry' })),
-    ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer' })),
+    ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer', status: item.status || (item.helpful ? 'Appreciated' : 'Needs review') })),
   ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const visibleRows = allRows.filter(item => tab === 'inquiries' ? item.type === 'inquiry' : item.type === 'feedback');
-  const choose = (item) => { selectedRef.current = item; setSelected(item); setStatus(item.status || 'Needs reply'); setAssignedTo(item.assignedTo || ''); setStaffNote(''); setNotice(''); };
+  const choose = (item) => {
+    selectedRef.current = item;
+    setSelected(item);
+    setStatus(item.status || (item.type === 'feedback' ? (item.helpful ? 'Appreciated' : 'Needs review') : 'Needs reply'));
+    setAssignedTo(item.assignedTo || '');
+    setStaffNote(item.resolutionNote || '');
+    setError('');
+    setNotice('');
+  };
   const saveAssignment = async () => {
     if (!selected || selected.type !== 'inquiry') return;
     setSaving(true); setError(''); setNotice('');
@@ -905,6 +963,22 @@ function ReviewInbox({ token }) {
       setNotice('Saved. Assignment is internal only; this does not email/text the submitter or assignee.');
     } catch (saveError) { setError(saveError.message || 'Could not update this inquiry.'); }
     finally { setSaving(false); }
+  };
+  const saveFeedbackStatus = async () => {
+    if (!selected || selected.type !== 'feedback') return;
+    setSaving(true); setError(''); setNotice('');
+    try {
+      const updated = await api.updateFeedbackStatus(token, selected.id, { status, resolutionNote: staffNote });
+      setFeedback(current => current.map(item => item.id === updated.id ? { ...updated, type: 'feedback' } : item));
+      const nextSelected = { ...updated, type: 'feedback' };
+      selectedRef.current = nextSelected;
+      setSelected(nextSelected);
+      setNotice(`Saved. Feedback status marked as ${status}.`);
+    } catch (saveError) {
+      setError(saveError.message || 'Could not update feedback status.');
+    } finally {
+      setSaving(false);
+    }
   };
   const contactHref = selected?.contact?.includes('@') ? `mailto:${selected.contact}` : selected?.contact ? `tel:${selected.contact.replace(/[^0-9+]/g, '')}` : '';
   const hasStaffResponse = (selected?.messages || []).some(entry => ['staff', 'admin'].includes(entry.authorRole));
@@ -927,24 +1001,62 @@ function ReviewInbox({ token }) {
     ) : <section className="inquiryWorkspace">
       <div className="inquiryList" aria-label={tab === 'inquiries' ? 'Visitor requests' : 'Answer feedback'}>
         {visibleRows.map(item => <button key={`${item.type}-${item.id}`} type="button" className={selected?.id === item.id ? 'active' : ''} onClick={() => choose(item)}>
-          <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.topic || (item.model ? `Answer feedback ? ${item.model}` : 'General request')}</small></div>
-          <span className="pill">{item.type === 'feedback' ? (item.helpful ? 'Helpful' : 'Not helpful') : item.status}</span>
+          <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.topic || (item.model ? `Answer feedback · ${item.model}` : 'General request')}</small></div>
+          <span className={`pill ${item.status === 'Resolved' || item.status === 'Appreciated' || item.status === 'Acknowledged' ? 'published' : item.status === 'Needs review' || item.status === 'Needs reply' || item.status === 'Investigating' ? 'review' : ''}`}>
+            {item.status || (item.type === 'feedback' ? (item.helpful ? 'Appreciated' : 'Needs review') : 'Needs reply')}
+          </span>
           <p>{item.question || 'No question text recorded'}</p>
         </button>)}
       </div>
       {selected && <article className="inquiryDetail">
-        <header><div><span className="eyebrow">{selected.type === 'feedback' ? 'Answer feedback' : selected.routingQueue || 'MITCORER Staff Triage'}</span><h2>{selected.name || (selected.helpful ? 'Helpful answer' : 'Unhelpful answer')}</h2></div><span className="pill">{selected.type === 'feedback' ? (selected.helpful ? 'Helpful' : 'Not helpful') : selected.priority || 'Normal'}</span></header>
+        <header><div><span className="eyebrow">{selected.type === 'feedback' ? 'Answer feedback' : selected.routingQueue || 'MITCORER Staff Triage'}</span><h2>{selected.name || (selected.helpful ? 'Helpful answer' : 'Unhelpful answer')}</h2></div><span className={`pill ${selected.status === 'Resolved' || selected.status === 'Appreciated' || selected.status === 'Acknowledged' ? 'published' : selected.status === 'Needs review' || selected.status === 'Needs reply' || selected.status === 'Investigating' ? 'review' : ''}`}>{selected.status || (selected.type === 'feedback' ? (selected.helpful ? 'Appreciated' : 'Needs review') : selected.priority || 'Normal')}</span></header>
         <dl>
           <div><dt>Received</dt><dd>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : 'Unknown'}</dd></div>
           {selected.type === 'inquiry' ? <><div><dt>Reference</dt><dd>{selected.id}</dd></div><div><dt>Contact</dt><dd>{contactHref ? <a href={contactHref}>{selected.contact}</a> : selected.contact || 'Not provided'}</dd></div><div><dt>Assigned to</dt><dd>{selected.assignedTo || 'Unassigned'}</dd></div></> : <><div><dt>Model</dt><dd>{selected.model || 'Unknown'}</dd></div><div><dt>Vote</dt><dd>{selected.helpful ? 'Helpful' : 'Not helpful'}</dd></div></>}
         </dl>
         <div className="inquiryQuestion"><strong>Visitor question</strong><p>{selected.question || 'No question was recorded.'}</p></div>
-        {selected.type === 'feedback' ? <div className="inquiryQuestion"><strong>Assistant answer</strong><p>{selected.answer || 'No answer text was recorded.'}</p>{selected.comment && <><strong>Visitor comment</strong><p>{selected.comment}</p></>}</div> : <>
+        {selected.type === 'feedback' ? <>
+          <div className="inquiryQuestion">
+            <strong>Assistant answer</strong>
+            <p>{selected.answer || 'No answer text was recorded.'}</p>
+            {selected.comment && <><strong>Visitor comment</strong><p>{selected.comment}</p></>}
+          </div>
+          {selected.resolvedBy && <div className="staffReplyHistory">
+            <div>
+              <strong>{selected.resolvedBy}</strong>
+              <p>{selected.resolutionNote ? `Resolution: ${selected.resolutionNote}` : `Status: ${selected.status}`}</p>
+              <small>{selected.updatedAt ? new Date(selected.updatedAt).toLocaleString() : ''}</small>
+            </div>
+          </div>}
+          <label className="staffReply">
+            {selected.helpful ? 'Feedback acknowledgment status' : 'Resolution status'}
+            <select value={status} onChange={event => setStatus(event.target.value)}>
+              {selected.helpful
+                ? ['Appreciated', 'Acknowledged', 'Reviewed'].map(v => <option key={v}>{v}</option>)
+                : ['Needs review', 'Investigating', 'Resolved', 'Dismissed'].map(v => <option key={v}>{v}</option>)}
+            </select>
+          </label>
+          <label className="staffReply">
+            {selected.helpful ? 'Internal note (optional)' : 'Resolution / action taken (e.g. updated knowledge record, verified accuracy)'}
+            <textarea
+              rows={3}
+              maxLength={1500}
+              value={staffNote}
+              onChange={event => setStaffNote(event.target.value)}
+              placeholder={selected.helpful ? 'Record any insight or acknowledgment.' : 'Describe how the issue was investigated or resolved.'}
+            />
+          </label>
+          <div className="inquiryActions">
+            <button type="button" disabled={saving} onClick={saveFeedbackStatus}>
+              {saving ? 'Saving…' : 'Save feedback status'}
+            </button>
+          </div>
+        </> : <>
           {(selected.messages || []).length > 0 && <div className="staffReplyHistory">{selected.messages.map(entry => <div key={entry.id}><strong>{entry.authorName || entry.authorRole}</strong><p>{entry.text}</p><small>{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ''}</small></div>)}</div>}
           <label className="staffReply">Assign to staff member (name or email)<input type="text" maxLength={120} value={assignedTo} onChange={event => setAssignedTo(event.target.value)} placeholder="Enter a verified MITCORER staff contact" /></label>
           <label className="staffReply">Queue status<select value={status} onChange={event => setStatus(event.target.value)}>{['Unassigned', 'Needs reply', 'In progress', 'Resolved'].map(value => <option key={value}>{value}</option>)}</select></label>
           <label className="staffReply">Internal note<textarea rows={3} maxLength={1500} value={staffNote} onChange={event => setStaffNote(event.target.value)} placeholder="Record an action taken. This note is not sent to the visitor." /></label>
-          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffResponse && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving?' : 'Save request'}</button></div>
+          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffResponse && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving…' : 'Save request'}</button></div>
           {status === 'Resolved' && !hasStaffResponse && !staffNote.trim() && <small>Add an internal note before resolving this request.</small>}
           <small>Use the displayed contact details to respond. Saving an assignment does not notify anyone automatically.</small>
         </>}

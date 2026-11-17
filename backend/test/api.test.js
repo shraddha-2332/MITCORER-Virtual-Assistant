@@ -1012,6 +1012,106 @@ test('assistant retrieves current official program and contact records', async (
   });
 });
 
+test('assistant answers parent-style institution type and autonomy questions from the current CET Cell profile', async () => {
+  await withServer(async (base) => {
+    const token = await login(base, 'applicant@example.com');
+    for (const [question, language] of [
+      ['What type of college is MITCORER?', 'en'],
+      ['Is MITCORER autonomous or non-autonomous?', 'en'],
+      ['Is MITCORER private or government?', 'en'],
+      ['MITCORER महाविद्यालयाचा प्रकार काय?', 'mr'],
+      ['क्या MITCORER स्वायत्त है?', 'hi'],
+    ]) {
+      const { response, payload } = await request(base, '/api/assistant/ask', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ question, language }),
+      });
+      assert.equal(response.status, 200, question);
+      assert.equal(payload.data.evidence[0]?.id, 'KB-54', question);
+      assert.match(payload.data.answer, /AY 2026-27/i, question);
+      assert.match(payload.data.answer, /Status: Un-Aided/i, question);
+      assert.match(payload.data.answer, /Autonomy Status: Non-Autonomous/i, question);
+      assert.match(payload.data.answer, /Minority Status: Non-Minority/i, question);
+      assert.doesNotMatch(payload.data.answer, /private-unaided|NAAC Grade A|degrees are conferred directly/i, question);
+      assert.ok(payload.data.officialLinks.some(link => link.url === 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901'), question);
+    }
+    const historical = await request(base, '/api/assistant/ask', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ question: 'Was MITCORER autonomous in AY 2025-26?' }),
+    });
+    assert.equal(historical.response.status, 200);
+    assert.deepEqual(historical.payload.data.evidence, []);
+    assert.match(historical.payload.data.answer, /listing for AY 2026-27 only/i);
+    assert.match(historical.payload.data.answer, /cannot verify its status for AY 2025-26/i);
+  });
+});
+
+test('assistant help menu advertises evidence-backed admission topics without stale headline claims', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'What can I ask Mitra?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.data.answer, /CAP rounds and option forms/i);
+    assert.match(payload.data.answer, /institute-level\/ACAP admissions/i);
+    assert.match(payload.data.answer, /aided status, autonomy, minority classification/i);
+    assert.match(payload.data.answer, /include the admission year/i);
+    assert.doesNotMatch(payload.data.answer, /360 seats total|94% placement rate|Mon.{0,4}Sat 9:30 AM/i);
+    assert.ok(payload.data.evidence.some((item) => item.id === 'KB-54'));
+  });
+});
+
+test('assistant explains admission quota terms with current official links and no fixed unsupported percentage', async () => {
+  await withServer(async (base) => {
+    const token = await login(base, 'applicant@example.com');
+    for (const question of [
+      'What is the admission quota at MITCORER?',
+      'Does MITCORER have management quota seats?',
+      'How do institute quota seats work for B.Tech?',
+    ]) {
+      const { response, payload } = await request(base, '/api/assistant/ask', {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ question }),
+      });
+      assert.equal(response.status, 200, question);
+      assert.ok(payload.data.evidence.some((item) => item.id === 'KB-55'), question);
+      assert.match(payload.data.answer, /programme-specific CET Cell matrix/i, question);
+      assert.match(payload.data.answer, /separate from a regular CAP allotment/i, question);
+      assert.match(payload.data.answer, /cannot confirm a fixed percentage/i, question);
+      assert.doesNotMatch(payload.data.answer, /20%|15%|guaranteed seat/i, question);
+      assert.ok(payload.data.officialLinks.some((link) => /acap-admission/.test(link.url)), question);
+    }
+    const historical = await request(base, '/api/assistant/ask', {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ question: 'What was the admission quota in AY 2025-26?' }),
+    });
+    assert.deepEqual(historical.payload.data.evidence, []);
+    assert.match(historical.payload.data.answer, /cannot confirm quota details for AY 2025-26/i);
+  });
+});
+
+test('assistant discloses the conflicting AI and Data Science choice codes instead of hiding either source', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'What is the AI and Data Science choice code for the CAP option form in 2026-27?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(payload.data.evidence[0]?.id, 'KB-56');
+    assert.match(payload.data.answer, /0690199510/);
+    assert.match(payload.data.answer, /0690126310/);
+    assert.match(payload.data.answer, /official pages conflict/i);
+    assert.ok(payload.data.officialLinks.some((link) => /frmInstituteSummary/.test(link.url)));
+    assert.ok(payload.data.officialLinks.some((link) => /mitcorer\/public\/admissions/.test(link.url)));
+
+    const historical = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'What was the AI and Data Science choice code in AY 2025-26?' }),
+    });
+    assert.deepEqual(historical.payload.data.evidence, []);
+    assert.match(historical.payload.data.answer, /cannot confirm the AI and Data Science choice code for AY 2025-26/i);
+  });
+});
+
 test('assistant answers bus questions without mixing in hostel details', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
@@ -1505,7 +1605,6 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
     'MITCORER Electronics and Telecommunication Engineering course',
     'MITCORER Civil Engineering course details',
     'MITCORER railway engineering diploma specialisations',
-    'Best railway engineering college in Maharashtra',
     'Engineering college with railway specialization in India',
     'MITCORER B.Tech lateral entry admission',
     'MITCORER course eligibility after 12th',
@@ -1542,7 +1641,6 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
     'MITCORER industry tie-ups and internships',
     'MITCORER campus interview process',
     'MITCORER placement preparation support',
-    'Best engineering college in Barshi for placement',
     'Railway sector jobs after engineering',
     'MITCORER alumni career success stories',
 
@@ -1555,7 +1653,6 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
     'MITCORER campus facilities',
     'MITCORER library and lab facilities',
     'MITCORER faculty details',
-    'MITCORER college reviews',
     'MITCORER admission enquiry',
     'MITCORER chatbot support',
     'MITCORER college timings',
@@ -1574,6 +1671,32 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
       assert.notEqual(payload.data.source, 'No verified record', `Unverified source for: ${question}`);
       assert.ok(Array.isArray(payload.data.evidence) && payload.data.evidence.length > 0, `Missing evidence for: ${question}`);
       assert.ok(typeof payload.data.answer === 'string' && payload.data.answer.trim().length > 20, `Empty answer for: ${question}`);
+    }
+  });
+});
+
+test('assistant does not present institutional facts as independent college reviews', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'MITCORER college reviews and ratings' }),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(payload.data.evidence, []);
+    assert.match(payload.data.answer, /do not have a verified set of independent student reviews or ratings/i);
+    assert.doesNotMatch(payload.data.answer, /21 LPA|100\+ visiting recruiters|60\+ qualified faculty/i);
+  });
+});
+
+test('assistant does not claim comparative college or placement rankings without a ranking source', async () => {
+  await withServer(async (base) => {
+    for (const question of ['Best railway engineering college in Maharashtra?', 'Best engineering college in Barshi for placement?']) {
+      const { response, payload } = await request(base, '/api/public-assistant/ask', {
+        method: 'POST', body: JSON.stringify({ question }),
+      });
+      assert.equal(response.status, 200);
+      assert.deepEqual(payload.data.evidence, []);
+      assert.match(payload.data.answer, /independent, comparable ranking dataset/i);
+      assert.doesNotMatch(payload.data.answer, /MITCORER is the best|ranked number one/i);
     }
   });
 });
@@ -1720,7 +1843,17 @@ test('human escalation is triggered when information is unverified and creates h
     const savedFeedback = staffFeedback.payload.data.items.find(item => item.id === feedbackResult.payload.data.feedbackId);
     assert.ok(savedFeedback, 'Answer feedback must be reviewable by staff');
     assert.equal(savedFeedback.helpful, false);
+    assert.equal(savedFeedback.status, 'Needs review');
     assert.equal(savedFeedback.question, 'Which courses are offered?');
+
+    const patchResult = await request(base, `/api/feedback/${savedFeedback.id}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${admin}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Resolved', resolutionNote: 'Verified course list in KB-10.' }),
+    });
+    assert.equal(patchResult.response.status, 200);
+    assert.equal(patchResult.payload.data.status, 'Resolved');
+    assert.equal(patchResult.payload.data.resolutionNote, 'Verified course list in KB-10.');
   });
 });
 

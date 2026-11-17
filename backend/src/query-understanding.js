@@ -147,6 +147,11 @@ export function understandQuery(input) {
   const { years: academicYears, invalid: invalidYears } = extractAcademicYears(normalized);
   const topics = [];
   if (/\bseat matrix\b/.test(normalized)) topics.push('seatMatrix');
+  if (/\b(?:autonom(?:ous|y)|non[- ]?autonomous|un[- ]?aided|aided|self[- ]?financ\w*|minority status|college type|type of (?:the )?(?:college|institute)|institution type|institute type|college classification|institution classification|government college|private college)\b/.test(normalized)
+    || /\b(?:private|government|public)\s+(?:vs\.?|versus|or)\s+(?:private|government|public)\b|\b(?:is|whether)\b.{0,40}\b(?:private|government|public)\b/.test(normalized)) {
+    topics.push('institutionStatus');
+  }
+  if (/\b(?:quota|seat type|seat category|reserved seat|institutional seat|institute seat)\b/.test(normalized)) topics.push('admissionQuota');
   const fee = /\b(?:fee|payment|amount|charge|cost|deposit|installments?|pay)\b/.test(normalized)
     && (!/\b(?:scholarship|pragati|mahadbt|nsp|financial aid)\b/.test(normalized)
       || /\b(?:fee|fees|tuition|charge|cost|deposit|pay)\b/.test(normalized));
@@ -157,9 +162,12 @@ export function understandQuery(input) {
   if (services.includes('transport')) topics.push('transport');
   if (services.some(service => ['hostel', 'mess'].includes(service)) && !fee) topics.push('hostel');
   const route = values.route.positive.length === 1 ? values.route.positive[0] : null;
+  const admissionPathway = /\b(?:non[\s-]?cap|a[\s-]?cap|against[\s-]+cap|institute[\s-]+level|institutional quota|institute quota|management quota)\b/.test(normalized)
+    ? 'instituteLevel'
+    : /\bcap\b/.test(normalized) ? 'cap' : null;
   const level = /\bpolytechnic\b|\bdiploma (?:fee|course|program)/.test(normalized) ? 'polytechnic'
     : /\b(?:class 12|12th|school|junior college) (?:fee|cost|charge)\b/.test(normalized) ? 'school' : 'engineering';
-  return { normalized, topics: [...new Set(topics)], admissionRoute: route, level, academicYears: [...new Set(academicYears)], invalidYears, ...values };
+  return { normalized, topics: [...new Set(topics)], admissionRoute: route, admissionPathway, level, academicYears: [...new Set(academicYears)], invalidYears, ...values };
 }
 
 export function queryClarification(query) {

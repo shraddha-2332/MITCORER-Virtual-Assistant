@@ -52,12 +52,15 @@ function directPassage(id, query, records) {
 }
 
 export function buildContextualPassage(normalized, records) {
-  const services = understandQuery(normalized).service.positive;
+  const query = understandQuery(normalized);
+  if (query.topics.includes('admissionQuota')) return null;
+  const services = query.service.positive;
   if (/\bpragati\b/.test(normalized)) return null;
   let id;
   if (/\b(?:document\w*|certificate\w*)\b/.test(normalized) && /\bst\b|scheduled tribe|\bsc\b|scheduled caste/.test(normalized)) id = 'KB-26';
   else if (/\b(?:document\w*|certificate\w*)\b/.test(normalized) && /\bobc\b|\bews\b|\bvjnt\b|\bsbc\b/.test(normalized)) id = 'KB-27';
-  else if (/non-cap|acap|institute.level|applying after\s+cap/.test(normalized) && /scholarship|concession/.test(normalized)) id = 'KB-14';
+  else if (query.admissionPathway === 'instituteLevel') id = 'KB-14';
+  else if (/applying after\s+cap/.test(normalized) && /scholarship|concession/.test(normalized)) id = 'KB-14';
   else if (services.includes('transport') && !services.some(service => ['hostel', 'mess'].includes(service)) && !/\b(?:nearest|distance|how far|bus stand|railway station|barshi town|kurduwadi)\b/.test(normalized)) id = 'KB-19';
   else if (services.includes('library') || /digital resources/.test(normalized)) id = 'KB-20';
   if (!id) return null;

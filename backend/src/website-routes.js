@@ -1,5 +1,6 @@
 export const newWebsiteRouteMap = {
   // Main & About
+  'https://mitcorer.edu.in/mitcorer/public': 'https://mitcorer.edu.in/mitcorer/public/',
   'https://mitcorer.edu.in/': 'https://mitcorer.edu.in/mitcorer/public/',
   'https://www.mitcorer.edu.in/': 'https://mitcorer.edu.in/mitcorer/public/',
   'https://mitcorer.edu.in/about-us.php': 'https://mitcorer.edu.in/mitcorer/public/about',
@@ -27,7 +28,7 @@ export const newWebsiteRouteMap = {
   'https://mitcorer.edu.in/mou.php': 'https://mitcorer.edu.in/mitcorer/public/placement/mous',
   'https://mitcorer.edu.in/technical-events-rail-mit.php': 'https://mitcorer.edu.in/mitcorer/public/campus-life/technical-events',
   'https://mitcorer.edu.in/cultural-events.php': 'https://mitcorer.edu.in/mitcorer/public/campus-life/cultural-events',
-  'https://mitcorer.edu.in/campus-life.php': 'https://mitcorer.edu.in/mitcorer/public/campus-life',
+  'https://mitcorer.edu.in/campus-life.php': 'https://mitcorer.edu.in/mitcorer/public/campus-life/asimit',
 
   // Departments
   'https://mitcorer.edu.in/computer-science-engineering.php': 'https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering',
@@ -38,6 +39,7 @@ export const newWebsiteRouteMap = {
   'https://mitcorer.edu.in/about-professional-diploma-railway.php': 'https://mitcorer.edu.in/mitcorer/public/department/professional-diploma-railway',
 
   // Admissions & Fees
+  'https://mitcorer.edu.in/fy-btech-eligibility-criteria.php': 'https://mitcorer.edu.in/mitcorer/public/admissions',
   'https://mitcorer.edu.in/fy-btech-fees.php': 'https://mitcorer.edu.in/mitcorer/public/admissions/fees-structure',
   'https://mitcorer.edu.in/d-sy-btech-fees.php': 'https://mitcorer.edu.in/mitcorer/public/admissions/dsy-fees-structure',
   'https://mitcorer.edu.in/fy-btech-documents.php': 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',

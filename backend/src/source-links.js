@@ -16,9 +16,13 @@ export const verifiedUrlRewrites = {
   'https://www.mitcorer.edu.in/training-placement.php': 'https://mitcorer.edu.in/placement-cell.php',
 };
 
-const missingReferences = {
+export const missingReferences = {
   'KB-1': 'https://mitcorer.edu.in/fy-btech-documents.php',
   'KB-5': 'https://mitcorer.edu.in/fy-btech-eligibility-criteria.php',
+  'SRC-1': 'https://fe2024.mahacet.org/StaticPages/HomePage',
+  'SRC-2': 'https://mitcorer.edu.in/fy-btech-eligibility-criteria.php',
+  'SRC-3': 'https://fe2024.mahacet.org/StaticPages/HomePage',
+  'SRC-4': 'https://fe2024.mahacet.org/StaticPages/HomePage',
 };
 
 export function resolveSourceUrl(url) {
@@ -28,7 +32,9 @@ export function resolveSourceUrl(url) {
 }
 
 export function sourceRecord(record) {
-  return { ...record, sourceUrl: resolveSourceUrl(record.sourceUrl ?? missingReferences[record.id]) };
+  if (!record) return record;
+  const rawUrl = record.sourceUrl ?? missingReferences[record.id];
+  return { ...record, sourceUrl: resolveSourceUrl(rawUrl) };
 }
 
 export function uniqueSourceLinks(links, primaryUrl = '') {

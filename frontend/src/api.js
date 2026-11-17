@@ -123,6 +123,7 @@ export const api = {
   createInquiry: (token, body) => request('/api/inquiries', { token, method: 'POST', body }),
   updateInquiryStatus: (token, id, updates) => request(`/api/inquiries/${id}/status`, { token, method: 'PATCH', body: updates }),
   getFeedback: (token) => request('/api/feedback', { token }),
+  updateFeedbackStatus: (token, id, updates) => request(`/api/feedback/${id}/status`, { token, method: 'PATCH', body: updates }),
   getAdmissionWorkspace: (token) => request('/api/admission-workspace', { token }),
   updateAdmissionWorkspace: (token, section, value) => request('/api/admission-workspace', { token, method: 'PATCH', body: { section, value } }),
   getDocuments: (token) => request('/api/documents', { token }),

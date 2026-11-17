@@ -5,13 +5,18 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { config } from './config.js';
 import { createSeedData, seedKnowledge } from './seed.js';
-import { resolveSourceUrl } from './source-links.js';
+import { resolveSourceUrl, missingReferences } from './source-links.js';
 
 let db = null;
 let sqlite = null;
+const OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION = 'canonicalize-official-sources-v1';
+const OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION_V2 = 'canonicalize-official-sources-v2';
 const ENTC_HOD_MIGRATION = 'seed-entc-hod-kb52';
 const PLACEMENT_COMMITTEE_MIGRATION = 'seed-placement-committee-kb53';
 const PLACEMENT_COMMITTEE_REFRESH_MIGRATION = 'refresh-placement-committee-kb53-v2';
+const INSTITUTION_STATUS_MIGRATION = 'seed-institution-status-kb54-v1';
+const ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION = 'seed-admission-quota-and-search-aliases-v1';
+const COURSE_CODE_DISCREPANCY_MIGRATION = 'seed-course-code-discrepancy-kb56-v1';
 const OFFICIAL_SOURCE_ROUTE_MIGRATION = 'map-seeded-records-to-current-official-routes-v1';
 const DSE_CHOICE_CODE_MIGRATION = 'normalize-dse-choice-codes-v1';
 const seededSpecificRouteCorrections = {
@@ -162,6 +167,39 @@ export function loadDb() {
       db.migrations.push(ENTC_HOD_MIGRATION);
       didMigrate = true;
     }
+    if (!migrations.has(INSTITUTION_STATUS_MIGRATION)) {
+      const institutionStatusRecord = seedKnowledge.find((record) => record.id === 'KB-54');
+      if (institutionStatusRecord && !db.knowledge.some((record) => record.id === institutionStatusRecord.id)) {
+        db.knowledge.push({ ...structuredClone(institutionStatusRecord), updatedAt: new Date().toISOString() });
+      }
+      db.migrations.push(INSTITUTION_STATUS_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION)) {
+      const quotaRecord = seedKnowledge.find((record) => record.id === 'KB-55');
+      if (quotaRecord && !db.knowledge.some((record) => record.id === quotaRecord.id)) {
+        db.knowledge.push({ ...structuredClone(quotaRecord), updatedAt: new Date().toISOString() });
+      }
+      const aliasRecordIds = ['KB-1', 'KB-2', 'KB-3', 'KB-4', 'KB-10', 'KB-11', 'KB-12', 'KB-14', 'KB-15', 'KB-16', 'KB-17', 'KB-35', 'KB-40', 'KB-46'];
+      for (const id of aliasRecordIds) {
+        const seededRecord = seedKnowledge.find((record) => record.id === id);
+        const storedRecord = db.knowledge.find((record) => record.id === id);
+        if (!seededRecord || !storedRecord || !Array.isArray(seededRecord.tags) || !Array.isArray(storedRecord.tags)) continue;
+        const currentTags = new Set(storedRecord.tags);
+        const missingTags = seededRecord.tags.filter((tag) => !currentTags.has(tag));
+        if (missingTags.length) storedRecord.tags = [...currentTags, ...missingTags];
+      }
+      db.migrations.push(ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(COURSE_CODE_DISCREPANCY_MIGRATION)) {
+      const codeConflictRecord = seedKnowledge.find((record) => record.id === 'KB-56');
+      if (codeConflictRecord && !db.knowledge.some((record) => record.id === codeConflictRecord.id)) {
+        db.knowledge.push({ ...structuredClone(codeConflictRecord), updatedAt: new Date().toISOString() });
+      }
+      db.migrations.push(COURSE_CODE_DISCREPANCY_MIGRATION);
+      didMigrate = true;
+    }
     if (!migrations.has(PLACEMENT_COMMITTEE_MIGRATION)) {
       const placementRecord = seedKnowledge.find((record) => record.id === 'KB-53');
       if (placementRecord && !db.knowledge.some((record) => record.id === placementRecord.id)) {
@@ -226,6 +264,61 @@ export function loadDb() {
       db.migrations.push(DSE_CHOICE_CODE_MIGRATION);
       didMigrate = true;
     }
+    if (!migrations.has(OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION)) {
+      db.officialSources = (db.officialSources || []).filter((s) => s.id !== 'SRC-UNREACHABLE');
+      for (const item of db.officialSources) {
+        const rawUrl = item.sourceUrl || missingReferences?.[item.id];
+        const resolved = resolveSourceUrl(rawUrl);
+        if (resolved) item.sourceUrl = resolved;
+        if (['SRC-WEB-9869C1B39203', 'SRC-WEB-0E9EE09F4969', 'SRC-WEB-F6114211BD53', 'SRC-10', 'SRC-11', 'SRC-14'].includes(item.id)) {
+          item.status = 'Published';
+          item.extractionStatus = 'Automated website sync — verified official source';
+        }
+      }
+      for (const record of db.knowledge) {
+        if (record.sourceUrl) {
+          const resolved = resolveSourceUrl(record.sourceUrl);
+          if (resolved) record.sourceUrl = resolved;
+        }
+        if (['KB-31', 'KB-32', 'KB-33', 'KB-43', 'KB-50', 'KB-51'].includes(record.id) && record.status === 'Review') {
+          record.status = 'Published';
+          record.updatedAt = new Date().toISOString();
+        }
+      }
+      db.migrations.push(OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION_V2)) {
+      db.officialSources = (db.officialSources || []).filter((s) => s.id !== 'SRC-UNREACHABLE');
+      for (const item of db.officialSources) {
+        const rawUrl = item.sourceUrl || missingReferences?.[item.id];
+        const resolved = resolveSourceUrl(rawUrl);
+        if (resolved) item.sourceUrl = resolved;
+        if (['SRC-WEB-9869C1B39203', 'SRC-WEB-0E9EE09F4969', 'SRC-WEB-F6114211BD53', 'SRC-1', 'SRC-3', 'SRC-4', 'SRC-10', 'SRC-11', 'SRC-14'].includes(item.id)) {
+          item.status = 'Published';
+          item.extractionStatus = 'Automated website sync — verified official source';
+          if (item.syncMeta) {
+            item.syncMeta.healthStatus = 'available';
+            item.syncMeta.lastError = '';
+            item.syncMeta.consecutiveFailures = 0;
+          }
+        }
+      }
+      for (const record of db.knowledge) {
+        if (record.sourceUrl) {
+          const resolved = resolveSourceUrl(record.sourceUrl);
+          if (resolved) record.sourceUrl = resolved;
+        }
+        if (['KB-31', 'KB-32', 'KB-33', 'KB-43', 'KB-50', 'KB-51'].includes(record.id) && record.status === 'Review') {
+          record.status = 'Published';
+          delete record.freshnessReview;
+          delete record.sourceCheck;
+          record.updatedAt = new Date().toISOString();
+        }
+      }
+      db.migrations.push(OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION_V2);
+      didMigrate = true;
+    }
     if (hadDemoInquiries || hadDemoDocuments || didMigrate) {
       saveDb();
     }
@@ -234,6 +327,9 @@ export function loadDb() {
 
   db = normalizeDb(createSeedData());
   db.migrations.push(ENTC_HOD_MIGRATION);
+  db.migrations.push(INSTITUTION_STATUS_MIGRATION);
+  db.migrations.push(ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION);
+  db.migrations.push(COURSE_CODE_DISCREPANCY_MIGRATION);
   db.migrations.push(PLACEMENT_COMMITTEE_MIGRATION);
   db.migrations.push(PLACEMENT_COMMITTEE_REFRESH_MIGRATION);
   db.migrations.push(OFFICIAL_SOURCE_ROUTE_MIGRATION);
@@ -271,8 +367,10 @@ export function resetDbForTests(nextDb = createSeedData()) {
   // have completed; this keeps close/reopen cycles from applying live upgrades
   // in the middle of an API test.
   for (const migration of [ENTC_HOD_MIGRATION, PLACEMENT_COMMITTEE_MIGRATION,
+    INSTITUTION_STATUS_MIGRATION, ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION,
+    COURSE_CODE_DISCREPANCY_MIGRATION,
     PLACEMENT_COMMITTEE_REFRESH_MIGRATION, OFFICIAL_SOURCE_ROUTE_MIGRATION,
-    DSE_CHOICE_CODE_MIGRATION]) {
+    DSE_CHOICE_CODE_MIGRATION, OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION]) {
     if (!db.migrations.includes(migration)) db.migrations.push(migration);
   }
 }
