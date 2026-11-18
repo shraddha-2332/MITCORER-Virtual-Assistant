@@ -14,6 +14,8 @@ const OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION_V2 = 'canonicalize-official-source
 const ENTC_HOD_MIGRATION = 'seed-entc-hod-kb52';
 const PLACEMENT_COMMITTEE_MIGRATION = 'seed-placement-committee-kb53';
 const PLACEMENT_COMMITTEE_REFRESH_MIGRATION = 'refresh-placement-committee-kb53-v2';
+const PLACEMENT_CURRENT_ACTIVITIES_MIGRATION = 'refresh-placement-current-activities-kb16-kb35-v1';
+const OFFICE_HOURS_VERIFICATION_MIGRATION = 'publish-dated-office-hours-observation-kb46-v2';
 const INSTITUTION_STATUS_MIGRATION = 'seed-institution-status-kb54-v1';
 const ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION = 'seed-admission-quota-and-search-aliases-v1';
 const COURSE_CODE_DISCREPANCY_MIGRATION = 'seed-course-code-discrepancy-kb56-v1';
@@ -119,7 +121,7 @@ function normalizeDb(nextDb) {
   return {
     users: (nextDb.users || []).map((user) => {
       if (user.id === 'USR-STF') return { ...user, name: 'Shobhana Raichurkar' };
-      if (user.id === 'USR-ADM') return { ...user, name: 'Mundhe' };
+      if (user.id === 'USR-ADM') return { ...user, name: 'Dean' };
       return user;
     }),
     // Remove known development-only requests from earlier sample data. Preserve real visitor requests.
@@ -232,6 +234,46 @@ export function loadDb() {
       db.migrations.push(PLACEMENT_COMMITTEE_REFRESH_MIGRATION);
       didMigrate = true;
     }
+    if (!migrations.has(PLACEMENT_CURRENT_ACTIVITIES_MIGRATION)) {
+      for (const id of ['KB-16', 'KB-35']) {
+        const seededRecord = seedKnowledge.find((record) => record.id === id);
+        const storedRecord = db.knowledge.find((record) => record.id === id);
+        if (!seededRecord || !storedRecord || !/100\+ companies|300\+ students|94% placement|4\.4 LPA/i.test(storedRecord.text || '')) continue;
+        const status = storedRecord.status;
+        const revision = (storedRecord.revision ?? 0) + 1;
+        const createdAt = storedRecord.createdAt;
+        storedRecord.text = seededRecord.text;
+        storedRecord.tags = [...new Set([...(storedRecord.tags || []), ...(seededRecord.tags || [])])];
+        Object.assign(storedRecord, { status, revision, ...(createdAt ? { createdAt } : {}), updatedAt: new Date().toISOString() });
+        delete storedRecord.verification;
+      }
+      db.migrations.push(PLACEMENT_CURRENT_ACTIVITIES_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(OFFICE_HOURS_VERIFICATION_MIGRATION)) {
+      const storedRecord = db.knowledge.find((record) => record.id === 'KB-46');
+      const seededRecord = seedKnowledge.find((record) => record.id === 'KB-46');
+      if (storedRecord && seededRecord) {
+        const needsRefresh = storedRecord.text !== seededRecord.text
+          || storedRecord.status !== 'Published'
+          || storedRecord.source !== seededRecord.source
+          || storedRecord.sourceUrl !== seededRecord.sourceUrl
+          || JSON.stringify(storedRecord.provenance || {}) !== JSON.stringify(seededRecord.provenance || {});
+        if (needsRefresh) {
+          storedRecord.text = seededRecord.text;
+          storedRecord.status = 'Published';
+          storedRecord.source = seededRecord.source;
+          storedRecord.sourceUrl = seededRecord.sourceUrl;
+          storedRecord.provenance = structuredClone(seededRecord.provenance);
+          storedRecord.tags = [...new Set([...(storedRecord.tags || []), ...(seededRecord.tags || [])])];
+          storedRecord.revision = (storedRecord.revision ?? 0) + 1;
+          storedRecord.updatedAt = new Date().toISOString();
+          delete storedRecord.verification;
+        }
+      }
+      db.migrations.push(OFFICE_HOURS_VERIFICATION_MIGRATION);
+      didMigrate = true;
+    }
     if (!migrations.has(OFFICIAL_SOURCE_ROUTE_MIGRATION)) {
       for (const record of db.knowledge) {
         const recordSpecificRoute = seededSpecificRouteCorrections[record.id];
@@ -332,6 +374,7 @@ export function loadDb() {
   db.migrations.push(COURSE_CODE_DISCREPANCY_MIGRATION);
   db.migrations.push(PLACEMENT_COMMITTEE_MIGRATION);
   db.migrations.push(PLACEMENT_COMMITTEE_REFRESH_MIGRATION);
+  db.migrations.push(OFFICE_HOURS_VERIFICATION_MIGRATION);
   db.migrations.push(OFFICIAL_SOURCE_ROUTE_MIGRATION);
   db.migrations.push(DSE_CHOICE_CODE_MIGRATION);
   saveDb();

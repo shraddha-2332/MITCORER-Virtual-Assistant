@@ -48,6 +48,16 @@ The source-bound experiment summaries are under `docs/research-review/`. Full ge
 
 ## Institutional review and source evidence
 
+## Recent user-facing follow-up and document workflow fixes
+
+- Public chat follow-up clarification now carries the original document question with the chosen First Year or Direct Second Year route, so a short reply such as “for first year” does not become an unrelated standalone query.
+- Applicant and parent accounts now have a public entry point to sign in/create an account, upload documents, submit a batch for staff review, and view their own statuses and correction notes. Uploaded files remain behind the existing authenticated, owner-scoped document API. Anonymous chat cannot inspect private document status.
+- “Send question to staff queue” states where the request is stored: the MITCORER Staff Triage queue in the admin Review Inbox. It remains unassigned until staff assigns it; this workflow does not automatically notify a named person or send email/SMS.
+- Placement responses now name the project-reported current student platforms (POD, Superset, Unstop) and placement drives, while directing historical recruiter/package claims to dated official records. Unscoped figures and a fixed recruiter list were removed because the public pages expose year-specific archives rather than a live current lineup. Platform names were supplied by the project owner and are not independently verified by a public source in this change.
+- Compound address/contact/office-hours/travel questions are answered as separate evidence-backed sections. KB-46 records the Contact page check dated 2026-11-18: the page lists contact details and local Barshi directions but no current office hours, working days, visiting schedule, or Solapur-city route. The answer cites this dated observation and asks users to call before visiting. The separate Bus Facility page does not publish a route list, timetable, or fare.
+- Staff can review submitted applicant documents from the admin Document Review page. Applicant uploads appear there only after they submit them; drafts remain private to the account owner.
+- Institution classification output is structured as a short list. A passage revision/citation ID identifies the referenced evidence revision; it is not an evaluation manifest, human label, independent review, or proof that the answer is correct.
+
 The project team reports that department professors reviewed responses internally and that institutional facts were transcribed from approved/signed circulars. No itemized faculty scoring rubric or independent numerical review file was provided. The three archived fee-table crops were visually inspected and match the canonical annual amounts. The inspected crops do not show signature/certification blocks, so this task does not independently authenticate the full signed originals. See `research-review/archived-fee-source-manifest.json` for their paths and hashes.
 
 The original 18 public cases, 24 paraphrases, 15 mutations and existing blinded development packet remain exposed development material. Faculty approval reported by the team is not relabeled as an independent accuracy score. Formal Marathi/Hindi speaker ratings remain pending as the team confirmed.

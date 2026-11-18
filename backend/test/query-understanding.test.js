@@ -162,7 +162,7 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.equal(station.evidence[0]?.id, 'KB-40');
     assert.match(station.answer, /Barshi Town/);
     assert.match(station.answer, /4\.7 km/);
-    assert.match(station.answer, /Kurduwadi/);
+    assert.doesNotMatch(station.answer, /Kurduwadi/);
 
     const busStand = await ask('How far is the college from Barshi bus stand?');
     assert.equal(busStand.evidence[0]?.id, 'KB-40');
@@ -219,14 +219,14 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(medium.answer, /English/i);
 
     const officeHours = await ask('What are the office hours and timings at MITCORER?');
-    assert.equal(officeHours.evidence[0]?.id, 'KB-46');
-    assert.match(officeHours.answer, /9:30 AM to 5:30 PM/);
-    assert.match(officeHours.answer, /Monday to Saturday/);
-    assert.ok(officeHours.officialLinks.some(link => link.url.endsWith('/contact-us')));
+    assert.deepEqual(officeHours.evidence.map(record => record.id), ['KB-46']);
+    assert.match(officeHours.answer, /checked on 2026-11-18/i);
+    assert.match(officeHours.answer, /does not publish current administrative office/i);
+    assert.ok(officeHours.officialLinks.some(link => link.url.endsWith('/mitcorer/public/contact-us')));
 
     const admissionDesk = await ask('When is the admission enquiry desk open?');
-    assert.equal(admissionDesk.evidence[0]?.id, 'KB-46');
-    assert.match(admissionDesk.answer, /Admission Enquiry Desk/);
+    assert.deepEqual(admissionDesk.evidence.map(record => record.id), ['KB-46']);
+    assert.match(admissionDesk.answer, /does not publish current administrative office/i);
 
     const railwayDiplomas = await ask('What professional diplomas or specialized railway courses does MITCORER offer?');
     assert.equal(railwayDiplomas.evidence[0]?.id, 'KB-47');

@@ -11,11 +11,12 @@ npm run dev
 
 Default URL: `http://127.0.0.1:4000`
 
-## Maintainer Account
+## Local Demo Account
 
-Seed maintainer account uses password `mitra`.
+The local development seed includes a demo admin account. Do not use its password in a deployed environment; provision production credentials through `ADMIN_EMAIL`, `ADMIN_PASSWORD` (minimum 12 characters), and optional `ADMIN_NAME`.
 
-- `admin@mitcorer.edu.in`
+- Email: `admin@mitcorer.edu.in`
+- Local demo password: `mitra`
 
 ## API Summary
 

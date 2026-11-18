@@ -179,9 +179,9 @@ export const seedKnowledge = [
     title: 'MITCORER placement support and published highlights',
     category: 'Placement',
     source: 'MITCORER website and Admissions FAQ',
-    tags: ['placement companies', 'MITCORER placement companies list', 'recruiters', 'highest package', 'highest package details', 'average package', 'placement highlights', 'placement record', 'internship opportunities', 'training and placement cell', 'placement support for students', 'industry tie-ups and internships', 'placement preparation support', 'railway sector jobs after engineering'],
+    tags: ['placement companies', 'MITCORER placement companies list', 'recruiters', 'published recruiter records', 'placement highlights', 'placement record', 'placement records by academic year', 'internship opportunities', 'training and placement cell', 'placement support for students', 'industry tie-ups and internships', 'placement preparation support', 'placement drive', 'placement drives', 'POD', 'Superset', 'Unstop', 'railway sector jobs after engineering'],
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
-    text: 'MITCORER Placement Highlights\n\n- 100+ companies visiting\n- 300+ students placed\n- Highest published package: 21 LPA\n- Average published package: 4.4 LPA\n\nThe Training and Placement Cell supports internships and placement preparation.',
+    text: 'MITCORER’s Training and Placement Cell coordinates placement activities, placement drives, preparation, and internship support. According to information supplied for this project, student placement activities are also shared through POD, Superset, and Unstop; platform access and drive eligibility are student-specific.\n\nThe public placement archive lists dated records through AY 2024-25. Use those records for historical recruiter and outcome details. The public pages do not establish a current recruiter lineup, live drive schedule, or a guaranteed placement/package for an individual student.',
     status: 'Published',
   },
   {
@@ -391,7 +391,7 @@ export const seedKnowledge = [
       'teachers', 'faculty details', 'alumni', '900+ alumni', 'college reviews', 'mitcorer reviews', 'MITCORER college reviews',
       'alumni career success stories',
     ],
-    text: 'MITCORER offers railway-oriented engineering courses, practical projects, interactive classes, and industry engagement. The college website lists 60+ faculty, 900+ alumni, 100+ companies visiting, 300+ total placed, and a highest published package of 21 LPA. Facilities include laboratories, a railway model room, library, workshops, computer labs, sports, and separate boys and girls hostels.',
+    text: 'MITCORER offers railway-oriented engineering courses, practical projects, interactive classes, industry engagement, and Training and Placement Cell activities. The public placement archive contains historical records by academic year; these records do not establish current drives or guarantee individual outcomes. Facilities include laboratories, a railway model room, library, workshops, computer labs, sports, and separate boys and girls hostels.',
     status: 'Published',
   },
   {
@@ -496,7 +496,12 @@ export const seedKnowledge = [
       'MITCORER Barshi to Solapur distance', 'Barshi to Solapur distance', 'Solapur to Barshi distance',
       'distance from railway station', 'distance from bus stand', 'reach by train', 'reach by bus',
     ],
-    text: 'MITCORER campus location and transit access details:\n\n- Campus Location: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.\n- Nearest Railway Station: Barshi Town Station is 4.7 km from the campus (via Bhosale Chowk – Cancer Chowk – Industrial Road). Major long-distance train connectivity is accessible at Kurduwadi Junction (~38 km).\n- Nearest Bus Stop: MSRTC Bus Stand Barshi is 5.7 km away (Route-I: via Cancer Chowk & Industrial Road; Route-II: via Bypass Agalgaon Chowk – Shukla Automobile – Industrial Road).\n- Daily College Bus Network: The college operates dedicated daily bus routes across Barshi, Kurduwadi, and Solapur for commuting students and staff.',
+    text: `MITCORER campus location and locally published transit directions:
+
+- Campus address: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.
+- Barshi Town railway station: 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road.
+- MSRTC Bus Stand Barshi: 5.7 km from campus; Route-I is via Cancer Chowk and Industrial Road, and Route-II is via Bypass, Agalgaon Chowk, Shukla Automobile, and Industrial Road.
+- The contact page does not publish the distance or route from Solapur city, or a college bus route from Solapur. Confirm current travel details with the college.`,
     status: 'Published',
   },
   {
@@ -575,16 +580,17 @@ export const seedKnowledge = [
   },
   {
     id: 'KB-46',
-    title: 'MITCORER college office timings, admission enquiry desk hours, and visiting schedule',
+    title: 'MITCORER office hours - current schedule not published',
     category: 'Contact',
-    source: 'MITCORER Contact Us and Admissions Office portal',
+    source: 'MITCORER official Contact page checked 2026-11-18',
     sourceUrl: 'https://mitcorer.edu.in/contact.php',
     tags: [
       'office hours', 'office timings', 'working hours', 'admission desk', 'enquiry desk',
       'visiting hours', 'college timings', 'saturday timings', 'working days', 'admission enquiry hours',
       'campus visit booking', 'campus visit', 'campus visit booking MITCORER', 'college visit', 'MITCORER college timings',
     ],
-    text: 'MITCORER college administrative office and admission enquiry desk schedule:\n\n- Working Days: Monday to Saturday (closed on Sundays and public holidays).\n- Operating Hours: 9:30 AM to 5:30 PM.\n- Admission Enquiry Desk: Functional throughout college working hours in the Administrative Building for counseling, campus tours, document verification checks, and admission assistance.\n- Official Helpdesk Lines: +91 84599 67882, +91 86696 62106; Email: info.mitcorer@mitpune.edu.in.',
+    text: 'MITCORER’s Contact page, checked on 2026-11-18, lists the college address, email, phone numbers, and local Barshi directions. It does not publish current administrative office or admission enquiry desk hours, working days, or a visiting schedule. Call +91 84599 67882 or +91 86696 62106 before visiting to confirm.',
+    provenance: { capturedAt: '2026-11-18', section: 'Contact Us / How to Reach Us' },
     status: 'Published',
   },
   {
@@ -714,12 +720,12 @@ export function createSeedData() {
     { id: 'USR-APP', name: 'Applicant', email: 'applicant@example.com', role: 'applicant', passwordHash, createdAt },
     { id: 'USR-PAR', name: 'Parent', email: 'parent@example.com', role: 'parent', passwordHash, createdAt },
     { id: 'USR-STF', name: 'Shobhana Raichurkar', email: 'staff@mitcorer.edu.in', role: 'staff', passwordHash, createdAt },
-    { id: 'USR-ADM', name: 'Mundhe', email: 'admin@mitcorer.edu.in', role: 'admin', passwordHash, createdAt },
+    { id: 'USR-ADM', name: 'Dean', email: 'admin@mitcorer.edu.in', role: 'admin', passwordHash, createdAt },
   ];
   const productionUsers = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD ? [
     {
       id: 'USR-ADM',
-      name: process.env.ADMIN_NAME || 'Administrator',
+      name: process.env.ADMIN_NAME || 'Dean',
       email: process.env.ADMIN_EMAIL,
       role: 'admin',
       passwordHash: hashPassword(process.env.ADMIN_PASSWORD),

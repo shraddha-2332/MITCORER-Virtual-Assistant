@@ -8,6 +8,9 @@ function clauses(text) {
   return splitQueryClauses(text);
 }
 function facet(text) {
+  if (/\b(?:office hours?|office timings?|working hours?|college timings?)\b/.test(text)) return 'officeHours';
+  if (/\b(?:address|contact details?|phone|telephone|email|college location)\b/.test(text)) return 'contact';
+  if (/\b(?:route|routes|stops?|distance|how far|travel from|bus from)\b/.test(text)) return 'transport';
   if (/seat matrix/.test(text)) return 'seatMatrix';
   if (/\b(?:fee\w*|payment\w*|amount|semester|charges?|cost\w*|deposit)\b/.test(text)) return /\b(?:hostel|mess)\b/.test(text) ? 'accommodationFees' : 'academicFees';
   if (/\b(?:bus|transport)\b/.test(text)) return 'transport';
@@ -17,7 +20,7 @@ function facet(text) {
   return 'unknown';
 }
 const titles = { seatMatrix: 'Historical seat matrix', programmes: 'Programmes and intake', academicFees: 'Academic fees', accommodationFees: 'Hostel and mess fees',
-  hostel: 'Hostel facilities', transport: 'Bus and transport', library: 'Library', unknown: 'Other requested information' };
+  hostel: 'Hostel facilities', transport: 'Bus and transport', library: 'Library', officeHours: 'Office hours', contact: 'Address and contact details', unknown: 'Other requested information' };
 const entities = /\bcse\b|computer science|computer engineering|civil(?: engineering)?|mechanical(?: engineering)?|electronics|artificial intelligence|ai & ds|polytechnic|diploma/i;
 
 export function buildClarificationAnswer(normalized) {
@@ -74,7 +77,6 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (/\b(?:faculty|faculties|teacher|teachers|professor|professors|teaching staff)\b/i.test(normalized) && !/\b(?:fee|fees|cost|hostel|mess|cutoff|cut-off|scholarship)\b/i.test(normalized)) return null;
   if (/mou|corporate readiness|railway signaling|railway track|railway technology|railway diploma|railway modules/.test(normalized)) return null;
   let parts = clauses(normalized);
-  if (parts.length < 2) return null;
   // Hostel + mess is one cost topic, not two unrelated queries.
   if (parts.every((part) => /\b(?:hostel|mess)\b/.test(part)) && /fee|charges|cost|amount/.test(normalized)) return null;
   const planned = parts.filter((part) => !/^(?:i am|i'm|my category is|my diploma is complete|i will join|i (?:passed|completed|finished) class 12)\b/.test(part)
@@ -89,6 +91,17 @@ export function buildCompoundAnswer(question, normalized, records) {
     if (topic === 'unknown' && /\b(?:bus|transport)\b/.test(normalized) && /^(?:what are (?:the )?)?(?:routes|stops|timings)[?. ]*$/.test(part)) topic = 'transport';
     return { question: part, topic };
   });
+  // This common parent-style question contains several comma-separated facts;
+  // clause splitting can leave contact and opening hours bundled together.
+  if (/\b(?:address|location)\b/.test(normalized)
+    && /\b(?:office hours?|office timings?|working hours?)\b/.test(normalized)
+    && /\b(?:route|routes|travel|bus)\b/.test(normalized)) {
+    planned.splice(0, planned.length,
+      { question: 'MITCORER address and contact details', topic: 'contact' },
+      { question: 'MITCORER office hours', topic: 'officeHours' },
+      { question: 'MITCORER bus routes and stops from Solapur', topic: 'transport' },
+    );
+  }
   parts = planned.map((part) => part.question);
   if (parts.length < 2) return null;
   if (/seat matrix/.test(normalized) && !/current|historical/.test(normalized)
@@ -123,13 +136,21 @@ export function buildCompoundAnswer(question, normalized, records) {
     let result = ['programmes', 'academicFees'].includes(part.topic) ? buildClarificationAnswer(query) : null;
     if (!result && ['seatMatrix', 'programmes', 'academicFees', 'accommodationFees'].includes(part.topic)) {
       result = buildMaintainedAnswer(query, query, records);
-    } else if (!result && ['hostel', 'transport', 'library'].includes(part.topic)) {
-      result = directPassage({ hostel: 'KB-23', transport: 'KB-19', library: 'KB-20' }[part.topic], query, records);
+    } else if (!result && ['hostel', 'transport', 'library', 'officeHours', 'contact'].includes(part.topic)) {
+      result = directPassage({ hostel: 'KB-23', transport: 'KB-19', library: 'KB-20', officeHours: 'KB-46', contact: 'KB-17' }[part.topic], query, records);
+    }
+    if (part.topic === 'transport' && /\b(?:route|routes|distance|how far|travel from|from solapur)\b/i.test(query)) {
+      const transitRecord = records.find((item) => item.id === 'KB-40' && usableKnowledge(item));
+      if (transitRecord) result = {
+        managedRecordId: 'KB-40', source: transitRecord.source, sourceUrl: transitRecord.sourceUrl,
+        evidence: [transitRecord],
+        answer: 'MITCORER’s official contact page gives local directions from Barshi: the MSRTC Bus Stand is listed 5.7 km away, with a route via Cancer Chowk and Industrial Road and an alternate route via Bypass, Agalgaon Chowk, and Industrial Road. Barshi Town railway station is listed 4.7 km away via Bhosale Chowk, Cancer Chowk, and Industrial Road. The page does not give a route or distance from Solapur city itself, so confirm that part before travelling.',
+      };
     }
     result ||= { source: 'No verified record', evidence: [], answer: 'I could not find a verified answer for this part. Please ask a more specific institutional question or check with the college.' };
     const refs = result.evidence || [];
     for (const record of refs) if (!evidence.some((item) => item.id === record.id)) evidence.push(record);
-    sections.push({ topic: part.topic, title: titles[part.topic], question: part.question, normalizedQuery: query, managedRecordId: result.managedRecordId, answer: result.answer,
+    sections.push({ topic: part.topic, title: titles[part.topic], question: part.question, normalizedQuery: query, managedRecordId: result.managedRecordId, answer: result.answer, officialLinks: result.officialLinks || [],
       status: result.conflict ? 'conflict' : result.clarification ? 'clarification' : refs.length ? 'supported' : 'unsupported', clarificationKind: result.clarificationKind, evidenceIds: refs.map((item) => item.id) });
   }
   const answer = sections.map((section) => {
@@ -138,5 +159,5 @@ export function buildCompoundAnswer(question, normalized, records) {
   }).join('\n\n');
   return { composed: true, source: evidence.length ? evidence.map((item, index) => `[${index + 1}] ${item.title} (${item.source})`).join(' · ') : 'No verified record',
     sourceUrl: '', answer, sections, evidence,
-    officialLinks: evidence.filter((item) => item.sourceUrl).map((item) => ({ label: `[${evidence.findIndex((record) => record.id === item.id) + 1}] ${item.title}`, url: item.sourceUrl })), next: '' };
+    officialLinks: [...evidence.filter((item) => item.sourceUrl).map((item) => ({ label: `[${evidence.findIndex((record) => record.id === item.id) + 1}] ${item.title}`, url: item.sourceUrl })), ...sections.flatMap((section) => section.officialLinks)], next: '' };
 }

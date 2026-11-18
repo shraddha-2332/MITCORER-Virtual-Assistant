@@ -8,6 +8,11 @@ import { askPublicWithHistory, resetPublicConversation } from '../src/conversati
 import { hashPassword, verifyPassword, createToken, verifyToken } from '../src/auth.js';
 
 const token = 'a'.repeat(64);
+test('retired CampusGuard demo password alias is rejected', () => {
+  const seedHash = hashPassword('mitra', 'mitra-seed-salt');
+  assert.equal(verifyPassword('mitra', seedHash), true);
+  assert.equal(verifyPassword('campusguard', seedHash), false);
+});
 beforeEach(() => { config.databaseFile = ':memory:'; config.geminiApiKey = ''; config.trustProxy = false; resetDbForTests(); resetRuntimeStateForTests(); });
 afterEach(() => closeDb());
 async function withServer(run) {

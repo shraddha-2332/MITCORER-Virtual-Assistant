@@ -33,9 +33,9 @@ test('anonymous multilingual uploaded-document status queries get safe guidance 
       resetRuntimeStateForTests();
       const response = await answerAdmissionQuestion({ question, language }, null);
       assert.match(response.answer, /private|खाजगी|निजी/i, question);
-      assert.match(response.answer, /admissions office|contact page|संपर्क/i, question);
       assert.doesNotMatch(response.answer, /which category|which concession|first year or direct second year/i, question);
       assert.deepEqual(response.evidence, [], question);
+      assert.equal(response.actionView, 'applicantPortal', question);
       const serialized = JSON.stringify(response);
       assert.ok(!serialized.includes('another-applicant@example.test'));
       assert.ok(!serialized.includes('PRIVATE_REVIEW_NOTE_CANARY'));

@@ -212,6 +212,15 @@ function App() {
     }
   };
 
+  const handleApplicantPortalAuth = async ({ mode, name, email, password, role }) => {
+    const payload = mode === 'signup'
+      ? await api.signup({ name, email, password, role })
+      : await api.login({ email, password });
+    setToken(payload.token);
+    setUser(payload.user);
+    return true;
+  };
+
   const extractStructuredOfficialSource = async (id) => {
     setAppError('');
     try {
@@ -223,7 +232,10 @@ function App() {
   };
 
   if (!user) {
-    return <PublicAssistantWidget onAdminLogin={handleAdminLogin} />;
+    return <PublicAssistantWidget onAdminLogin={handleAdminLogin} onApplicantPortalAuth={handleApplicantPortalAuth} />;
+  }
+  if (['applicant', 'parent'].includes(user.role)) {
+    return <ApplicantDocumentsPortal user={user} token={token} onLogout={logout} />;
   }
 
   return (
@@ -237,13 +249,14 @@ function App() {
           {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} onSyncWebsite={syncOfficialSources} />}
           {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onSyncWebsite={syncOfficialSources} onExtractStructuredSource={extractStructuredOfficialSource} />}
           {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
+          {view === 'documents' && <DocumentReviewQueue token={token} />}
         </section>
       </main>
     </div>
   );
 }
 
-function PublicAssistantWidget({ onAdminLogin }) {
+function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
   const [showAdminLogin, setShowAdminLogin] = useState(() => {
     try {
       return typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('admin') || window.location.hash === '#admin');
@@ -253,6 +266,7 @@ function PublicAssistantWidget({ onAdminLogin }) {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState('');
+  const [showApplicantPortal, setShowApplicantPortal] = useState(false);
   const [language, setLanguage] = useState('auto');
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -367,6 +381,8 @@ function PublicAssistantWidget({ onAdminLogin }) {
           officialLinks: answer.officialLinks,
           evidence: answer.evidence,
           sections: answer.sections,
+          actionView: answer.actionView,
+          actionLabel: answer.actionLabel,
           requestedLanguage: answer.requestedLanguage,
           showQuickReplies: !answer.answerPart2,
           choices: retainedChoices || undefined,
@@ -462,11 +478,16 @@ function PublicAssistantWidget({ onAdminLogin }) {
           </div>
         </header>
         <div className="publicChatMessages">
-          <section className="publicCampusWelcome" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,32,51,.78), rgba(7,32,51,.25)), url(${mitcorerCampus})` }}><div><span>MITCORER, Barshi</span><strong>Start your engineering journey.</strong><a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Start admission enquiry <ArrowRight size={13} /></a></div></section>
+          <section className="publicCampusWelcome" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,32,51,.78), rgba(7,32,51,.25)), url(${mitcorerCampus})` }}><div><span>MITCORER, Barshi</span><strong>Start your engineering journey.</strong><div className="campusWelcomeActions"><a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Start admission enquiry <ArrowRight size={13} /></a><button type="button" onClick={() => setShowApplicantPortal(true)}>Upload / check documents <ArrowRight size={13} /></button></div></div></section>
           {messages.map((message, index) => <Fragment key={`${message.type}-${index}`}><article className={`publicBubble ${message.type}`}>
             {message.type === 'assistant' && <div className="publicBubbleAvatar"><img src={mitcorerLogo} alt="" /></div>}
             <div>
               <PublicAnswerBody message={message} />
+              {message.type === 'assistant' && message.actionView === 'applicantPortal' && (
+                <button type="button" className="applicantPortalEntry answerPortalEntry" onClick={() => setShowApplicantPortal(true)}>
+                  {message.actionLabel || 'Open applicant document portal'} <ArrowRight size={13} />
+                </button>
+              )}
               {publicAnswerLinks(message, { firstYear: feeFirstYearImage, directSecondYear: feeDirectSecondYearImage, hostel: hostelMessFeeImage }).map(link => <a key={link.url} href={link.url} target="_blank" rel="noreferrer">{link.label} <ArrowRight size={13} /></a>)}
               {message.type === 'assistant' && (message.escalation?.available || message.source === 'No verified record') && (
                 <PublicEscalationCard message={message} language={language} />
@@ -484,7 +505,8 @@ function PublicAssistantWidget({ onAdminLogin }) {
           <button type="submit" aria-label={language === 'mr' ? 'प्रश्न पाठवा' : language === 'hi' ? 'प्रश्न भेजें' : 'Send message'} disabled={busy || !input.trim()}><Send size={19} /></button>
         </form>
         <footer>
-          Powered by MITCORER{' '}
+          <button type="button" onClick={() => setShowApplicantPortal(true)} className="applicantPortalEntry">Applicant / parent document portal</button>
+          <span>Powered by MITCORER{' '}</span>
           <button
             type="button"
             className="adminEntryBtn"
@@ -531,9 +553,132 @@ function PublicAssistantWidget({ onAdminLogin }) {
           </div>
         </div>
       )}
+      {showApplicantPortal && <ApplicantPortalAccess
+        onClose={() => setShowApplicantPortal(false)}
+        onAuthenticate={onApplicantPortalAuth}
+      />}
       <button className="assistantLauncher" type="button" onClick={() => setOpen(true)} aria-label="Open MIT Barshi admission assistant"><span className="launcherPulse" /><img src={mitcorerLogo} alt="" /></button>
     </main>
   );
+}
+
+function ApplicantPortalAccess({ onClose, onAuthenticate }) {
+  const [mode, setMode] = useState('login');
+  const [role, setRole] = useState('applicant');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const ok = await onAuthenticate({ mode, name, email, password, role });
+      if (ok) onClose();
+      else setError('Check your details and try again.');
+    } catch (submitError) {
+      setError(submitError.message || 'Could not sign in.');
+    } finally { setBusy(false); }
+  };
+  return <div className="portalModalBackdrop" role="presentation">
+    <section className="portalModal" role="dialog" aria-modal="true" aria-labelledby="applicant-portal-title">
+      <button type="button" className="portalModalClose" onClick={onClose} aria-label="Close applicant portal"><X size={18} /></button>
+      <span className="eyebrow">Private applicant workspace</span>
+      <h2 id="applicant-portal-title">{mode === 'login' ? 'Sign in to your documents' : 'Create an applicant account'}</h2>
+      <p>Upload admission documents and submit them for staff review. Your records are visible only to your account and authorized staff.</p>
+      {error && <div className="errorBanner" role="alert">{error}</div>}
+      <form onSubmit={submit} className="portalAccessForm">
+        {mode === 'signup' && <>
+          <label>Full name<input required maxLength={120} value={name} onChange={event => setName(event.target.value)} /></label>
+          <label>Account type<select value={role} onChange={event => setRole(event.target.value)}><option value="applicant">Applicant</option><option value="parent">Parent / guardian</option></select></label>
+        </>}
+        <label>Email<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
+        <label>Password<input type="password" required minLength={mode === 'signup' ? 12 : undefined} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} /></label>
+        {mode === 'signup' && <small>Use at least 12 characters. Keep your account credentials private.</small>}
+        <button type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+      </form>
+      <button type="button" className="portalModeToggle" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>
+        {mode === 'login' ? 'New applicant? Create an account' : 'Already have an account? Sign in'}
+      </button>
+    </section>
+  </div>;
+}
+
+function ApplicantDocumentsPortal({ user, token, onLogout }) {
+  const [items, setItems] = useState([]);
+  const [docName, setDocName] = useState('12th Marksheet');
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const uploadFormRef = useRef(null);
+  const reload = async () => {
+    const result = await api.getDocuments(token);
+    setItems(result.items || []);
+  };
+  useEffect(() => {
+    let active = true;
+    api.getDocuments(token).then(result => { if (active) setItems(result.items || []); })
+      .catch(loadError => { if (active) setError(loadError.message || 'Could not load documents.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
+  const uploadFile = async event => {
+    event.preventDefault();
+    if (!file || busy) return;
+    setBusy(true); setError(''); setNotice('');
+    try {
+      await api.uploadDocument(token, { docName }, file);
+      setFile(null);
+      uploadFormRef.current?.reset();
+      await reload();
+      setNotice('Document uploaded. Submit it for review when you are ready.');
+    } catch (uploadError) { setError(uploadError.message || 'Upload failed.'); }
+    finally { setBusy(false); }
+  };
+  const submitForReview = async () => {
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const result = await api.submitDocuments(token);
+      setItems(result.items || []);
+      await reload();
+      setNotice(`${result.submittedCount} document(s) submitted to the MITCORER review queue.`);
+    } catch (submitError) { setError(submitError.message || 'Could not submit documents.'); }
+    finally { setBusy(false); }
+  };
+  const remove = async id => {
+    setBusy(true); setError(''); setNotice('');
+    try { await api.deleteDocument(token, id); await reload(); setNotice('Document removed.'); }
+    catch (removeError) { setError(removeError.message || 'Could not remove document.'); }
+    finally { setBusy(false); }
+  };
+  const openFile = async id => {
+    try { await api.openDocument(token, id); }
+    catch (openError) { setError(openError.message || 'Could not open document.'); }
+  };
+  const canSubmit = items.some(item => ['Uploaded (not submitted)', 'Needs correction'].includes(item.status));
+  return <main className="applicantPortalPage">
+    <header className="applicantPortalHeader"><div className="brandLockup"><span className="collegeLogo"><img src={mitcorerLogo} alt="MITCORER logo" /></span><div><strong>MITCORER</strong><small>Applicant document portal</small></div></div><div><span>{user.name} · {user.role === 'parent' ? 'Parent / guardian' : 'Applicant'}</span><button type="button" onClick={onLogout}>Sign out</button></div></header>
+    <section className="applicantPortalContent">
+      <span className="eyebrow">Private workspace</span><h1>Your admission documents</h1>
+      <p>Upload a PDF, JPG, or PNG against the document checklist, then submit the batch for staff review. Do not upload documents in the public chat.</p>
+      {error && <div className="errorBanner" role="alert">{error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
+      <form ref={uploadFormRef} className="portalUploadForm" onSubmit={uploadFile}>
+        <label>Document type<select value={docName} onChange={event => setDocName(event.target.value)}><option>10th Marksheet</option><option>12th Marksheet</option><option>CET or JEE Scorecard</option><option>School Leaving Certificate</option><option>Nationality or Domicile Proof</option><option>Aadhaar Copy</option><option>Bank Passbook Copy</option><option>Income Certificate</option><option>Other Supporting Document</option></select></label>
+        <label>Choose file<input required type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={event => setFile(event.target.files?.[0] || null)} /></label>
+        <button type="submit" disabled={busy || !file}><UploadCloud size={16} />{busy ? 'Working…' : 'Upload document'}</button>
+      </form>
+      <div className="applicantDocumentListHead"><h2>Uploaded documents</h2><button type="button" disabled={busy || !canSubmit} onClick={submitForReview}>Submit for staff review</button></div>
+      {loading ? <p>Loading documents…</p> : items.length ? <div className="applicantDocumentList">{items.map(item => <article key={item.id}>
+        <div><strong>{item.docName}</strong><span>{item.fileName} · {item.status}</span>{item.reviewNote && <p>Staff note: {item.reviewNote}</p>}</div>
+        <div><button type="button" onClick={() => openFile(item.id)}>Open</button>{['Uploaded (not submitted)', 'Needs correction'].includes(item.status) && <button type="button" disabled={busy} onClick={() => remove(item.id)}>Remove</button>}</div>
+      </article>)}</div> : <div className="knowledgeEmpty">No documents uploaded yet. Choose a document type and file above.</div>}
+      <p className="portalPrivacyNote"><LockKeyhole size={15} /> Documents are account-scoped. Staff review updates appear here; this portal does not promise email or SMS notifications.</p>
+    </section>
+  </main>;
 }
 
 function PublicEscalationCard({ message, language }) {
@@ -587,7 +732,7 @@ function PublicEscalationCard({ message, language }) {
     ? 'तुमची विनंती MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली जाईल. ती आपोआप एखाद्या विशिष्ट सल्लागाराकडे पाठवली जात नाही. तातडीसाठी खालील क्रमांकांवर कॉल करा:'
     : language === 'hi'
       ? 'आपका अनुरोध MITCORER कर्मचारी समीक्षा कतार में दर्ज होगा। यह अपने आप किसी विशेष परामर्शदाता को नहीं भेजा जाता। तत्काल सहायता के लिए नीचे दिए गए नंबरों पर कॉल करें:'
-      : 'Submitting saves your request to the MITCORER staff triage queue. It is not automatically assigned to a named counselor or sent by email/SMS. For urgent help, call one of the numbers below:';
+      : 'Enter a phone number or email you can access. Staff can see it in Admin → Review Inbox → Requests and contact you manually; the system does not send a reply automatically. For urgent help, call one of the numbers below:';
 
   return (
     <div className="escalationCard" role="region" aria-label="MITCORER staff inquiry">
@@ -610,7 +755,7 @@ function PublicEscalationCard({ message, language }) {
     ? `तुमची विनंती ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली आहे. कोणताही विशिष्ट सल्लागार आपोआप नियुक्त झालेला नाही. तातडीसाठी वरील क्रमांकांवर कॉल करा.`
               : language === 'hi'
       ? `आपका अनुरोध ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचारी समीक्षा कतार में दर्ज किया गया है। कोई विशेष परामर्शदाता अपने आप नियुक्त नहीं हुआ है। तत्काल सहायता के लिए ऊपर दिए गए नंबरों पर कॉल करें।`
-                : `Your inquiry${submissionId ? ` (${submissionId})` : ''} was saved to the MITCORER staff triage queue. No individual counselor was assigned automatically. For urgent help, please call one of the numbers above.`}
+                : `Your inquiry${submissionId ? ` (${submissionId})` : ''} was saved to Admin → Review Inbox → Requests. No individual counselor was assigned automatically, and no email/SMS was sent. For urgent help, please call one of the numbers above.`}
           </span>
         </div>
       ) : (
@@ -814,6 +959,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
         <div className="adminShortcutList">
           <button type="button" onClick={() => setView('knowledge')}><FileText size={19} /><span><strong>Manage verified knowledge</strong><small>Edit records and review official sources</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => setView('documents')}><FileText size={19} /><span><strong>Review applicant documents</strong><small>Open submitted files and record review status</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}><ThumbsDown size={19} /><span><strong>Inspect answer feedback</strong><small>Find answers visitors marked unhelpful</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={onOpenSources}><FileText size={19} /><span><strong>Review official sources</strong><small>Check indexed pages, files and source updates</small></span><ArrowRight size={16} /></button>
         </div>
@@ -879,6 +1025,9 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
         {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')} title={collapsed ? 'Review inbox' : undefined} aria-label={collapsed ? 'Review inbox' : undefined}>
           <Phone size={17} /><span>Review inbox</span>
         </button>}
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'documents' ? 'active' : ''} type="button" onClick={() => openView('documents')} title={collapsed ? 'Document review' : undefined} aria-label={collapsed ? 'Document review' : undefined}>
+          <FileText size={17} /><span>Document review</span>
+        </button>}
       </nav>
       <div className="accountFooter" title={user.email}>
         <span aria-hidden="true">{user.name.trim().charAt(0).toUpperCase()}</span>
@@ -887,6 +1036,52 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
       </div>
     </aside>
   );
+}
+
+function DocumentReviewQueue({ token }) {
+  const [items, setItems] = useState([]);
+  const [notes, setNotes] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState('');
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const reload = async () => {
+    const result = await api.getDocuments(token);
+    setItems(result.items || []);
+  };
+  useEffect(() => {
+    let active = true;
+    api.getDocuments(token).then(result => { if (active) setItems(result.items || []); })
+      .catch(loadError => { if (active) setError(loadError.message || 'Could not load submitted documents.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [token]);
+  const openFile = async item => {
+    setError('');
+    try { await api.openDocument(token, item.id); }
+    catch (openError) { setError(openError.message || 'Could not open this submitted file.'); }
+  };
+  const review = async (item, status) => {
+    setBusyId(item.id); setError(''); setNotice('');
+    try {
+      await api.updateDocumentStatus(token, item.id, status, notes[item.id] || '');
+      await reload();
+      setNotice(`${item.docName} marked “${status}”. The applicant will see this status in their document portal.`);
+      setNotes(current => ({ ...current, [item.id]: '' }));
+    } catch (reviewError) { setError(reviewError.message || 'Could not save the document review.'); }
+    finally { setBusyId(''); }
+  };
+  return <div className="pageStack documentReviewPage">
+    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Document review queue</h1><p>Only documents submitted for review appear here. Open the file, then mark it ready for reporting or request a correction.</p></div><button type="button" onClick={() => { setLoading(true); reload().catch(loadError => setError(loadError.message || 'Could not refresh the queue.')).finally(() => setLoading(false)); }}>Refresh queue</button></section>
+    {error && <div className="errorBanner" role="alert">{error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
+    {loading ? <div className="panelBlock">Loading submitted documents…</div> : items.length === 0 ? <div className="knowledgeEmpty">No documents are waiting in the review queue.</div> : <div className="documentReviewList">{items.map(item => <article key={item.id} className="documentReviewCard">
+      <header><div><strong>{item.docName}</strong><span>{item.ownerName} · {item.ownerEmail}</span></div><span className="statusPill">{item.status}</span></header>
+      <p>{item.fileName} · Submitted {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : new Date(item.updatedAt || item.createdAt).toLocaleString()}</p>
+      <label>Review note (shown to the applicant)<textarea maxLength={500} rows={2} value={notes[item.id] ?? item.reviewNote ?? ''} onChange={event => setNotes(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Explain what to correct, if needed." /></label>
+      <footer><button type="button" onClick={() => openFile(item)}>Open submitted file</button><span /><button type="button" disabled={busyId === item.id} onClick={() => review(item, 'Needs correction')}>{busyId === item.id ? 'Saving…' : 'Request correction'}</button><button type="button" className="knowledgePrimaryAction" disabled={busyId === item.id} onClick={() => review(item, 'Ready for reporting')}>{busyId === item.id ? 'Saving…' : 'Mark ready for reporting'}</button></footer>
+    </article>)}</div>}
+    <p className="portalPrivacyNote"><LockKeyhole size={15} /> This queue is available to authorized staff. Applicant files are served through the authenticated document API.</p>
+  </div>;
 }
 
 function ReviewInbox({ token, initialTab = 'inquiries' }) {

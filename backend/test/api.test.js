@@ -306,6 +306,53 @@ test('ambiguous public references ask for clarification even after an earlier ex
   });
 });
 
+test('public document clarification carries the original question and route into the answer', async () => {
+  await withServer(async (base) => {
+    const first = await request(base, '/api/public-assistant/ask', { method: 'POST',
+      body: JSON.stringify({ question: 'What documents should an applicant prepare?' }) });
+    assert.equal(first.payload.data.clarification, true);
+    const continued = await request(base, '/api/public-assistant/ask', { method: 'POST',
+      headers: { Cookie: first.response.headers.get('set-cookie')?.split(';')[0] },
+      body: JSON.stringify({ question: 'for first year', conversationId: first.payload.data.conversationId }) });
+    assert.equal(continued.response.status, 200);
+    assert.equal(continued.payload.data.conversationId, first.payload.data.conversationId);
+    assert.deepEqual(continued.payload.data.evidence.map(item => item.id), ['KB-1']);
+    assert.match(continued.payload.data.answer, /CET or JEE scorecard/);
+    assert.doesNotMatch(continued.payload.data.answer, /I could not find/);
+  });
+});
+
+test('anonymous document-status reply points to the authenticated applicant portal without exposing document data', async () => {
+  await withServer(async (base) => {
+    const result = await request(base, '/api/public-assistant/ask', { method: 'POST',
+      body: JSON.stringify({ question: 'I uploaded a document; what is its review status?' }) });
+    assert.equal(result.response.status, 200);
+    assert.equal(result.payload.data.actionView, 'applicantPortal');
+    assert.match(result.payload.data.answer, /sign in or create an account/i);
+    assert.match(result.payload.data.answer, /Do not upload private records in this public chat/i);
+    assert.ok(result.payload.data.officialLinks.some(link => link.url === 'https://mitcorer.edu.in/mitcorer/public/contact-us'));
+    assert.deepEqual(result.payload.data.evidence, []);
+  });
+});
+
+test('compound contact and travel questions answer supported parts and qualify unsupported hours and Solapur route', async () => {
+  await withServer(async (base) => {
+    const result = await request(base, '/api/public-assistant/ask', { method: 'POST',
+      body: JSON.stringify({ question: 'What are the college address, contact details, office timings, and route from Solapur?' }) });
+    assert.equal(result.response.status, 200);
+    assert.ok(result.payload.data.sections, JSON.stringify(result.payload.data));
+    assert.deepEqual(result.payload.data.sections.map(section => section.topic), ['contact', 'officeHours', 'transport']);
+    assert.deepEqual(result.payload.data.sections.map(section => section.status), ['supported', 'supported', 'supported']);
+    assert.deepEqual(result.payload.data.sections.map(section => section.evidenceIds), [['KB-17'], ['KB-46'], ['KB-40']]);
+    assert.deepEqual(result.payload.data.evidence.map(record => record.id), ['KB-17', 'KB-46', 'KB-40']);
+    assert.match(result.payload.data.answer, /Industrial Estate No\. 03/);
+    assert.match(result.payload.data.answer, /checked on 2026-11-18/i);
+    assert.match(result.payload.data.answer, /does not publish current administrative office/i);
+    assert.match(result.payload.data.answer, /MSRTC Bus Stand is listed 5\.7 km away/);
+    assert.match(result.payload.data.answer, /does not give a route or distance from Solapur city itself/i);
+  });
+});
+
 test('account history preserves compound sections and supporting references', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
@@ -472,10 +519,11 @@ test('public assistant formats scholarship, placement, fee, and contact informat
     assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship and financial-aid guidance', 'MahaDBT scholarship portal']);
 
     const placement = await ask('What placement highlights and companies does MITCORER have?');
-    assert.match(placement.answer, /100\+ companies visiting/);
-    assert.match(placement.answer, /Training and Placement Cell supports internships/);
-    assert.match(placement.answerPart2, /^Published recruiter records include\n\n/);
-    assert.match(placement.answerPart2, /- TCS\n- Infosys\n- Cognizant/);
+    assert.match(placement.answer, /POD, Superset, and Unstop/);
+    assert.match(placement.answer, /through AY 2024-25/);
+    assert.match(placement.answer, /not treated as current or guaranteed/);
+    assert.doesNotMatch(placement.answer, /100\+ companies visiting|300\+ students placed|4\.4 LPA/);
+    assert.equal(placement.answerPart2, undefined);
     assert.ok(placement.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/mitcorer/public/placements'));
 
     const fees = await ask('What are the first-year B.Tech fees?');
@@ -522,7 +570,8 @@ test('public assistant serves verified About and Why MITCORER responses', async 
     });
     assert.equal(why.response.status, 200);
     assert.match(why.payload.data.answer, /What sets MITCORER apart/);
-    assert.match(why.payload.data.answer, /60\+ faculty and 900\+ alumni/);
+    assert.match(why.payload.data.answer, /placement drives, and internship support/);
+    assert.doesNotMatch(why.payload.data.answer, /94%|21 LPA|100\+ recruiters/);
     assert.equal(why.payload.data.source, 'MITCORER Admissions FAQ and official website');
   });
 });
@@ -1031,8 +1080,8 @@ test('assistant answers parent-style institution type and autonomy questions fro
       assert.equal(payload.data.evidence[0]?.id, 'KB-54', question);
       assert.match(payload.data.answer, /AY 2026-27/i, question);
       assert.match(payload.data.answer, /Status: Un-Aided/i, question);
-      assert.match(payload.data.answer, /Autonomy Status: Non-Autonomous/i, question);
-      assert.match(payload.data.answer, /Minority Status: Non-Minority/i, question);
+      assert.match(payload.data.answer, /Autonomy: Non-Autonomous/i, question);
+      assert.match(payload.data.answer, /Minority status: Non-Minority/i, question);
       assert.doesNotMatch(payload.data.answer, /private-unaided|NAAC Grade A|degrees are conferred directly/i, question);
       assert.ok(payload.data.officialLinks.some(link => link.url === 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901'), question);
     }
@@ -1668,6 +1717,11 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
         body: JSON.stringify({ question }),
       });
       assert.equal(response.status, 200, `Failed status for: ${question}`);
+      if (/college timings/i.test(question)) {
+        assert.equal(payload.data.evidence[0]?.id, 'KB-46', question);
+        assert.match(payload.data.answer, /does not publish current administrative office/i, question);
+        continue;
+      }
       assert.notEqual(payload.data.source, 'No verified record', `Unverified source for: ${question}`);
       assert.ok(Array.isArray(payload.data.evidence) && payload.data.evidence.length > 0, `Missing evidence for: ${question}`);
       assert.ok(typeof payload.data.answer === 'string' && payload.data.answer.trim().length > 20, `Empty answer for: ${question}`);
@@ -1731,7 +1785,7 @@ test('general placement record questions use the verified placement summary rath
     assert.equal(response.status, 200);
     assert.notEqual(payload.data.source, 'No matching indexed document');
     assert.ok(payload.data.evidence.some((record) => record.id === 'KB-16'));
-    assert.match(payload.data.answer, /100\+ companies visiting/);
+    assert.match(payload.data.answer, /POD, Superset, and Unstop/);
   });
 });
 
@@ -1770,7 +1824,7 @@ test('strategic improvement options: multi-turn session context, suggestions chi
     });
     assert.equal(placementAsk.response.status, 200);
     assert.ok(Array.isArray(placementAsk.payload.data.suggestions));
-    assert.ok(placementAsk.payload.data.suggestions.some((s) => s.label.includes('21 LPA')));
+    assert.ok(placementAsk.payload.data.suggestions.some((s) => /placement platforms|dated placement records/i.test(s.label)));
 
     // Option A: Fuzzy retrieval resolves student typos
     const typoAsk = await request(base, '/api/public-assistant/ask', {

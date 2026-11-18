@@ -819,9 +819,11 @@ function buildDocumentStatusAnswer(question, user) {
   if (!user) {
     return {
       source: 'Applicant document status',
-      answer: 'Uploaded-document review status is private to each applicant. This public assistant cannot look up that status. Please contact the MITCORER admissions office through its official contact page, and do not share document details or identifiers here.',
-      next: 'Contact the admissions office through the official MITCORER contact page.',
-      officialLinks: [{ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
+      answer: 'Uploaded-document review status is private to each applicant, so this public assistant cannot look it up. To upload documents or check review notes, open the applicant / parent document portal, sign in or create an account, and use “Your admission documents.” Do not upload private records in this public chat.',
+      next: 'Open the applicant / parent document portal below.',
+      actionView: 'applicantPortal',
+      actionLabel: 'Open applicant document portal',
+      officialLinks: [{ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/contact.php' }],
     };
   }
   const records = getDb().documents.filter((item) => item.ownerEmail === user.email);
@@ -1043,7 +1045,7 @@ function getOfficialExperienceLinks(question) {
     links.push({ label: 'PAH Solapur University Engineering Rules', url: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf' });
   }
   if (/office hours|office timings|working hours|visiting hours|admission desk|enquiry desk|college timings/.test(normalized)) {
-    links.push({ label: 'MITCORER Contact & Office Hours', url: 'https://mitcorer.edu.in/contact.php' });
+    links.push({ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/contact.php' });
   }
   if (/professional diploma|railway diploma|railway track technology|railway signaling|railway signalling|rolling stocks?|software technology in railway/.test(normalized)) {
     links.push({ label: 'MITCORER Professional Railway Diplomas', url: 'https://mitcorer.edu.in/about-professional-diploma-railway.php' });
@@ -1217,12 +1219,13 @@ function buildCollegeProfileAnswer(question) {
     };
   }
   if (/\b(?:office hours?|office timings?|working hours?|visiting hours?|admission desk|enquiry desk|college timings?|working days?|visiting the college|visiting schedule|office open|office close|open on saturday|admission helpline|helpline number|campus visit|visit booking)\b/.test(normalized)) {
+    if (/\b(?:office hours?|office timings?|working hours?|visiting hours?|college timings?|working days?|office open|office close|open on saturday)\b/.test(normalized)) return buildOfficeHoursAnswer(question);
     return {
-      recordId: 'KB-46',
-      source: 'MITCORER Contact Us and Admissions Office portal',
+      recordId: 'KB-17',
+      source: 'MITCORER Contact page',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'MITCORER Administrative Office & Admission Enquiry Desk Hours:\n\n- Working Days: Monday to Saturday (closed on Sundays and public holidays).\n- Operating Timings: 9:30 AM to 5:30 PM.\n- Admission Enquiry Desk: Open during working hours in the Administrative Building for admission counseling, document verification checks, campus visits, and seat enquiry.\n- Contact Lines: +91 84599 67882 / +91 86696 62106; Email: info.mitcorer@mitpune.edu.in.',
-      next: '', actionView: 'visit', actionLabel: 'View office details',
+      answer: 'For admission enquiries or to arrange a campus visit, contact MITCORER at +91 84599 67882 or +91 86696 62106, or email info.mitcorer@mitpune.edu.in. The published contact page does not list current office hours; call to confirm before visiting.',
+      next: '', actionView: 'inquiry', actionLabel: 'Contact admissions',
     };
   }
   if (/\b(?:nep(?: 2020)?|national education policy|outcome[- ]based education|obe|medium of instruction|english medium|curriculum pattern|evaluation pattern)\b/.test(normalized)) {
@@ -1284,7 +1287,12 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-40',
       source: 'MITCORER Contact Us portal and campus transit directions',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'MITCORER Transit Directions & Commuting Access:\n\n- Campus Location: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.\n- Nearest Railway Station: Barshi Town Station is 4.7 km from campus (via Bhosale Chowk – Cancer Chowk – Industrial Road). Major long-distance train connectivity is accessible at Kurduwadi Junction (~38 km).\n- Nearest Bus Stand: MSRTC Bus Stand Barshi is 5.7 km away (Route-I: via Cancer Chowk & Industrial Road; Route-II: via Bypass Agalgaon Chowk – Shukla Automobile – Industrial Road).\n- Daily College Bus Network: The college operates dedicated daily bus routes across Barshi, Kurduwadi, and Solapur for commuting students and staff.',
+      answer: `MITCORER transit information published on the official contact page:
+
+- Campus address: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.
+- Barshi Town railway station: 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road.
+- MSRTC Bus Stand Barshi: 5.7 km from campus; Route-I is via Cancer Chowk and Industrial Road, and Route-II is via Bypass, Agalgaon Chowk, Shukla Automobile, and Industrial Road.
+- The page does not publish the distance or route from Solapur city, or a college bus route from Solapur. Confirm current travel details before setting out.`,
       next: '', actionView: 'visit', actionLabel: 'View campus location',
     };
   }
@@ -1551,7 +1559,7 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-54',
       source: 'Maharashtra State CET Cell 2026-27 Institute Summary',
       sourceUrl: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901',
-      answer: 'According to the Maharashtra State CET Cell institute summary for AY 2026-27, MITCORER (Institute Code 06901) is listed as Status: Un-Aided, Autonomy Status: Non-Autonomous, and Minority Status: Non-Minority. The listed affiliating university is Punyashlok Ahilyadevi Holkar Solapur University. The CET Cell uses “Un-Aided” rather than a private/public label; Un-Aided and Non-Autonomous are separate classifications. This is a year-specific listing; check the current CET Cell institute summary for another admission year.',
+      answer: 'For AY 2026-27, the Maharashtra State CET Cell lists MITCORER (Institute Code 06901) as:\n\n- Status: Un-Aided\n- Autonomy: Non-Autonomous\n- Minority status: Non-Minority\n- Affiliating university: Punyashlok Ahilyadevi Holkar Solapur University\n\nThe CET Cell uses “Un-Aided” rather than a private/public label. Un-Aided status and autonomy are separate classifications. This listing is year-specific; check the CET Cell institute summary for another admission year.',
       next: '', actionView: 'programs', actionLabel: 'View affiliations',
     };
   }
@@ -1560,7 +1568,7 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
-      answer: "What MITCORER is Famous For & Key Highlights:\n\n- India's Railway Engineering Pioneer: MITCORER is renowned as India's specialized institute for railway engineering education under MAEER's MIT Pune Group, featuring an exclusive state-of-the-art Railway Model Room and railway-oriented specializations.\n- High Placement Track Record: 94% placement rate in AY 2024-25, 100+ visiting recruiters, and highest package of 21 LPA.\n- MAEER's MIT Legacy: Backed by the 35+ year legacy of MAEER's MIT Pune Group founded by Prof. Dr. Vishwanath D. Karad.\n- Industry Exposure: 25+ corporate MoUs, proximity to Central Railway workshops, Corporate Readiness Program (CRP), and high-demand internships.\n- Complete Campus Infrastructure: Advanced departmental laboratories, AI/ML computing centers, central workshop, sports grounds, gym, and separate student hostels.",
+      answer: "What MITCORER is known for:\n\n- Railway-oriented engineering programmes and a Railway Model Room.\n- Practical projects, workshops, and industry engagement.\n- A Training and Placement Cell that coordinates placement activities and internships.\n- Separate hostels, laboratories, library, workshops, and campus facilities.\n\nPlacement figures and recruiter lists vary by academic year. See the dated official placement records for historical outcomes; they do not guarantee an individual placement or current drive.",
       next: '', actionView: 'visit', actionLabel: 'Explore why MITCORER',
     };
   }
@@ -1586,7 +1594,7 @@ function buildCollegeProfileAnswer(question) {
     return {
       recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
-      answer: 'What sets MITCORER apart?\n\n- Railway-oriented engineering courses based on practical railway work\n- Projects, interactive classes, and industry engagement\n- 60+ faculty and 900+ alumni listed on the college website\n- Dedicated placement support; 100+ companies visiting and 300+ students placed in the published highlights\n- Highest published package: 21 LPA\n- Laboratories, railway model room, library, workshops, and computer labs\n- Separate hostels for boys and girls, sports, and other campus facilities',
+      answer: 'What sets MITCORER apart?\n\n- Railway-oriented engineering courses and practical projects\n- Interactive classes and industry engagement\n- Training and Placement Cell activities, placement drives, and internship support\n- Laboratories, railway model room, library, workshops, and computer labs\n- Separate hostels, sports, and other campus facilities\n\nPlacement figures in public records are historical and year-specific; they are not guarantees of current or individual outcomes.',
       next: '', actionView: 'programs', actionLabel: 'Explore programmes',
     };
   }
@@ -1606,7 +1614,7 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-1',
       source: 'MITCORER Admissions Office and Accounts Section',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
-      answer: 'MITCORER Education Loan Support:\n\n- Bank Loan Support: The college administrative office assists admitted students with official documentation required for education loans across nationalized, private, and cooperative banks.\n- Documentation Provided: Official Bonafide Certificate, itemized Fee Estimate on institute letterhead, and AICTE Approval Letter copies needed by banks for loan processing.\n- Assistance Desk: Students can visit the college Admission Enquiry Desk or contact the Administrative Office (Mon-Sat, 9:30 AM to 5:30 PM) for loan documentation assistance.',
+      answer: 'MITCORER Education Loan Support:\n\n- Bank Loan Support: The college administrative office assists admitted students with official documentation required for education loans across nationalized, private, and cooperative banks.\n- Documentation Provided: Official Bonafide Certificate, itemized Fee Estimate on institute letterhead, and AICTE Approval Letter copies needed by banks for loan processing.\n- Assistance Desk: Students can visit the college Admission Enquiry Desk or contact the Administrative Office during its current published hours for loan documentation assistance.',
       next: '', actionView: 'fees', actionLabel: 'Explore fee details',
     };
   }
@@ -1670,7 +1678,7 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-40',
       source: 'MITCORER Contact Us portal and campus transit directions',
       sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'MITCORER Barshi to Solapur Transit & Commute:\n\n- Road Distance: Approximately 70 km from Solapur city to MITCORER campus in Barshi (about 1.5 to 2 hours via NH-52 / state highway).\n- College Bus Network: The college runs dedicated daily bus routes between Barshi, Kurduwadi, and Solapur for commuting day scholars and staff.\n- Rail Transit: Barshi Town railway station is 4.7 km from campus, while Kurduwadi Junction (~38 km) offers extensive rail connections across Solapur and Maharashtra.',
+      answer: 'The MITCORER contact page lists local directions in Barshi: Barshi Town railway station is 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road. The MSRTC Bus Stand is 5.7 km away, with two published local routes. It does not provide the Solapur-city-to-campus distance, travel time, or a college bus route from Solapur; confirm current travel details before setting out.',
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
@@ -1697,7 +1705,7 @@ function buildCollegeProfileAnswer(question) {
       recordId: 'KB-35',
       source: 'MITCORER Admissions FAQ and official website',
       sourceUrl: 'https://mitcorer.edu.in/faq.php',
-      answer: "Why Choose MITCORER Barshi:\n\n- MAEER's MIT Group Legacy: Part of the renowned MAEER's MIT Pune Group with 35+ years of educational excellence.\n- Specialized Railway Curriculum: High-demand railway technology modules in Signaling, Track Tech, Rolling Stocks, and Operations.\n- High Placement Record: 94% placement rate (2024-25), 100+ recruiters visiting campus, and highest package of 21 LPA.\n- Industrial Linkages: 25+ corporate MoUs, proximity to Kurduwadi Railway Workshop, hands-on internships, and corporate readiness training.\n- Complete Campus Infrastructure: Smart classrooms, specialized railway model room, advanced labs, Wi-Fi campus, gym, and separate boys & girls hostels.",
+      answer: "Why consider MITCORER Barshi?\n\n- Railway-oriented engineering programmes under the MAEER's MIT Group.\n- Practical learning through projects, workshops, and industry engagement.\n- Training and Placement Cell activities, placement drives, and internship support.\n- Campus facilities include laboratories, a Railway Model Room, library, workshops, and separate hostels.\n\nReview dated placement records for historical outcomes. Past records do not guarantee a particular recruiter, drive, offer, or salary.",
       next: '', actionView: 'visit', actionLabel: 'Explore why MITCORER',
     };
   }
@@ -1769,10 +1777,28 @@ function buildPlacementAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/placement|company|companies|recruiter|package|internship/.test(normalized)) return null;
   if (/placement assistance|internship/.test(normalized) && !/company|companies|recruiter|package|highlight/.test(normalized)) return null;
+  if (/highest|average|package|salary|recruiter|companies|company list/.test(normalized)) {
+    return {
+      source: 'MITCORER dated placement records and Training & Placement pages',
+      sourceUrl: 'https://mitcorer.edu.in/placements-record.php',
+      answer: 'MITCORER’s Training and Placement Cell coordinates placement activities and drives, and students use POD, Superset, and Unstop for placement updates and opportunities. Platform access and drive eligibility are student-specific. The publicly listed archive includes placement records through AY 2024-25; recruiter names and package figures should be read from the specific year’s record, not treated as current or guaranteed. For current schedules, check the Training and Placement Cell updates.',
+      officialLinks: [
+        { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+        { label: 'MITCORER current placement record page', url: 'https://mitcorer.edu.in/mitcorer/public/placement/record' },
+        { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/mitcorer/public/placements' },
+        { label: 'MITCORER recruiter information', url: 'https://mitcorer.edu.in/mitcorer/public/placement/ourrecruiters' },
+      ],
+      next: '', actionView: 'placements', actionLabel: 'View dated placement records',
+    };
+  }
   return {
-    source: 'MITCORER website and Admissions FAQ',
-    answer: 'MITCORER Placement Highlights\n\n- 100+ companies visiting\n- 300+ students placed\n- Highest published package: 21 LPA\n- Average published package: 4.4 LPA\n\nThe Training and Placement Cell supports internships and placement preparation.',
-    answerPart2: 'Published recruiter records include\n\n- TCS\n- Infosys\n- Cognizant\n- Bosch\n- Cybage\n- Apisero\n- MNGL\n- BYJU’S',
+    source: 'MITCORER placement record and Training & Placement pages',
+    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
+    answer: 'MITCORER’s Training and Placement Cell coordinates placement activities, placement drives, preparation, and internship support. According to information supplied for this project, student placement activities are also shared through POD, Superset, and Unstop; platform access and drive eligibility are student-specific.\n\nThe public placement archive lists dated records through AY 2024-25. Use those records for historical recruiter and outcome details. The public pages do not establish a current recruiter lineup, live drive schedule, or a guaranteed placement/package for an individual student.',
+    officialLinks: [
+      { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/mitcorer/public/placements' },
+      { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+    ],
     next: '', actionView: 'placements', actionLabel: 'View placement support',
   };
 }
@@ -1858,12 +1884,36 @@ function buildAdmissionEnquiryAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/admission (?:enquiry|inquiry|help)|admission office|admissions office|how do i apply|start my application|campus tour/.test(normalized)) return null;
   return {
-    recordId: 'KB-46',
-    source: 'MITCORER Contact Us and Admissions Office portal',
+    recordId: 'KB-17',
+    source: 'MITCORER Contact page',
     sourceUrl: 'https://mitcorer.edu.in/contact.php',
-    answer: 'MITCORER’s Admission Enquiry Desk is listed as operating Monday to Saturday, 9:30 AM to 5:30 PM, in the Administrative Building. For current application steps or counselling, contact +91 84599 67882 or +91 86696 62106, or email info.mitcorer@mitpune.edu.in.',
+    answer: 'For admission enquiries, contact MITCORER at +91 84599 67882 or +91 86696 62106, or email info.mitcorer@mitpune.edu.in. Check the official contact page for the current address and directions.',
     actionView: 'inquiry',
     actionLabel: 'Contact admissions',
+  };
+}
+
+function buildOfficeHoursAnswer(question) {
+  const normalized = normalizeIntentText(question);
+  const officeContext = /\b(?:office|enquiry desk|administrative|visiting|visit|campus)\b/.test(normalized)
+    || (/\bcollege\b/.test(normalized) && /\b(?:hours?|times?|timings?|open|close|saturday|sunday)\b/.test(normalized));
+  const scheduleIntent = /\b(?:hours?|times?|timings?|open(?![- ]category)|opens|close|closes|working days?|weekdays?|saturday|sunday|schedule|when can i visit)\b/.test(normalized);
+  if (!officeContext || !scheduleIntent) return null;
+  const record = getDb().knowledge.find(item => item.id === 'KB-46' && usableKnowledge(item));
+  if (record) return {
+    source: record.source,
+    answer: record.text,
+    sourceUrl: record.sourceUrl,
+    evidence: [record],
+    officialLinks: [{ label: 'MITCORER Contact page — office-hours information checked 2026-11-18', url: resolveSourceUrl(record.sourceUrl) }],
+    outcomeStatus: 'ANSWERED',
+  };
+  return {
+    source: 'No verified record',
+    answer: 'MITCORER’s published contact page does not list current office hours. Please call the admission desk to confirm before visiting.',
+    officialLinks: [{ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
+    evidence: [],
+    outcomeStatus: 'INSUFFICIENT_EVIDENCE',
   };
 }
 
@@ -2337,9 +2387,9 @@ function buildNoAnswerSuggestions(normalized) {
   // Placement / career related
   if (/\b(?:placement|recruiter|package|internship|job|career|company|companies|alumni)\b/.test(normalized)) {
     return [
-      { label: 'Highest Package (21 LPA)', question: 'What is the highest package at MITCORER?' },
-      { label: 'Top Recruiters List', question: 'Which companies visit MITCORER for campus placement?' },
-      { label: 'T&P Cell & MoUs', question: 'What is the MITCORER Training and Placement cell?' },
+      { label: 'Placement platforms and drives', question: 'Where are current MITCORER placement activities and drives shared?' },
+      { label: 'Dated placement records', question: 'What placement records are published by academic year?' },
+      { label: 'Training and Placement Cell', question: 'What support does the MITCORER Training and Placement Cell provide?' },
     ];
   }
   // Fee / cost / scholarship related
@@ -2496,9 +2546,9 @@ export function generateQuerySuggestions(question, normalized) {
   const norm = String(normalized || '').toLocaleLowerCase();
   if (/\b(?:placement|recruiter|package|internship)\b/.test(norm)) {
     return [
-      { label: 'Highest Package (21 LPA)', question: 'What is the highest package at MITCORER?' },
-      { label: 'Top Recruiters List', question: 'Which companies visit MITCORER for campus placement?' },
-      { label: 'T&P Cell MoUs', question: 'What industry MoUs does MITCORER have?' },
+      { label: 'Dated placement records', question: 'What placement records are published by academic year?' },
+      { label: 'Placement platforms and drives', question: 'Where are current MITCORER placement activities and drives shared?' },
+      { label: 'Training and Placement Cell', question: 'What support does the MITCORER Training and Placement Cell provide?' },
       { label: 'Interview Process', question: 'What is the MITCORER campus interview process?' },
     ];
   }
@@ -2746,6 +2796,29 @@ async function answerAdmissionQuestionCore(body, user) {
     audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
     return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
   }
+  const standaloneOfficeHours = /[,;&]|\b(?:address|contact|route|travel|distance|bus)\b/i.test(normalized) ? null : buildOfficeHoursAnswer(question);
+  if (standaloneOfficeHours) {
+    const officeEvidence = standaloneOfficeHours.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
+    return localizeResponse({ ...standaloneOfficeHours, evidence: officeEvidence, model: 'deterministic-rag-fallback' }, language, normalized, officeEvidence, academicFeeSelection, parseLegacyFactText);
+  }
+  const feeQuery = understandQuery(normalized);
+  const feeTopics = feeQuery.topics.filter(topic => ['academicFees', 'accommodationFees'].includes(topic));
+  const selectedFee = academicFeeSelection(normalized);
+  const feeScopeResolved = feeTopics[0] === 'accommodationFees'
+    || !feeQuery.category.excluded.length && feeQuery.route.positive.length > 0 && (!feeQuery.category.positive.length || selectedFee.key)
+    || !feeQuery.category.excluded.length && selectedFee.key;
+  const asksMultipleFeeScopes = /\b(?:academic|tuition|college|first year|direct second|engineering)\b/.test(normalized) && /\b(?:hostel|mess|dining)\b/.test(normalized);
+  if (language === 'en' && feeQuery.topics.length === 1 && feeTopics.length === 1 && feeScopeResolved && !feeQuery.invalidYears.length && !asksMultipleFeeScopes && !feeQuery.admissionPathway && !/scholarship|concession eligibility|financial aid/.test(normalized)) {
+    const structuredFeeAnswer = buildMaintainedAnswer(question, normalized, getDb().knowledge);
+    if (structuredFeeAnswer?.managedRecordId === 'KB-2' || structuredFeeAnswer?.managedRecordId === 'KB-3') {
+      const feeEvidence = structuredFeeAnswer.evidence.map(record => publicEvidence(record, Date.now()));
+      const officialLinks = uniqueSourceLinks([
+        ...getOfficialFeeLinks(question),
+        ...(structuredFeeAnswer.sourceUrl ? [{ label: 'MITCORER fee record', url: resolveSourceUrl(structuredFeeAnswer.sourceUrl) }] : []),
+      ]);
+      return localizeResponse({ ...structuredFeeAnswer, evidence: feeEvidence, officialLinks, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' }, language, normalized, feeEvidence, academicFeeSelection, parseLegacyFactText);
+    }
+  }
   const asksToFabricateCutoff = /\b(?:ignore|disregard|forget)\b.{0,50}\b(?:records?|rules?|college|instructions?)\b/i.test(question)
     && /\b(?:make\s+up|invent|fabricat|guarantee|guaranteed)\b/i.test(question)
     && /\bcutoffs?|cut[- ]?offs?|closing\s+(?:rank|merit|percentile)\b/i.test(question);
@@ -2822,6 +2895,7 @@ async function answerAdmissionQuestionCore(body, user) {
   }
   const asksSpecificBusDetails = /\b(?:bus|transport|vehicle|commute|travel|village|route|fare|stop)\b/i.test(question)
     && /\b(?:timetable|schedule|timing|fare|route|stop|from my village|my village)\b/i.test(question)
+    && !/\b(?:address|contact details?|office hours?|office timings?|working hours?|college timings?)\b/i.test(question)
     && !/\b(?:does|is there|provide|provides|have|has)\b.{0,35}\b(?:bus|transport)\s+(?:facility|service)\b/i.test(question);
   if (asksSpecificBusDetails) {
     const busRecord = getDb().knowledge.find((record) => record.id === 'KB-19' && usableKnowledge(record));
@@ -2978,7 +3052,7 @@ async function answerAdmissionQuestionCore(body, user) {
     // Gemini failed verification or returned null — fall through to deterministic chain below.
   }
 
-  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildReviewedPassage(normalized, language, records) || guard(buildFacilityAnswer(question)) || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
+  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildOfficeHoursAnswer(question) || buildReviewedPassage(normalized, language, records) || guard(buildFacilityAnswer(question)) || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
     source: 'No verified record',
     answer: 'I could not find an official answer for that question. Please ask about a specific programme, fee, scholarship, admission step, or campus facility.',
     next: '',

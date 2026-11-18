@@ -8,6 +8,45 @@ import { config } from '../src/config.js';
 import { createSeedData } from '../src/seed.js';
 import { closeDb, loadDb } from '../src/store.js';
 
+test('office-hours migration publishes the dated verified finding after withdrawing the stale schedule', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-office-hours-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = [
+      'seed-entc-hod-kb52', 'seed-institution-status-kb54-v1', 'seed-admission-quota-and-search-aliases-v1',
+      'seed-course-code-discrepancy-kb56-v1', 'seed-placement-committee-kb53', 'refresh-placement-committee-kb53-v2',
+      'refresh-placement-current-activities-kb16-kb35-v1', 'map-seeded-records-to-current-official-routes-v1',
+      'normalize-dse-choice-codes-v1', 'quarantine-unverified-office-hours-kb46-v1',
+    ];
+    const record = persisted.knowledge.find((item) => item.id === 'KB-46');
+    record.text = 'Hours: 9:30 AM to 5:30 PM';
+    record.revision = 4;
+    record.status = 'Published';
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    const current = migrated.knowledge.find((item) => item.id === 'KB-46');
+    assert.equal(current.status, 'Published');
+    assert.equal(current.revision, 5);
+    assert.match(current.text, /checked on 2026-11-18/i);
+    assert.match(current.text, /does not publish current administrative office or admission enquiry desk hours/i);
+    assert.doesNotMatch(current.text, /9:30 AM to 5:30 PM/);
+    assert.equal(current.provenance.capturedAt, '2026-11-18');
+    assert.ok(migrated.migrations.includes('publish-dated-office-hours-observation-kb46-v2'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('placement committee migration repairs stale persisted TPO record without changing its status', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-placement-migration-'));
   const previousDatabaseFile = config.databaseFile;

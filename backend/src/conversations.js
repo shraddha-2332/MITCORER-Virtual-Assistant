@@ -128,6 +128,15 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
     && !/\b(?:intake|sanctioned|seat matrix|cutoffs?|vacanc(?:y|ies))\b/i.test(norm)) return question;
   // Do not attach a branch from a prior subject when the current message explicitly changes topic.
   const previousQuestionText = [...chat.messages].reverse().find(message => message.type === 'user')?.text || '';
+  const previousNormForAdmission = previousQuestionText.normalize('NFKC').toLowerCase();
+  // Short route clarifications should complete the pending question (for
+  // example, "What documents should I prepare?" -> "for first year").
+  if (context.lastTopic === 'admission'
+    && /\b(?:document|documents|certificate|checklist|eligibility|admission process)\b/.test(previousNormForAdmission)
+    && /^(?:for\s+)?(?:first\s+year|fy|direct\s+second\s+year|dse|lateral(?:\s+entry)?)\??$/i.test(norm)) {
+    const route = context.route === 'DSE' ? 'Direct Second Year' : 'First Year';
+    return `${previousQuestionText.replace(/[?]+$/u, '').trim()} for ${route}`;
+  }
   if (/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(norm)
     && !/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(previousQuestionText)
     && (!/\b(?:labs?|laborator|library|campus|facilit|infrastructure)\b/i.test(previousQuestionText) || context.lastTopic === 'facilities')
