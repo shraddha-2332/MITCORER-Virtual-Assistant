@@ -869,7 +869,7 @@ function buildAdmissionReadinessAnswer(question, user) {
   const hasAcceptance = /seat.*accepted|accepted.*seat|acceptance.*complete|freeze.*complete/i.test(intentText);
   const hasPayment = /payment.*(?:done|paid|complete)|(?:paid|payment done|fee paid)/i.test(intentText);
   const saysDocumentsReady = /documents?.*(?:uploaded|ready|complete)|(?:uploaded|ready).*documents?/i.test(intentText);
-  const hasReported = /reported.*(?:college|institute)|reporting.*complete|admission.*complete/i.test(intentText);
+  const hasReported = /reported.*(?:college|institute)|reporting.*complete|completed.*reporting|admission.*complete/i.test(intentText);
   const workflowSteps = [
     ['allotment or institute-level merit/vacancy confirmation', hasAllotment],
     ['seat acceptance or freeze/betterment decision where applicable', hasAcceptance],
@@ -2800,6 +2800,24 @@ async function answerAdmissionQuestionCore(body, user) {
   if (standaloneOfficeHours) {
     const officeEvidence = standaloneOfficeHours.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
     return localizeResponse({ ...standaloneOfficeHours, evidence: officeEvidence, model: 'deterministic-rag-fallback' }, language, normalized, officeEvidence, academicFeeSelection, parseLegacyFactText);
+  }
+  // Compound progress questions can mention a fee payment while asking what
+  // remains in the admission workflow. Route those to the workflow checklist
+  // before topic-based fee handling can mistake them for fee questions.
+  if (user) {
+    const readinessAnswer = buildAdmissionReadinessAnswer(question, user);
+    if (readinessAnswer) {
+      const record = getDb().knowledge.find((item) => item.id === readinessAnswer.recordId);
+      if (record && usableKnowledge(record)) {
+        const readinessEvidence = [publicEvidence({ ...record, score: 200 }, Date.now())];
+        return localizeResponse({
+          ...readinessAnswer,
+          evidence: readinessEvidence,
+          model: 'deterministic-rag-fallback',
+          outcomeStatus: 'ANSWERED',
+        }, language, normalized, readinessEvidence, academicFeeSelection, parseLegacyFactText);
+      }
+    }
   }
   const feeQuery = understandQuery(normalized);
   const feeTopics = feeQuery.topics.filter(topic => ['academicFees', 'accommodationFees'].includes(topic));

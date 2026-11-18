@@ -1304,6 +1304,8 @@ test('assistant identifies only the remaining admission workflow stages stated b
     const cases = [
       ['I received my CAP allotment. What should I do next for admission?', /seat acceptance or freeze\/betterment/i],
       ['I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. I need the final admission checklist.', /all main workflow stages appear complete/i],
+      ['My category is Open. I received allotment, accepted the seat, uploaded documents, and paid the fee. What is remaining?', /institute reporting/i],
+      ['My category is Open. I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. What is remaining?', /all main workflow stages appear complete/i],
     ];
     for (const [question, expectedText] of cases) {
       const { response, payload } = await request(base, '/api/assistant/ask', {
