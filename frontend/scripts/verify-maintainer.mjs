@@ -122,7 +122,7 @@ try {
   await page.locator('.knowledgeRecordList').waitFor();
   await openRecord('MITCORER library and digital resources');
   await editor.getByLabel('Verified text').fill('Library test record: digital resources are available. Timings are not published.');
-  await editor.getByLabel('Reviewed Hindi translation').fill('इस परीक्षण रिकॉर्ड में पुस्तकालय की डिजिटल सामग्री उपलब्ध है। समय प्रकाशित नहीं है।');
+  await editor.getByLabel(/Hindi translation/).fill('इस परीक्षण रिकॉर्ड में पुस्तकालय की डिजिटल सामग्री उपलब्ध है। समय प्रकाशित नहीं है।');
   await editor.getByRole('button', { name: 'Save record', exact: true }).click();
   await editor.getByRole('alert').waitFor();
   assert.match(await editor.getByRole('alert').innerText(), /confirm the review/);
