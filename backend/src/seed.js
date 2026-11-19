@@ -1,8 +1,10 @@
 import { hashPassword } from './auth.js';
+import { createHash } from 'node:crypto';
 import { nowIso } from './utils.js';
 import { renderFactText } from './knowledge.js';
 import { config } from './config.js';
 import facultyProfileCaptures from './faculty-profile-captures.json' with { type: 'json' };
+import { knowledgeTranslations } from './knowledge-translations.js';
 
 const passwordHash = hashPassword('mitra', 'mitra-seed-salt');
 const placementPlatformsText = 'The project owner reports that MITCORER provides students with these placement platforms: POD, Superset, TalentBattle, and Unstop. Platform access, active drives, student eligibility, and available opportunities may vary; students should confirm current details with the Training and Placement Cell. A platform listing does not guarantee an interview, placement, company, or package.';
@@ -832,6 +834,17 @@ export const seedKnowledge = [
 
 for (const record of seedKnowledge) {
   if (record.facts) record.text = renderFactText(record.facts);
+  const translations = knowledgeTranslations[record.id];
+  if (translations && record.text && !record.facts) {
+    record.translations = {
+      ...(record.translations || {}),
+      ...Object.fromEntries(Object.entries(translations).map(([language, text]) => [language, {
+        text,
+        sourceHash: createHash('sha256').update(record.text).digest('hex'),
+        status: 'ai-reviewed-pending-human-review',
+      }])),
+    };
+  }
 }
 
 export const seedOfficialSources = [

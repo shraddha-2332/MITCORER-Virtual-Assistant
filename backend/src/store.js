@@ -37,6 +37,7 @@ const NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION = 'normalize-scholarship-sour
 const FORMAT_MITCORER_PROFILE_MIGRATION = 'format-maintained-college-profile-v12';
 const OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION = 'import-official-faculty-profile-captures-v13';
 const PLACEMENT_PLATFORMS_MIGRATION = 'seed-project-owner-placement-platforms-kb69-v1';
+const SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION = 'seed-ai-reviewed-knowledge-translations-mr-hi-v1';
 // Current seeds already contain these upgrades. Record them atomically with
 // initialization so a later restart cannot reinterpret a deletion as an upgrade.
 const CURRENT_SEED_MIGRATIONS = [
@@ -52,6 +53,7 @@ const CURRENT_SEED_MIGRATIONS = [
   RECOVER_VERIFIED_SOURCE_RECORDS_MIGRATION, REPAIR_CURRENT_SCHOLARSHIP_SOURCE_MIGRATION,
   NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION, FORMAT_MITCORER_PROFILE_MIGRATION,
   PLACEMENT_PLATFORMS_MIGRATION,
+  SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION,
   OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION,
 ];
 const seededSpecificRouteCorrections = {
@@ -745,6 +747,29 @@ export function loadDb() {
         placementRecord.tags = [...new Set([...(placementRecord.tags || []), 'placement platform', 'placement platforms', 'POD', 'Superset', 'TalentBattle', 'Unstop'])];
       }
       db.migrations.push(PLACEMENT_PLATFORMS_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION)) {
+      const seedsById = new Map(seedKnowledge.map((record) => [record.id, record]));
+      const now = new Date().toISOString();
+      for (const record of db.knowledge || []) {
+        const seeded = seedsById.get(record.id);
+        if (record.status !== 'Published' || !seeded?.translations || record.text !== seeded.text) continue;
+        let changed = false;
+        record.translations ||= {};
+        for (const language of ['mr', 'hi']) {
+          const translation = seeded.translations[language];
+          const current = record.translations[language];
+          if (!translation || current?.reviewedBy || current?.sourceHash === translation.sourceHash) continue;
+          record.translations[language] = structuredClone(translation);
+          changed = true;
+        }
+        if (changed) {
+          record.revision = (record.revision ?? 0) + 1;
+          record.updatedAt = now;
+        }
+      }
+      db.migrations.push(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION);
       didMigrate = true;
     }
     if (!migrations.has(OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION)) {
