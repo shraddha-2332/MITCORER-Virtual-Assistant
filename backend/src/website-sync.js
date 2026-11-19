@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import { supportsMaintainedClaim } from './maintained-claim-support.js';
+import { sourceReview } from './provenance.js';
 
 export const officialWebsiteRoot = 'https://mitcorer.edu.in/mitcorer/public/index.php';
 const websitePathRoot = '/mitcorer/public';
@@ -16,7 +18,12 @@ export const monitoredWebsiteSources = [{
 function canonicalPageUrl(value) {
   const url = new URL(value);
   url.hash = '';
-  url.search = '';
+  // Query parameters can select a distinct official record (for example,
+  // InstituteCode on the CET Cell institute summary). Ignore tracking only.
+  for (const key of [...url.searchParams.keys()]) {
+    if (/^(utm_.+|gclid|fbclid)$/i.test(key)) url.searchParams.delete(key);
+  }
+  url.searchParams.sort();
   url.hostname = url.hostname.toLowerCase().replace(/^www\./, '');
   if (url.pathname !== '/') url.pathname = url.pathname.replace(/\/+$/, '');
   return url.toString();
@@ -368,7 +375,10 @@ export function detectRemovedNumericClaims(currentText, knowledgeRecords = [], s
   for (const record of knowledgeRecords) {
     if (!(record.status === 'Published' || record.status === 'Review' && record.freshnessReview) || !record.text) continue;
     if (canonicalUrl) {
-      try { if (canonicalPageUrl(record.sourceUrl || '') !== canonicalUrl) continue; } catch { continue; }
+      try {
+        const recordSourceUrl = canonicalPageUrl(record.sourceUrl || '');
+        if (recordSourceUrl !== canonicalUrl && canonicalPageUrl(record.freshnessReview?.changedSourceUrl || '') !== canonicalUrl) continue;
+      } catch { continue; }
     }
     if (numericClaims(record.text).some((claim) => !current.has(`${claim.key}|${claim.values.join('|')}`))) removed.add(record.id);
   }
@@ -446,10 +456,20 @@ export async function syncMonitoredWebsiteSources({
 
   function withholdLinkedKnowledge(url, reason) {
     let count = 0;
+    const linkedSource = findExistingSource(url);
     for (const record of db.knowledge || []) {
       let matches = false;
-      try { matches = record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalPageUrl(url); } catch {}
+      try { matches = record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalPageUrl(url)
+        || record.freshnessReview?.changedSourceUrl && canonicalPageUrl(record.freshnessReview.changedSourceUrl) === canonicalPageUrl(url); } catch {}
       if (!matches || record.status !== 'Published') continue;
+      const hasReviewedSnapshot = linkedSource?.verifiedAt && linkedSource?.extractedText
+        && (record.sourceDocumentId === linkedSource.id || record.provenance?.documentId === linkedSource.id)
+        && sourceReview(record).status === 'recorded';
+      if (reason === 'source-unavailable' && hasReviewedSnapshot) {
+        if (auditFn) auditFn('knowledge.source_unavailable_snapshot_retained', 'knowledge', record.id, user,
+          `Retained the administrator-verified source snapshot for ${url}`);
+        continue;
+      }
       record.status = 'Review';
       record.freshnessReview = { detectedAt: now, changedSourceUrl: canonicalPageUrl(url), reason };
       count += 1;
@@ -486,8 +506,11 @@ export async function syncMonitoredWebsiteSources({
       };
       db.officialSources.unshift(existing);
     }
-    existing.status = 'Review';
-    existing.extractionStatus = 'Source unavailable; linked answers withheld until the page is reachable and reviewed.';
+    const hasReviewedSnapshot = Boolean(existing.verifiedAt && existing.extractedText);
+    existing.status = hasReviewedSnapshot ? 'Published' : 'Review';
+    existing.extractionStatus = hasReviewedSnapshot
+      ? 'Previously reviewed source snapshot retained; live URL is currently unavailable and must be rechecked before updating the answer.'
+      : 'Source unavailable; linked answers withheld until the page is reachable and reviewed.';
     existing.updatedAt = now;
     existing.linkedKnowledgeCount = (db.knowledge || []).filter((record) => {
       try { return record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalUrl; } catch { return false; }
@@ -574,13 +597,14 @@ export async function syncMonitoredWebsiteSources({
 
     const drift = analyzeContentDrift(existing?.extractedText || '', cleaned);
     const conflicts = detectNumericConflicts(cleaned, db.knowledge || [], source.url);
-    const removedClaimRecordIds = detectRemovedNumericClaims(cleaned, db.knowledge || [], source.url);
+    const removedClaimRecordIds = detectRemovedNumericClaims(cleaned, db.knowledge || [], source.url)
+      .filter((id) => !supportsMaintainedClaim(cleaned, (db.knowledge || []).find((record) => record.id === id)));
     const directlyLinkedRecords = (db.knowledge || []).filter((record) => {
-      try { return record.status === 'Published' && record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalSourceUrl; } catch { return false; }
+      try { return record.status === 'Published' && record.sourceUrl && canonicalPageUrl(record.sourceUrl) === canonicalSourceUrl && !supportsMaintainedClaim(cleaned, record); } catch { return false; }
     });
     const freshnessReviewIds = new Set([
       ...directlyLinkedRecords.map((record) => record.id),
-      ...conflicts.map((item) => item.recordId),
+      ...conflicts.filter((item) => !supportsMaintainedClaim(cleaned, (db.knowledge || []).find((record) => record.id === item.recordId))).map((item) => item.recordId),
       ...removedClaimRecordIds,
     ]);
     for (const recordId of freshnessReviewIds) {

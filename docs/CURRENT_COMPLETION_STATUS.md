@@ -1,6 +1,6 @@
 # Mitra current completion status
 
-Updated 24 October 2026. This supersedes older milestone status descriptions. The current changes are local and await the user's explicit permission before committing or pushing.
+**19 November 2026 — Phases B–D:** Local operations observability, current source routing, and campus image optimization are implemented; speech-to-text is future scope and its icon is disabled. The latest isolated run passed backend 292/292, focused Phase A 13/13, frontend 22/22, public evaluation 36/36, workflow 500/500, browser 49 checks, and bounded audit 150/150. See [AI review evidence](answer-review/AI_REVIEW.md). Human institutional and Marathi/Hindi review and deployment remain pending.
 
 ## Implemented and validated
 
@@ -79,3 +79,12 @@ This report closes the reproduced high-risk regressions and prepares the review/
 ## Commit boundary
 
 No commit or push has been made in this task. Before proceeding, the user must approve the concrete reviewed change set. Unrelated pre-existing deletions and the old unverified IEEE Markdown/Word drafts remain outside the proposed change set. A push to the deployment branch may trigger provider auto-deployments; follow [operations instructions](OPERATIONS.md) before calling the release verified.
+
+## Consolidated implementation and evaluation notes
+
+- Operations: Assistant event summaries are held in process memory for 24 hours, capped at 500 events, and summarized in four rolling six-hour buckets. They omit question and answer text, tokens, contact details and IP addresses. Restarting the process resets them; durable monitoring needs an approved destination and retention policy.
+- Sources and rural access: Scholarship and admission follow-ups route to relevant official pages and do not invent scheme-specific document requirements. The campus background was compressed from 953,906-byte PNG to 104,694-byte WebP. Institution-approved checklist sources are still needed.
+- Speech input: Future scope. The microphone icon remains visible but disabled; no speech recognition or audio processing is active.
+- Retrieval experiment: On 30 assistant-authored development questions, evidence-group Recall@3 was 100.00% for the current keyword/rules method, 81.67% for plain BM25 and 95.00% for normalized-query BM25. These are facet-group retrieval measures, not answer-accuracy scores. Production retrieval remains keyword/rules based. The retrieval review workflow retains misses, frozen corpus and pending independent judgments.
+- Answer presentation: The answer audit catalogue covers 71 public question families in English, Marathi and Hindi. Browser checks and answer-source audit scripts test cards, topic links and citation order; they do not certify institutional facts or language quality.
+- Evaluation tools: Backend provides evaluate:public, evaluate:retrieval, evaluate:verifiers, evaluate:guardrails, and evaluate:document-agent. The optional external judge requires MITRA_ENABLE_EXTERNAL_EVAL=true, sanitized reviewed cases and provider credentials; its recorded pilot produced no usable quality score. A previous RAGAS attempt also produced no score, and its optional runner has been removed. The 90-case diagnostic set is synthetic and unreviewed. See the answer-review packet for pending human review requirements.

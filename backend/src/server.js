@@ -31,6 +31,11 @@ import { verifySpeculativeFigures } from './speculative-verifier.js';
 import { documentCorpusStats, isDocumentSearchQuery, searchDocumentCorpus } from './document-corpus.js';
 import { runEvidenceGapNavigator } from './evidence-navigator.js';
 import { EVIDENCE_UNTRUSTED_INSTRUCTION, serializeEvidenceForPrompt } from './grounded-prompt.js';
+import { buildOfficialNavigationAnswer } from './official-navigation.js';
+import { maintainedProfile, maintainedContacts } from './maintained-profile.js';
+import { reviewBoundaryResponse } from './review-boundaries.js';
+import { refinedAnswer } from './answer-refinements.js';
+import { assistantOperations, recordAssistantEvent, reviewAssistantEvent, clearAssistantEvents } from './assistant-observability.js';
 
 const publicRoutes = new Set([
   'GET /api/health',
@@ -55,8 +60,9 @@ const assistantAttempts = new Map();
 const publicAssistantAttempts = new Map();
 const pipelineTraceKey = crypto.randomBytes(32);
 const assistantTraceContext = new AsyncLocalStorage();
-const uploadDir = path.resolve(process.cwd(), 'uploads');
-const officialSourceDir = path.resolve(process.cwd(), 'official-sources');
+const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const uploadDir = path.join(backendRoot, 'uploads');
+const officialSourceDir = path.join(backendRoot, 'official-sources');
 const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const allowedOfficialMimeTypes = new Set([
   ...allowedMimeTypes,
@@ -76,6 +82,7 @@ const extensionByMimeType = {
 };
 
 export function resetRuntimeStateForTests() {
+  clearAssistantEvents();
   authAttempts.clear();
   loginIpAttempts.clear();
   signupIpAttempts.clear();
@@ -168,10 +175,22 @@ function sanitizeFileName(fileName) {
   return path.basename(String(fileName || 'upload.bin')).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
 }
 
+function hasCompletePdfStructure(content) {
+  if (content.length < 64 || content.subarray(0, 5).toString('ascii') !== '%PDF-') return false;
+  const tail = content.subarray(Math.max(0, content.length - 2048)).toString('latin1');
+  if (!/%%EOF\s*$/.test(tail)) return false;
+  const marker = /startxref\s+(\d+)\s+%%EOF\s*$/.exec(tail);
+  if (!marker) return false;
+  const offset = Number(marker[1]);
+  if (!Number.isSafeInteger(offset) || offset < 5 || offset >= content.length) return false;
+  const crossReference = content.subarray(offset, Math.min(offset + 32, content.length)).toString('latin1');
+  return /^xref\b/.test(crossReference) || /^\d+\s+\d+\s+obj\b/.test(crossReference);
+}
+
 function fileHasExpectedSignature(file) {
   const extension = path.extname(file.filename).toLowerCase();
   if (!extensionByMimeType[file.mimeType]?.includes(extension)) return false;
-  if (file.mimeType === 'application/pdf') return file.content.subarray(0, 5).toString('ascii') === '%PDF-';
+  if (file.mimeType === 'application/pdf') return hasCompletePdfStructure(file.content);
   if (file.mimeType === 'image/jpeg') return file.content.length >= 3 && file.content[0] === 0xff && file.content[1] === 0xd8 && file.content[2] === 0xff;
   if (file.mimeType === 'image/png') return file.content.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   if (file.mimeType.includes('openxmlformats')) return file.content.subarray(0, 2).equals(Buffer.from('PK'));
@@ -182,6 +201,12 @@ function assertAllowedUpload(file, allowedTypes, message) {
   if (!file) throw badRequest('A file is required.');
   if (!allowedTypes.has(file.mimeType) || !fileHasExpectedSignature(file)) throw badRequest(message);
   if (file.content.length === 0) throw badRequest('Uploaded file is empty.');
+}
+
+function assertStoredFileReadable(filePath, mimeType) {
+  if (mimeType === 'application/pdf' && !hasCompletePdfStructure(fs.readFileSync(filePath))) {
+    throw badRequest('The stored PDF is incomplete or invalid. Please upload a valid copy.');
+  }
 }
 
 function parseMultipart(req, bodyBuffer) {
@@ -672,6 +697,7 @@ function getDocumentFile(id, user) {
   if (!record.storedFileName) throw notFound('The original file is not available for this record.');
   const filePath = path.resolve(uploadDir, record.storedFileName);
   if (!filePath.startsWith(uploadDir) || !fs.existsSync(filePath)) throw notFound('Document file is unavailable.');
+  assertStoredFileReadable(filePath, record.mimeType);
   audit('document.file_opened', 'document', record.id, user, record.docName);
   return { __file: true, filePath, mimeType: record.mimeType || 'application/octet-stream', fileName: record.fileName };
 }
@@ -736,14 +762,21 @@ function buildCutoffAnswer(question, records) {
   const positive = query.branch.positive;
   const branch = positive.length === 1 ? positive[0] : null;
   const yearMatch = normalized.match(/\b(20\d{2})(?:[-/]\d{2,4})?\b/);
-  const isRoundOne = /\b(?:round\s*(?:i|1)|cap\s*(?:i|1))\b/i.test(normalized);
+  const requestedRound = normalized.match(/\b(?:round|cap)\s*(iv|iii|ii|i|[1-9]\d*)\b/i)?.[1]?.toLowerCase();
+  if (yearMatch && !records.some(record => usableKnowledge(record) && /cutoff|cut.off/i.test(`${record.title} ${record.category}`)
+    && `${record.provenance?.academicYear || ''} ${record.text}`.includes(yearMatch[1]))) return {
+    source: 'No verified record', evidence: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    answer: 'There is no maintained cutoff record for the requested academic year. I cannot predict or invent a future cutoff. Check the official CET Cell publication for that year.',
+  };
+  const isRoundOne = ['i', '1'].includes(requestedRound);
   const isAllIndia = /\b(?:all india|ai seat)\b/i.test(normalized) || branch === 'cse' && /\b(ai)\s+seat\b/i.test(normalized);
   const isJee = /\b(?:jee(?: main)?|all india merit)\b/i.test(normalized) || branch === 'cse' && /\b(?:score|merit|cutoff|cut-offs?)\b/i.test(normalized);
   const missing = [];
   if (!branch) missing.push('branch');
   if (!yearMatch) missing.push('academic year');
-  if (!isRoundOne) missing.push('CAP Round I');
-  if (branch === 'cse' && !/\bai\s+seat\b/i.test(normalized) && !/\ball india\b/i.test(normalized)) missing.push('AI seat type');
+  if (!requestedRound) missing.push('CAP round');
+  const explicitOtherExam = /\bmht[ -]?cet\b|\bstate merit\b/i.test(normalized);
+  if (branch === 'cse' && !isAllIndia && !explicitOtherExam) missing.push('seat type and entrance exam');
   if (missing.length) return {
     source: 'Historical cutoff records',
     answer: `Please specify the ${missing.join(', ')} for the cutoff you want. Published cutoff values depend on each of these details.`,
@@ -752,9 +785,10 @@ function buildCutoffAnswer(question, records) {
     actionView: 'cap', actionLabel: 'Check official cutoff portal',
   };
   const year = Number(yearMatch[1]);
-  const supported = branch === 'cse' && [2024, 2025].includes(year);
+  const supported = branch === 'cse' && [2024, 2025].includes(year) && isRoundOne && isAllIndia && isJee && !explicitOtherExam;
   const targetId = year === 2024 ? 'KB-7' : 'KB-8';
-  const record = supported && records.find((item) => item.id === targetId && usableKnowledge(item));
+  const record = supported && records.find((item) => item.id === targetId && usableKnowledge(item)
+    && (item.provenance?.academicYear ? item.provenance.academicYear.startsWith(String(year)) : String(item.text).includes(String(year))));
   if (record) return {
     source: record.source, sourceUrl: record.sourceUrl || '', answer: record.text,
     evidence: [{ ...record, score: 200 }], anchored: true, actionView: 'cap', actionLabel: 'Check CAP history',
@@ -762,7 +796,7 @@ function buildCutoffAnswer(question, records) {
   };
   return {
     source: 'No verified record',
-    answer: `I could not find a verified ${year} ${branch === 'cse' ? 'CSE' : branch} All India JEE Main CAP Round I cutoff in MITCORER's indexed records. Please check the Maharashtra CET Cell cutoff portal for the official record.`,
+    answer: `I could not find a verified ${year} ${branch === 'cse' ? 'CSE' : branch} cutoff matching the requested exam, seat type and CAP round in MITCORER's indexed records. Please check the Maharashtra CET Cell cutoff portal for the official record.`,
     evidence: [], suppressRetrievedEvidence: true, outcomeStatus: 'INSUFFICIENT_EVIDENCE',
     officialLinks: [{ label: 'Maharashtra CET Cell cutoff portal', url: 'https://fe2024.mahacet.org/StaticPages/HomePage' }],
     actionView: 'cap', actionLabel: 'Check official cutoff portal',
@@ -823,7 +857,7 @@ function buildDocumentStatusAnswer(question, user) {
       next: 'Open the applicant / parent document portal below.',
       actionView: 'applicantPortal',
       actionLabel: 'Open applicant document portal',
-      officialLinks: [{ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/contact.php' }],
+      officialLinks: [{ label: 'MITCORER Contact Us page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
     };
   }
   const records = getDb().documents.filter((item) => item.ownerEmail === user.email);
@@ -962,9 +996,28 @@ function getOfficialScholarshipLinks(question) {
   const links = [
     { label: 'MITCORER scholarship schemes', url: 'https://www.mitcorer.edu.in/scholarship.php' },
   ];
-  if (normalized.includes('pragati')) links.push({ label: 'National Scholarship Portal schemes', url: 'https://scholarships.gov.in/All-Scholarships' });
-  if (!normalized.includes('pragati')) links.push({ label: 'MahaDBT scholarship portal', url: 'https://mahadbt.maharashtra.gov.in/login/login' });
+  const requestedYear = normalized.match(/\b20\d{2}-\d{2}\b/)?.[0];
+  links.push(requestedYear && requestedYear !== '2026-27'
+    ? { label: `MahaDBT portal (verify AY ${requestedYear} availability)`, url: 'https://mahadbt.maharashtra.gov.in/' }
+    : { label: 'MahaDBT 2.0 portal (AY 2026-27)', url: 'https://mahadbt2.maharashtra.gov.in/' });
+  links.push({ label: 'National Scholarship Portal (AICTE Pragati)', url: 'https://scholarships.gov.in/All-Scholarships' });
   return links;
+}
+
+function getRefinementOfficialLinks(question, refinement) {
+  const normalized = normalizeIntentText(question);
+  const links = [
+    ...(refinement.officialLinks || []),
+    ...getOfficialAdmissionLinks(question),
+    ...getOfficialScholarshipLinks(question),
+  ];
+  if (/\badmission\b/.test(normalized) && /\b(?:docs?|documents?|certificates?|marksheets?|checklist)\b/.test(normalized)) {
+    links.push(
+      { label: 'MITCORER Required Admission Documents', url: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents' },
+      { label: 'State CET Cell technical admission notices', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
+    );
+  }
+  return uniqueSourceLinks(links);
 }
 
 function getOfficialExperienceLinks(question) {
@@ -1013,7 +1066,7 @@ function getOfficialExperienceLinks(question) {
     links.push({ label: 'Mechanical & Rail Engineering Department', url: 'https://mitcorer.edu.in/mechanical-engineering.php' });
   }
   if (/transit|nearest railway station|nearest station|nearest bus|railway station|bus stand|how to reach/.test(normalized)) {
-    links.push({ label: 'MITCORER Contact & Transit Directions', url: 'https://mitcorer.edu.in/contact.php' });
+    links.push({ label: 'MITCORER Contact & Transit Directions', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' });
     links.push({ label: 'MITCORER Bus Facility', url: 'https://mitcorer.edu.in/bus-facility.php' });
   }
   if (/mit pune|maeer|parent trust|mit group/.test(normalized)) {
@@ -1045,13 +1098,13 @@ function getOfficialExperienceLinks(question) {
     links.push({ label: 'PAH Solapur University Engineering Rules', url: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf' });
   }
   if (/office hours|office timings|working hours|visiting hours|admission desk|enquiry desk|college timings/.test(normalized)) {
-    links.push({ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/contact.php' });
+    links.push({ label: 'MITCORER official contact page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' });
   }
   if (/professional diploma|railway diploma|railway track technology|railway signaling|railway signalling|rolling stocks?|software technology in railway/.test(normalized)) {
     links.push({ label: 'MITCORER Professional Railway Diplomas', url: 'https://mitcorer.edu.in/about-professional-diploma-railway.php' });
   }
   if (/polytechnic|msbte|post[- ]?ssc|diploma (?:course|program|engineering|admission|intake|branch)/.test(normalized) && !/professional diploma|railway diploma/.test(normalized)) {
-    links.push({ label: 'MITCORER Polytechnic Admissions', url: 'https://mitcorer.edu.in/fy-polytechnic.php' });
+    links.push({ label: 'MITCORER Diploma Admissions 2026-27', url: 'https://mitcorer.edu.in/Diploma-Admissions-Open-2026-27.html' });
     links.push({ label: 'MSBTE Official Portal', url: 'https://msbte.org.in/' });
   }
   if (/sports|cricket|volleyball|badminton|gym|gymnasium|cultural event|cultural gathering|shiv jayanti|ganesh utsav/.test(normalized)) {
@@ -1086,6 +1139,15 @@ function getOfficialFeeLinks(question) {
 }
 
 function buildCollegeProfileAnswer(question) {
+  if (/\b(?:intake|sanctioned seat|capacity|choice code)\b/.test(normalizeIntentText(question)) && !/\b(?:conflict|different|discrepancy|disagree|both|versus|data science|artificial intelligence)\b/i.test(question)) return null;
+  if (/\badmission (?:procedure|steps)\b/.test(normalizeIntentText(question))) {
+    return maintainedProfile({ recordId: 'KB-29', actionView: 'cap', next: '' }, question, getDb().knowledge);
+  }
+  return maintainedProfile(buildLegacyCollegeProfileAnswer(question), question, getDb().knowledge);
+}
+
+function buildLegacyCollegeProfileAnswer(question) {
+  // These legacy templates select routes. maintainedProfile supplies the facts.
   const normalized = normalizeIntentText(question);
   if (/\b(?:choice code|dte code|option form)\b/.test(normalized)
     && /\b(?:artificial intelligence|ai\s*(?:&|and)\s*(?:data\s*)?science|ai\s*&\s*ds)\b/.test(normalized)) {
@@ -1210,11 +1272,12 @@ function buildCollegeProfileAnswer(question) {
     };
   }
   if (/\b(?:polytechnic|msbte|post[- ]?ssc diploma|diploma in engineering|diploma courses?|diploma programs?|diploma intake|diploma branches?|polytechnic courses?|polytechnic branches?|polytechnic intake|polytechnic eligibility)\b/.test(normalized) && !/\b(?:professional diploma|railway diploma|railway track|railway signaling|rolling stocks?|software technology in railway|direct second|dse|lateral|fees?|cost|charges?)\b/.test(normalized)) {
+    const record = getDb().knowledge.find((item) => item.id === 'KB-12' && usableKnowledge(item));
     return {
       recordId: 'KB-12',
       source: 'MITCORER Polytechnic admissions page',
-      sourceUrl: 'https://mitcorer.edu.in/fy-polytechnic.php',
-      answer: 'MITCORER Polytechnic (Diploma in Engineering) Programs under MSBTE:\n\n- Affiliation & Approvals: Affiliated to Maharashtra State Board of Technical Education (MSBTE), Mumbai; approved by AICTE, New Delhi and DTE Maharashtra (Institute Code: 06901).\n- Branches Offered & Intake (Sanctioned Intake: 60 each, Total 240 seats):\n  1. Computer Science & Engineering (Intake: 60)\n  2. Civil Engineering (Intake: 60)\n  3. Mechanical Engineering (Intake: 60)\n  4. Electronic & Telecom Engineering (Intake: 60)\n- Program Duration: 3-Year Full-Time Diploma program (6 Semesters under MSBTE curriculum).\n- First Year (Post-SSC) Eligibility: Candidate must have passed 10th Standard (SSC) examination from Maharashtra State Board or equivalent with at least 35% aggregate marks.\n- Direct Second Year (Lateral Entry): Available for candidates who have passed 12th Science / HSC Vocational / Technical or 2-year ITI as per DTE/MSBTE norms.\n- Separate Process: Polytechnic admission cycles, CAP seat allotment, fees, and documentation are administered separately from degree B.Tech admissions.',
+    sourceUrl: 'https://mitcorer.edu.in/Diploma-Admissions-Open-2026-27.html',
+      answer: record?.text || 'I could not find a current verified Polytechnic programme record.',
       next: '', actionView: 'programs', actionLabel: 'Explore polytechnic',
     };
   }
@@ -1222,9 +1285,9 @@ function buildCollegeProfileAnswer(question) {
     if (/\b(?:office hours?|office timings?|working hours?|visiting hours?|college timings?|working days?|office open|office close|open on saturday)\b/.test(normalized)) return buildOfficeHoursAnswer(question);
     return {
       recordId: 'KB-17',
-      source: 'MITCORER Contact page',
-      sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'For admission enquiries or to arrange a campus visit, contact MITCORER at +91 84599 67882 or +91 86696 62106, or email info.mitcorer@mitpune.edu.in. The published contact page does not list current office hours; call to confirm before visiting.',
+      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
+      answer: 'For admission enquiries, call the Admission Helpline at +91 91584 14343. For the college office, call +91 91584 14444. Email info.mitcorer@mitpune.edu.in. The Admissions Enquiry Desk hours reported by the supplied Contact Us excerpt are Monday–Saturday, 9:00 AM–5:00 PM; confirm before visiting outside those hours or for a campus tour.',
       next: '', actionView: 'inquiry', actionLabel: 'Contact admissions',
     };
   }
@@ -1285,14 +1348,13 @@ function buildCollegeProfileAnswer(question) {
   if (/\b(?:nearest railway station|nearest station|which railway station|station to college|barshi town station|kurduwadi junction|nearest bus (?:stop|stand)|barshi bus stand|how to reach (?:mitcorer|the college|barshi college)|distance from (?:station|bus stand)|reach (?:by train|by bus))\b/.test(normalized)) {
     return {
       recordId: 'KB-40',
-      source: 'MITCORER Contact Us portal and campus transit directions',
-      sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: `MITCORER transit information published on the official contact page:
+      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
+      answer: `MITCORER’s supplied Contact Us page excerpt describes these travel connections:
 
-- Campus address: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.
-- Barshi Town railway station: 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road.
-- MSRTC Bus Stand Barshi: 5.7 km from campus; Route-I is via Cancer Chowk and Industrial Road, and Route-II is via Bypass, Agalgaon Chowk, Shukla Automobile, and Industrial Road.
-- The page does not publish the distance or route from Solapur city, or a college bus route from Solapur. Confirm current travel details before setting out.`,
+- Regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai; check the current railway timetable for your travel date.
+- MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus; verify the current operator, stop, and service.
+- A separate legacy Contact page gives conflicting local-distance details. No exact distance or travel time is asserted until the institution reconciles the pages.`,
       next: '', actionView: 'visit', actionLabel: 'View campus location',
     };
   }
@@ -1449,7 +1511,7 @@ function buildCollegeProfileAnswer(question) {
           recordId: 'KB-38',
           source: 'MITCORER Civil Engineering department portal',
           sourceUrl: 'https://mitcorer.edu.in/civil-engineering.php',
-          answer: 'MITCORER Department of Civil Engineering Contact Details:\n\n- Head of Department (HOD): Prof. Amit Raosaheb Shinde\n- Department Office: Civil Engineering Wing, Main Academic Building, MITCORER Barshi\n- General Admission & Office Helpline: +91 84599 67882 / +91 86696 62106\n- Email: info.mitcorer@mitpune.edu.in\n- Department Webpage: https://mitcorer.edu.in/civil-engineering.php',
+          answer: 'MITCORER Department of Civil Engineering Contact Details:\n\n- Head of Department (HOD): Prof. Amit Raosaheb Shinde\n- Department Office: Civil Engineering Wing, Main Academic Building, MITCORER Barshi\n- Admission Helpline: +91 91584 14343\n- College Office: +91 91584 14444\n- Email: info.mitcorer@mitpune.edu.in\n- Department Webpage: https://mitcorer.edu.in/civil-engineering.php',
           next: '', actionView: 'visit', actionLabel: 'Contact Civil Department',
         };
       }
@@ -1676,9 +1738,9 @@ function buildCollegeProfileAnswer(question) {
   if (/\b(?:barshi to solapur|solapur to barshi|distance (?:from|to) solapur|solapur distance)\b/.test(normalized)) {
     return {
       recordId: 'KB-40',
-      source: 'MITCORER Contact Us portal and campus transit directions',
-      sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'The MITCORER contact page lists local directions in Barshi: Barshi Town railway station is 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road. The MSRTC Bus Stand is 5.7 km away, with two published local routes. It does not provide the Solapur-city-to-campus distance, travel time, or a college bus route from Solapur; confirm current travel details before setting out.',
+      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
+      answer: 'MITCORER’s supplied Contact Us page excerpt says regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai. It says MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus. Check current train and bus timetables and stops for your travel date. A separate legacy Contact page gives conflicting local-distance details, so Mitra cannot confirm an exact distance or travel time until the college reconciles the pages.',
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
@@ -1686,8 +1748,8 @@ function buildCollegeProfileAnswer(question) {
     return {
       recordId: 'KB-17',
       source: 'MITCORER Contact Us page',
-      sourceUrl: 'https://mitcorer.edu.in/contact.php',
-      answer: 'MITCORER, Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra 413401.\n\nEmail: info.mitcorer@mitpune.edu.in.\n\nPhone: +91 84599 67882, +91 86696 62106.\n\nWebsite: https://mitcorer.edu.in/.',
+      sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
+      answer: 'MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nAdmission Helpline: +91 91584 14343.\nCollege Office: +91 91584 14444.\n\nEmail: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nWebsite: https://mitcorer.edu.in/.',
       next: '', actionView: 'visit', actionLabel: 'View contact details',
     };
   }
@@ -1726,13 +1788,11 @@ function buildUnavailableProgrammeAnswer(question) {
   if (!/\b(?:electrical engineering|electrical branch)\b/.test(normalized)
     || !/\b(?:intake|offer|available|programme|program|course|branch|degree)\b/.test(normalized)
     || /\b(?:difference|compare|versus|vs\.?|electrical and electronics|electronics and electrical)\b/.test(normalized)) return null;
-  return {
-    recordId: 'KB-10',
-    source: 'MITCORER First Year B.Tech admissions page',
-    sourceUrl: 'https://mitcorer.edu.in/fy-btech.php',
-    answer: 'The official First Year B.Tech programme list does not list a standalone Electrical Engineering degree. It lists Electronics and Telecommunication Engineering and Electronics and Computer Engineering. If you meant one of those programmes, tell me which one.',
-    next: '', actionView: 'programs', actionLabel: 'View B.Tech programmes',
-  };
+  const maintained = buildMaintainedAnswer(question, normalized, getDb().knowledge);
+  if (!maintained || !maintained.evidence?.length) return maintained;
+  const names = maintained.evidence[0].facts?.programs?.map(program => program.name) || [];
+  return { ...maintained, answer: names.length && !names.some(name => /^electrical engineering$/i.test(name))
+    ? `The maintained programme list does not list a standalone Electrical Engineering degree.\n\n${maintained.answer}` : maintained.answer };
 }
 
 function buildIntakeVsAvailabilityAnswer(question) {
@@ -1743,17 +1803,10 @@ function buildIntakeVsAvailabilityAnswer(question) {
   const query = understandQuery(question);
   if (query.branch.positive.length !== 1 || query.admissionRoute === 'directSecondYear'
     || /\b(?:polytechnic|diploma)\b/.test(normalized)) return null;
-  const intake = { cse: 120, aids: 60, civil: 60, electronicsComputer: 60, entc: 60, mechanical: 60 }[query.branch.positive[0]];
-  if (!intake) return null;
-  const branch = {
-    cse: 'Computer Science and Engineering', aids: 'Artificial Intelligence and Data Science', civil: 'Civil Engineering',
-    electronicsComputer: 'Electronics and Computer Engineering', entc: 'Electronics and Telecommunication Engineering', mechanical: 'Mechanical and Rail Engineering',
-  }[query.branch.positive[0]];
+  const maintained = buildMaintainedAnswer(question, normalized, getDb().knowledge);
+  if (!maintained) return null;
   return {
-    recordId: 'KB-10',
-    source: 'MITCORER First Year B.Tech admissions page 2026-27',
-    sourceUrl: 'https://mitcorer.edu.in/fy-btech.php',
-    answer: `For AY 2026-27, ${branch} has a published sanctioned intake of ${intake}. Sanctioned intake is the programme’s approved capacity; it does not show how many seats remain available today. The published page does not confirm current vacancies, and the indexed records do not contain a live vacancy count. Check the current CAP or ACAP notice for availability.`,
+    ...maintained,
     officialLinks: [
       { label: 'MITCORER First Year B.Tech programmes and intake', url: 'https://mitcorer.edu.in/fy-btech.php' },
       { label: 'MITCORER ACAP and institute-level notices', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
@@ -1777,11 +1830,47 @@ function buildPlacementAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/placement|company|companies|recruiter|package|internship/.test(normalized)) return null;
   if (/placement assistance|internship/.test(normalized) && !/company|companies|recruiter|package|highlight/.test(normalized)) return null;
-  if (/highest|average|package|salary|recruiter|companies|company list/.test(normalized)) {
+  const asksPlacementSupport = /\b(?:support|assistance|prepare|preparation|training|platform|platforms|drive|drives|activity|activities|internship|internships|cell|process|how does|what does|what support)\b/.test(normalized)
+    && !/\b(?:company|companies|recruiter|recruiters|company list)\b/.test(normalized);
+  if (asksPlacementSupport) {
+    return {
+      recordId: 'KB-24',
+      source: 'MITCORER placement support and published highlights',
+      sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
+      answer: 'MITCORER’s Training and Placement Cell coordinates placement drives, preparation, and internship support. Students receive placement updates and opportunities through POD, Superset, and Unstop; access and drive eligibility are student-specific. The Cell also supports placement preparation. For recruiter names, see the dated records by academic year.',
+      officialLinks: [
+        { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' },
+        { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+      ],
+      next: '', actionView: 'placements', actionLabel: 'View placement support',
+    };
+  }
+  const asksRecruiterList = /\b(?:company|companies|recruiter|recruiters)\b/.test(normalized)
+    && /\b(?:list|which|what|who|names?|visit|visiting|come|recruit|campus|highlight|highlights)\b/.test(normalized);
+  if (asksRecruiterList) {
+    const record = getDb().knowledge.find((item) => item.id === 'KB-16' && usableKnowledge(item));
+    if (!record) return null;
+    return {
+      recordId: 'KB-16',
+      source: 'MITCORER placement records by academic year',
+      sourceUrl: 'https://mitcorer.edu.in/placements-record.php',
+      answer: 'Companies named in MITCORER’s 2024-25 placement and internship record:\n\n- Telge Projects Ltd\n- Tricon Engineering\n- Inavit Structural Consultants\n- Altraavision Test House\n- JUSPAY\n- Numetry Technologies\n- E-arth Solutions\n- TATA Motors\n- RK Info Systems\n- Flynaut SaaS\n- Cognizant\n- UTTAM Tools\n- Nexcelent Technologies\n- JRR Safelogic Technologies\n\nThese are companies recorded for AY 2024-25. The published record does not confirm which companies will visit in a future recruitment cycle.',
+      officialLinks: [
+        { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+        { label: 'MITCORER Our Recruiters', url: 'https://mitcorer.edu.in/our-recruiters.php' },
+        { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' },
+      ],
+      relatedLinks: [
+        { label: 'MITCORER Our Recruiters', url: 'https://mitcorer.edu.in/our-recruiters.php' },
+      ],
+      next: '', actionView: 'placements', actionLabel: 'View recruiter and placement records',
+    };
+  }
+  if (/highest|average|package|salary/.test(normalized)) {
     return {
       source: 'MITCORER dated placement records and Training & Placement pages',
       sourceUrl: 'https://mitcorer.edu.in/placements-record.php',
-      answer: 'MITCORER’s Training and Placement Cell coordinates placement activities and drives, and students use POD, Superset, and Unstop for placement updates and opportunities. Platform access and drive eligibility are student-specific. The publicly listed archive includes placement records through AY 2024-25; recruiter names and package figures should be read from the specific year’s record, not treated as current or guaranteed. For current schedules, check the Training and Placement Cell updates.',
+      answer: 'MITCORER’s published placement records include historical company and package details through AY 2024-25. Figures are specific to the dated record and do not establish current drives or guarantee an individual outcome. For current schedules and eligibility, check the Training and Placement Cell.',
       officialLinks: [
         { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
         { label: 'MITCORER current placement record page', url: 'https://mitcorer.edu.in/mitcorer/public/placement/record' },
@@ -1794,10 +1883,14 @@ function buildPlacementAnswer(question) {
   return {
     source: 'MITCORER placement record and Training & Placement pages',
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
-    answer: 'MITCORER’s Training and Placement Cell coordinates placement activities, placement drives, preparation, and internship support. According to information supplied for this project, student placement activities are also shared through POD, Superset, and Unstop; platform access and drive eligibility are student-specific.\n\nThe public placement archive lists dated records through AY 2024-25. Use those records for historical recruiter and outcome details. The public pages do not establish a current recruiter lineup, live drive schedule, or a guaranteed placement/package for an individual student.',
+    answer: 'The MITCORER Training and Placement Cell coordinates placement activities and preparation. Students receive placement updates and opportunities through POD, Superset, and Unstop; access and drive eligibility are student-specific. For recruiter names, see the dated placement records by academic year.',
     officialLinks: [
       { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/mitcorer/public/placements' },
       { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+      { label: 'MITCORER Our Recruiters', url: 'https://mitcorer.edu.in/our-recruiters.php' },
+    ],
+    relatedLinks: [
+      { label: 'MITCORER Our Recruiters', url: 'https://mitcorer.edu.in/our-recruiters.php' },
     ],
     next: '', actionView: 'placements', actionLabel: 'View placement support',
   };
@@ -1849,7 +1942,7 @@ function buildPolytechnicAdmissionAnswer(question, records) {
   return {
     recordId: 'KB-12',
     source: 'MITCORER Polytechnic admissions page',
-    sourceUrl: 'https://mitcorer.edu.in/fy-polytechnic.php',
+    sourceUrl: 'https://mitcorer.edu.in/Diploma-Admissions-Open-2026-27.html',
     answer: record.text,
     next: '', actionView: 'programs', actionLabel: 'Explore Polytechnic programmes',
   };
@@ -1885,9 +1978,9 @@ function buildAdmissionEnquiryAnswer(question) {
   if (!/admission (?:enquiry|inquiry|help)|admission office|admissions office|how do i apply|start my application|campus tour/.test(normalized)) return null;
   return {
     recordId: 'KB-17',
-    source: 'MITCORER Contact page',
-    sourceUrl: 'https://mitcorer.edu.in/contact.php',
-    answer: 'For admission enquiries, contact MITCORER at +91 84599 67882 or +91 86696 62106, or email info.mitcorer@mitpune.edu.in. Check the official contact page for the current address and directions.',
+    source: 'MITCORER Contact Us page excerpt supplied by project owner',
+    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
+    answer: 'For admission enquiries, call the Admission Helpline at +91 91584 14343. For the college office, call +91 91584 14444. Email info.mitcorer@mitpune.edu.in. Check the current Contact Us page for the address and directions.',
     actionView: 'inquiry',
     actionLabel: 'Contact admissions',
   };
@@ -1905,7 +1998,7 @@ function buildOfficeHoursAnswer(question) {
     answer: record.text,
     sourceUrl: record.sourceUrl,
     evidence: [record],
-    officialLinks: [{ label: 'MITCORER Contact page — office-hours information checked 2026-11-18', url: resolveSourceUrl(record.sourceUrl) }],
+    officialLinks: [{ label: 'MITCORER Contact Us page — admissions hours from supplied excerpt', url: resolveSourceUrl(record.sourceUrl) }],
     outcomeStatus: 'ANSWERED',
   };
   return {
@@ -1942,60 +2035,82 @@ function buildTpoAnswer(question, records) {
 }
 
 function buildScholarshipAnswer(question) {
+  return maintainedProfile(buildLegacyScholarshipAnswer(question), question, getDb().knowledge);
+}
+
+function buildLegacyScholarshipAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/scholarship|pragati|financial aid|mahadbt|nsp/.test(normalized)) return null;
   const asksPragati = normalized.includes('pragati');
   const isNonCap = /non cap|non-cap|acap|institute level|institute-level|against cap/.test(normalized);
+  const source = 'MITCORER published scholarship schemes';
+  const sourceUrl = 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship';
   if (asksPragati) {
     return {
-      source: 'National Scholarship Portal and MITCORER scholarship page',
-      answer: `MITCORER lists AICTE Pragati for girl students, and NSP lists separate merit-based Pragati schemes for technical degree and diploma students. It is potentially relevant to a girl student in an AICTE-approved technical course. Final eligibility depends on the current NSP specification, merit and family conditions, admission details, documents, and application dates.${isNonCap ? ' Because this is an institute-level/non-CAP admission, do not assume eligibility: confirm that the current Pragati specification accepts that route.' : ''} NSP One Time Registration is required before applying.`,
-      next: 'Open the current Pragati specification on NSP and verify course level, admission route, family conditions, documents, and deadline.',
+      recordId: getDb().knowledge.some(r => r.id === 'KB-33' && usableKnowledge(r)) ? 'KB-33' : 'KB-18', source, sourceUrl,
+      answer: `MITCORER lists the AICTE Pragati Scholarship for Girl Students (Technical Degree). Apply through the National Scholarship Portal (NSP), then check the current scheme specification for eligibility, admission-route conditions, required documents, and dates.${isNonCap ? ' Institute-level or non-CAP admission does not by itself establish eligibility.' : ''}`,
+      next: 'Open the current Pragati scheme on NSP and review its eligibility and application requirements.',
       actionView: 'scholarships',
       actionLabel: 'Check scholarship readiness',
     };
   }
   if (isNonCap) {
     return {
-      source: 'MITCORER scholarship and institute-level admission guidance',
+      recordId: 'KB-18', source, sourceUrl,
       answer: 'A non-CAP or institute-level student may check scholarships, but admission through that route does not automatically qualify the student for a scheme. Each MahaDBT or NSP scheme has its own admission-route, category, income, domicile, merit, and document conditions. Verify the current scheme specification before relying on a concession or paying fees.',
       next: 'Select the exact scheme and compare its current admission-route condition with your institute-level allotment or merit proof.',
       actionView: 'scholarships',
       actionLabel: 'Check scholarship readiness',
     };
   }
-  return null;
+  return {
+    recordId: 'KB-18', source, sourceUrl,
+    answer: 'MITCORER lists Maharashtra state schemes such as the EBC tuition-fee scheme, Dr. Punjabrao Deshmukh hostel allowance, post-matric scholarships and fee schemes for eligible OBC, SBC, VJNT and SC students, disability scholarships, and minority-community schemes. It also lists AICTE Pragati for girl students in technical degree courses. Apply for Maharashtra schemes through MahaDBT and for Pragati through NSP. Eligibility, documents, and deadlines vary by scheme, so confirm them on the relevant portal.',
+    next: 'Choose the scheme that matches your course and category, then check its current official portal for eligibility and dates.',
+    actionView: 'scholarships',
+    actionLabel: 'View scholarship schemes',
+  };
 }
 
 function getOfficialUniversityLinks(question) {
   const normalized = normalizeIntentText(question);
   if (!/attendance|present|absen|detain|condonation|biometric|\bxx\b/.test(normalized)) return [];
-  return [
+  const links = [
     { label: 'Official engineering attendance rules', url: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf' },
-    { label: 'Official biometric attendance circular 2026-27', url: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf' },
   ];
+  if (/biometric/.test(normalized)) links.push({ label: 'Official biometric attendance circular 2026-27 (under source review)', url: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf' });
+  return links;
 }
 
-function buildAttendanceAnswer(question) {
+function buildAttendanceAnswer(question, records = []) {
   const normalized = normalizeIntentText(question);
   if (!/attendance|present|absen|detain|condonation|biometric|\bxx\b/.test(normalized)) return null;
+  const asksBiometric = /biometric/.test(normalized);
+  const attendanceRecord = records.find(record => record.id === 'KB-31' && usableKnowledge(record));
+  const biometricRecord = records.find(record => record.id === 'KB-32' && usableKnowledge(record));
+  if (!attendanceRecord || asksBiometric && !biometricRecord) return null;
+  const answer = asksBiometric
+    ? `${biometricRecord.text}\n\nSeparately, the engineering CBCS rules expect regular 100% attendance and require at least 75% in each theory and laboratory course; falling below 75% results in an XX (Detained) grade. Absence relaxation is limited to valid grounds and requires institute approval.`
+    : 'For engineering courses, regular 100% attendance is expected. The minimum threshold is 75% in each theory and laboratory course. Falling below 75% results in an XX grade (Detained) for that course. Up to 25% absence may be considered only for valid grounds and with approval from the affiliated institute.';
   return {
+    recordId: asksBiometric ? ['KB-31', 'KB-32'] : 'KB-31',
     source: 'PAH Solapur University CBCS UG Engineering Rules',
-    answer: 'For engineering courses, regular 100% attendance is expected. The minimum threshold is 75% in each theory and laboratory course because only a maximum of 25% absence may be permitted. Falling below 75% results in an XX grade (Detained) for that course. Absence relaxation is not automatic: it is limited to valid grounds such as illness, death in the family, or another emergency beyond the student\'s control and requires approval from the affiliated institute. For AY 2026-27, the university also requires biometric attendance for students of affiliated colleges and university schools.',
+    answer,
     next: 'Check your subject-wise attendance with the college and submit supporting evidence promptly if you need institute consideration for an eligible absence.',
     actionView: 'inquiry',
     actionLabel: 'Ask attendance support',
   };
 }
 
-function buildFacilityAnswer(question) {
+function buildFacilityAnswer(question, records = []) {
   const normalized = normalizeIntentText(question);
   if (/hostel/.test(normalized) && !/fee|cost|charge|payment/.test(normalized)) {
     const isAllotmentOrProcess = /\b(?:admission|process|allotment|apply|procedure|rules|joining|reporting)\b/.test(normalized);
+    const specificHostelAvailable = records.some(record => record.id === 'KB-23' && usableKnowledge(record));
     return {
-      recordId: ['KB-23', 'KB-36'],
-      source: 'MITCORER Admissions FAQ and official brochure',
-      sourceUrl: 'https://www.mitcorer.edu.in/hostel-amenities.php',
+      recordId: specificHostelAvailable ? ['KB-23', 'KB-36'] : 'KB-15',
+      source: specificHostelAvailable ? 'MITCORER Admissions FAQ and official brochure' : 'MITCORER Admissions FAQ and infrastructure overview',
+      sourceUrl: specificHostelAvailable ? 'https://www.mitcorer.edu.in/hostel-amenities.php' : 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
       answer: isAllotmentOrProcess
         ? 'MITCORER confirms separate boys’ and girls’ hostel facilities, RO drinking water, solar water heating, and an emergency vehicle facility. The public information indexed here does not verify the application steps, allotment rules, student eligibility, or current room availability. Confirm those details with the hostel or admissions office before making plans.'
         : 'MITCORER has separate hostels for boys and girls, with RO drinking water, solar water heating, and an emergency vehicle facility. Campus facilities also include a mess and canteen. Room availability and student eligibility must be confirmed with the hostel office.',
@@ -2032,11 +2147,14 @@ function buildFacilityAnswer(question) {
     };
   }
   if ((/\bbus\b|transport facility|bus facility|bus route|bus stop|bus fee|bus timing/.test(normalized)) && !/\b(?:nearest|distance|how far|bus stand|railway station|barshi town|kurduwadi)\b/.test(normalized)) {
+    const specificBusAvailable = records.some(record => record.id === 'KB-19' && usableKnowledge(record));
     return {
-      recordId: 'KB-19',
-      source: 'MITCORER Bus Facility page',
-      sourceUrl: 'https://mitcorer.edu.in/bus-facility.php',
-      answer: 'MITCORER lists a bus facility under campus infrastructure:\n\n- College bus transportation is provided for student and staff commute\n- The published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee\n- Route details and transport fees must be confirmed from the current transport notice or admission staff before travel',
+      recordId: specificBusAvailable ? 'KB-19' : 'KB-15',
+      source: specificBusAvailable ? 'MITCORER Bus Facility page' : 'MITCORER infrastructure overview',
+      sourceUrl: specificBusAvailable ? 'https://mitcorer.edu.in/bus-facility.php' : 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
+      answer: specificBusAvailable
+        ? 'MITCORER lists a bus facility under campus infrastructure:\n\n- College bus transportation is provided for student and staff commute\n- The published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee\n- Route details and transport fees must be confirmed from the current transport notice or admission staff before travel'
+        : 'MITCORER lists a bus facility under campus infrastructure. The available maintained overview does not establish current routes, stops, timetable, seat availability, or transport fees. Confirm those details with admission staff before travel or payment.',
       next: 'Request the current route, stop, timing, seat availability, and fee for your location from admission staff.',
       actionView: 'inquiry',
       actionLabel: 'Request bus details',
@@ -2045,10 +2163,10 @@ function buildFacilityAnswer(question) {
   if (/\blibrary\b|digital resources|journal/.test(normalized)) {
     return {
       recordId: 'KB-20',
-      source: 'MITCORER Admissions FAQ',
-      sourceUrl: 'https://mitcorer.edu.in/about-lib-details.php',
-      answer: 'The MITCORER central library provides learning and research resources:\n\n- Extensive collection of reference books and engineering textbooks\n- Well-equipped library with digital resources and journals\n- Dedicated quiet reading hall for students and faculty\n- Note: The public FAQ does not publish borrowing rules, timings, or access eligibility; confirm operational details with the library',
-      next: 'Check the library page for access details.',
+      source: 'MITCORER Library Rules page',
+      sourceUrl: 'https://mitcorer.edu.in/library.php',
+      answer: 'The MITCORER library provides books, digital resources, and journals. The published Library Rules page describes book issue and return through the library system. Its general rules require users to sign in and show an identity card for access, and describe conduct and property-counter rules. The page does not specify library opening hours or borrowing limits/loan periods; confirm those details with the library. For library enquiries, the Library Details page lists library@mitcorer.edu.in.',
+      next: 'Contact the library to confirm current opening hours and borrowing limits.',
       actionView: 'inquiry',
       actionLabel: 'Request library details',
     };
@@ -2153,7 +2271,10 @@ export function retrieveKnowledge(question, vectorScores = null, candidateLimit 
       primaryRecordIds.add('KB-31');
     }
   }
-  if (['scholarship', 'financial aid', 'mahadbt'].some((term) => rawQuestion.includes(term)) && !rawQuestion.includes('fee')) targetedRecordIds.add('KB-18');
+  if (['scholarship', 'financial aid', 'mahadbt'].some((term) => rawQuestion.includes(term)) && !rawQuestion.includes('fee')) {
+    targetedRecordIds.add('KB-18');
+    primaryRecordIds.add('KB-18');
+  }
   if (rawQuestion.includes('pragati') || normalizedQuestion.includes('pragati')) {
     targetedRecordIds.add('KB-33');
     primaryRecordIds.add('KB-33');
@@ -2270,7 +2391,10 @@ export function retrieveKnowledge(question, vectorScores = null, candidateLimit 
     targetedRecordIds.add('KB-10');
     primaryRecordIds.add('KB-10');
   }
-  if (normalizedQuestion.includes('scholarship')) primaryRecordIds.add('KB-18');
+  if (normalizedQuestion.includes('scholarship') || normalizedQuestion.includes('mahadbt') || normalizedQuestion.includes('financial aid')) {
+    targetedRecordIds.add('KB-18');
+    primaryRecordIds.add('KB-18');
+  }
   if (normalizedQuestion.includes('seat matrix')) primaryRecordIds.add('KB-6');
   if (normalizedQuestion.includes('program') && rawQuestion.includes('b.tech')) primaryRecordIds.add('KB-10');
   const hasAccommodation = ['hostel', 'mess', 'accommodation', 'stay'].some((term) => matchesIntent(rawQuestion, term) || matchesIntent(normalizedQuestion, term));
@@ -2578,10 +2702,10 @@ export function generateQuerySuggestions(question, normalized) {
   }
   if (/\b(?:courses?|programmes?|branches?)\b/.test(norm)) {
     return [
-      { label: 'B.Tech Courses List', question: 'Which B.Tech courses are offered at MITCORER?' },
+      { label: 'B.Tech Courses List', question: 'Which B.Tech programmes are available at MITCORER?' },
       { label: 'Computer Science & Engineering', question: 'Tell me about Computer Science and Engineering at MITCORER' },
       { label: 'Mechanical & Rail Engineering', question: 'Tell me about Mechanical and Rail Engineering' },
-      { label: 'Polytechnic Diploma', question: 'Which Polytechnic diploma courses are offered?' },
+      { label: 'Polytechnic Diploma', question: 'Which Polytechnic diploma programmes are available at MITCORER?' },
     ];
   }
   if (/\b(?:computer science|computer engineering|cse)\b/.test(norm)) {
@@ -2644,10 +2768,10 @@ export function generateQuerySuggestions(question, normalized) {
   }
   if (/\b(?:scholarship|pragati|mahadbt|concession)\b/.test(norm)) {
     return [
-      { label: 'Government Scholarships (MahaDBT)', question: 'What scholarship support is available?' },
-      { label: 'AICTE Pragati for Girls', question: 'Tell me about the AICTE Pragati scholarship for girl students' },
-      { label: 'Education Loan Assistance', question: 'What education loan assistance is provided?' },
-      { label: 'Category Fee Concessions', question: 'What are the engineering fees for OBC and SC categories?' },
+      { label: 'Government Scholarships (MahaDBT)', question: 'What scholarships are available at MITCORER and where can I apply?' },
+      { label: 'AICTE Pragati for Girls', question: 'Tell me about the AICTE Pragati scholarship for girl students and where to apply.' },
+      { label: 'MahaDBT Application Portal', question: 'Where do I apply for MITCORER MahaDBT scholarship schemes?' },
+      { label: 'Scholarship Eligibility', question: 'What should I check before applying for a MITCORER scholarship?' },
     ];
   }
   return [];
@@ -2773,8 +2897,8 @@ async function answerAdmissionQuestionCore(body, user) {
         ...safetyCheck.response,
         answer: localizedAnswer,
         requestedLanguage: lang,
-        responseLanguage: lang,
-        localizationStatus: 'template',
+        responseLanguage: safetyCheck.flag === 'PROMISSORY_GUARANTEE' ? lang : 'en',
+        localizationStatus: safetyCheck.flag === 'PROMISSORY_GUARANTEE' ? 'template' : 'fallback',
       };
     }
     return safetyCheck.response;
@@ -2783,6 +2907,29 @@ async function answerAdmissionQuestionCore(body, user) {
   const queryScope = understandQuery(question);
   const language = selectLanguage(question, body.language);
   const normalized = normalizeIntentText(question);
+  const privateContact = /\b(?:personal|private)\s+(?:mobile|phone|whatsapp|contact|number)/i.test(question);
+  const reviewBoundary = reviewBoundaryResponse(question, language);
+  if (reviewBoundary) return reviewBoundary;
+  if (/\bbiometric\b/i.test(question)) {
+    const biometricRecord = getDb().knowledge.find(record => record.id === 'KB-32' && usableKnowledge(record));
+    if (!biometricRecord) return localizeResponse({
+      source: 'University biometric attendance circular under review', evidence: [],
+      officialLinks: getOfficialUniversityLinks(question), model: 'deterministic-rag-fallback',
+      outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+      answer: 'I can’t confirm whether biometric attendance is mandatory for AY 2026–27 because the university circular could not be verified. Please confirm with the university or college before relying on this requirement.',
+    }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
+  }
+  const refinement = user ? null : refinedAnswer(question, normalized, getDb().knowledge);
+  if (refinement) {
+    const evidence = refinement.evidence.map(record => publicEvidence(record, Date.now()));
+    const officialLinks = getRefinementOfficialLinks(question, refinement);
+    return localizeResponse({ ...refinement, evidence, officialLinks, model: 'deterministic-rag-fallback' }, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
+  const liveAttendance = /\b(?:today|tomorrow|current|live)\b.{0,35}\battendance\b|\bmy attendance\s+(?:percentage|records?|status)\b/i.test(question);
+  if (privateContact || liveAttendance) return localizeResponse({
+    source: 'No verified record', evidence: [], officialLinks: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE', model: 'deterministic-rag-fallback',
+    answer: privateContact ? 'I cannot provide private contact information. Please use the published college contact channels.' : 'I cannot access live or personal attendance records. Please check with the college through its authorized channels.',
+  }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
   const tpoAnswer = buildTpoAnswer(question, getDb().knowledge);
   if (tpoAnswer) {
     const record = tpoAnswer.recordId ? getDb().knowledge.find((item) => item.id === tpoAnswer.recordId) : null;
@@ -2825,7 +2972,9 @@ async function answerAdmissionQuestionCore(body, user) {
   const feeScopeResolved = feeTopics[0] === 'accommodationFees'
     || !feeQuery.category.excluded.length && feeQuery.route.positive.length > 0 && (!feeQuery.category.positive.length || selectedFee.key)
     || !feeQuery.category.excluded.length && selectedFee.key;
-  const asksMultipleFeeScopes = /\b(?:academic|tuition|college|first year|direct second|engineering)\b/.test(normalized) && /\b(?:hostel|mess|dining)\b/.test(normalized);
+  const asksMultipleFeeScopes = /\b(?:academic|tuition|college|first year|direct second|engineering|cse|civil|mechanical)\b/.test(normalized) && /\b(?:hostel|mess|dining)\b/.test(normalized)
+    || /\bfee\b.+\band\b.+\b(?:hostel|mess)\b/.test(normalized)
+    || /\b(?:intake|scholarship|placement)\b/.test(normalized);
   if (language === 'en' && feeQuery.topics.length === 1 && feeTopics.length === 1 && feeScopeResolved && !feeQuery.invalidYears.length && !asksMultipleFeeScopes && !feeQuery.admissionPathway && !/scholarship|concession eligibility|financial aid/.test(normalized)) {
     const structuredFeeAnswer = buildMaintainedAnswer(question, normalized, getDb().knowledge);
     if (structuredFeeAnswer?.managedRecordId === 'KB-2' || structuredFeeAnswer?.managedRecordId === 'KB-3') {
@@ -2919,7 +3068,7 @@ async function answerAdmissionQuestionCore(body, user) {
     const busRecord = getDb().knowledge.find((record) => record.id === 'KB-19' && usableKnowledge(record));
     const response = {
       source: 'MITCORER Bus Facility page',
-      answer: 'MITCORER lists a bus facility. The published page does not state a route list, stops, timetable, seat availability, or transport fee. Confirm the current route and timetable with the college before planning travel.',
+      answer: busRecord?.text || 'I could not find published transport details. Please confirm with the college.',
       evidence: busRecord ? [publicEvidence({ ...busRecord, score: 200 }, Date.now())] : [],
       officialLinks: [{ label: 'MITCORER Bus Facility', url: 'https://mitcorer.edu.in/bus-facility.php' }],
       model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
@@ -2966,7 +3115,13 @@ async function answerAdmissionQuestionCore(body, user) {
       evidence: documentResponse.evidence.map(record => publicEvidence(record, Date.now())),
     }, language, normalized, documentResponse.evidence, academicFeeSelection, parseLegacyFactText);
   }
-  const cachedResponse = semanticResponseCache.get(normalized, language, context);
+  const cachedResponse = !user && semanticResponseCache.get(normalized, language, context, (cached, signature) =>
+    signature === responseDependencySignature(cached) && (cached.evidence || []).every(evidence => {
+      const current = getDb().knowledge.find(record => record.id === evidence.id);
+      return current && usableKnowledge(current) && evidence.passage?.sha256 === publicEvidence(current, Date.now()).passage?.sha256
+        && evidence.revision === (current.revision ?? 0)
+        && JSON.stringify(evidence.provenance || {}) === JSON.stringify(current.provenance || {});
+    }));
   if (cachedResponse) {
     return cachedResponse;
   }
@@ -2998,12 +3153,7 @@ async function answerAdmissionQuestionCore(body, user) {
         reason: 'UNVERIFIED_INFORMATION',
         department: 'administrative_office',
         message: 'Staff recruitment, faculty vacancies, and employment inquiries are handled directly by the Administrative Office and Principal Desk. MITRA does not maintain live staff vacancy notices.',
-        helplines: [
-          { label: 'Administrative Office', number: '02184-222222', tel: '02184222222' },
-          { label: 'Principal Office Desk', number: '02184-222223', tel: '02184222223' },
-        ],
-        email: 'office@mitcorer.edu.in',
-        officeHours: 'Monday to Saturday, 9:30 AM to 5:30 PM IST',
+        ...maintainedContacts(getDb().knowledge),
         actionLabel: 'Escalate to Administrative Office',
       },
       suggestions: buildNoAnswerSuggestions(normalized),
@@ -3014,10 +3164,13 @@ async function answerAdmissionQuestionCore(body, user) {
   const records = getDb().knowledge;
   const guard = (result, id, anchor = true) => {
     if (!result) return null;
+    if (result.source === 'No verified record' && Array.isArray(result.evidence)) return result;
     const targetId = result.recordId || id;
     if (!targetId) return result;
     const required = Array.isArray(targetId) ? targetId : [targetId];
     const unavailable = required.find(key => { const record = records.find(item => item.id === key); return !record || !usableKnowledge(record); });
+    if (!unavailable && anchor && !result.managedRecordId) result = maintainedProfile({ ...result, recordId: targetId }, question, records);
+    if (result.source === 'No verified record' && Array.isArray(result.evidence)) return result;
     return !unavailable ? { ...result, ...(anchor ? { anchored: true } : {}), evidence: required.map(key => ({
       ...records.find(item => item.id === key),
       // Specific deterministic handlers may name a more precise official page
@@ -3046,13 +3199,15 @@ async function answerAdmissionQuestionCore(body, user) {
   // from retrieved evidence. The deterministic chain remains the fallback if providers fail
   // verification or the evidence score is too low.
   const criticalFactQuery = queryScope.topics.some(topic => ['academicFees', 'accommodationFees', 'programmes', 'seatMatrix'].includes(topic));
-  if (language === 'en' && !criticalFactQuery && isAdvisoryQuestion(normalized) && retrievedEvidence.length > 0 && retrievedEvidence[0].score >= 5) {
+  const usesMaintainedCollegeProfile = /^(?:tell me about mit ?corer|about mit ?corer|about us|why should i choose mit ?corer|why choose mit ?corer|why mit ?corer)[?.! ]*$/i.test(normalized);
+  if (language === 'en' && !criticalFactQuery && !usesMaintainedCollegeProfile && isAdvisoryQuestion(normalized) && retrievedEvidence.length > 0 && retrievedEvidence[0].score >= 5) {
     const advisoryEvidence = retrievedEvidence.slice(0, 3).map(sourceRecord);
     const advisoryDraft = await generateVerifiedDraft(question, null, advisoryEvidence, context);
     const rawAdvisory = advisoryDraft?.text;
     if (rawAdvisory) {
       const advisoryOfficialLinks = [
         ...getOfficialAdmissionLinks(question),
+        ...getOfficialScholarshipLinks(question),
         ...getOfficialExperienceLinks(question),
         ...getOfficialFeeLinks(question),
       ];
@@ -3070,7 +3225,8 @@ async function answerAdmissionQuestionCore(body, user) {
     // Gemini failed verification or returned null — fall through to deterministic chain below.
   }
 
-  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildOfficeHoursAnswer(question) || buildReviewedPassage(normalized, language, records) || guard(buildFacilityAnswer(question)) || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question), ['KB-31', 'KB-32']) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : /pragati/.test(normalized) ? 'KB-33' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
+  const facilityAnswer = buildFacilityAnswer(question, records);
+  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || buildOfficialNavigationAnswer(question) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildOfficeHoursAnswer(question) || buildReviewedPassage(normalized, language, records) || guard(facilityAnswer, undefined, facilityAnswer?.recordId !== 'KB-15') || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question, records)) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
     source: 'No verified record',
     answer: 'I could not find an official answer for that question. Please ask about a specific programme, fee, scholarship, admission step, or campus facility.',
     next: '',
@@ -3158,12 +3314,7 @@ async function answerAdmissionQuestionCore(body, user) {
         reason: 'UNVERIFIED_INFORMATION',
         department: 'administrative_office',
         message: 'Staff recruitment, faculty vacancies, and employment inquiries are handled directly by the Administrative Office and Principal Desk. MITRA does not maintain live staff vacancy notices.',
-        helplines: [
-          { label: 'Administrative Office', number: '02184-222222', tel: '02184222222' },
-          { label: 'Principal Office Desk', number: '02184-222223', tel: '02184222223' },
-        ],
-        email: 'office@mitcorer.edu.in',
-        officeHours: 'Monday to Saturday, 9:30 AM to 5:30 PM IST',
+        ...maintainedContacts(getDb().knowledge),
         actionLabel: 'Escalate to Administrative Office',
       };
     } else {
@@ -3171,12 +3322,7 @@ async function answerAdmissionQuestionCore(body, user) {
         available: true,
         reason: 'UNVERIFIED_INFORMATION',
         message: 'This question does not have a verified published record. You can escalate directly to our human admissions counselors.',
-        helplines: [
-          { label: 'Admissions Office Desk 1', number: '+91 84599 67882', tel: '+918459967882' },
-          { label: 'Admissions Office Desk 2', number: '+91 86696 62106', tel: '+918669662106' },
-        ],
-        email: 'info.mitcorer@mitpune.edu.in',
-        officeHours: 'Monday to Saturday, 9:30 AM to 5:30 PM IST',
+        ...maintainedContacts(getDb().knowledge),
         actionLabel: 'Escalate to Admissions Staff',
       };
     }
@@ -3190,19 +3336,35 @@ async function answerAdmissionQuestionCore(body, user) {
   }
   groundedAnswer.answer = validateBranchRelevance(groundedAnswer.answer, question, context);
   const localized = localizeResponse(groundedAnswer, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
-  semanticResponseCache.set(normalized, localized, language, context);
+  if (!user) semanticResponseCache.set(normalized, localized, language, context, responseDependencySignature(localized));
   return localized;
 }
 
 // Emit a privacy-minimized trace for each assistant outcome. The raw question,
 // user identity, and answer text are deliberately excluded from operational logs.
+function responseDependencySignature(response) {
+  const records = (response.evidence || []).map(evidence => getDb().knowledge.find(record => record.id === evidence.id) || null);
+  return crypto.createHash('sha256').update(JSON.stringify(records)).digest('hex');
+}
+
 function normalizeAssistantSourceLinks(response) {
+  response = { evidence: [], ...response };
+  if (response.sections?.length && response.sections.some(section => section.status !== 'supported')) {
+    const supported = response.sections.some(section => section.status === 'supported');
+    response = { ...response, outcomeStatus: supported ? 'PARTIALLY_ANSWERED' : response.sections.some(section => section.status === 'clarification') ? 'NEEDS_CLARIFICATION' : 'INSUFFICIENT_EVIDENCE' };
+  }
+  // Keep navigation useful without presenting it as verified factual evidence.
+  if (response?.clarification || response?.outcomeStatus === 'NEEDS_CLARIFICATION') response = { ...response, clarification: true, outcomeStatus: response.outcomeStatus === 'PARTIALLY_ANSWERED' ? 'PARTIALLY_ANSWERED' : 'NEEDS_CLARIFICATION' };
+  if (response?.escalation) {
+    const { officeHours, email, helplines, ...escalation } = response.escalation;
+    response = { ...response, escalation: { ...escalation, ...maintainedContacts(getDb().knowledge) } };
+  }
   const evidenceLinks = uniqueSourceLinks((response?.evidence || []).filter(record => record.sourceUrl).map(record => ({
     label: [record.title, record.academicYear, record.provenance?.section].filter(Boolean).join(' · '),
     url: record.sourceUrl,
   })));
   const citationUrls = new Set(evidenceLinks.map(link => link.url));
-  const relatedCandidates = [...(response?.relatedLinks || response?.officialLinks || [])];
+  const relatedCandidates = [...(response?.relatedLinks || []), ...(response?.officialLinks || [])];
   const primaryUrl = response?.sourceUrl ? resolveSourceUrl(response.sourceUrl) : '';
   if (primaryUrl && !citationUrls.has(primaryUrl)) relatedCandidates.push({ label: 'Related official page', url: primaryUrl });
   const relatedLinks = uniqueSourceLinks(relatedCandidates)
@@ -3233,6 +3395,7 @@ export async function answerAdmissionQuestion(body, user) {
     }
     const trace = { traceId, agentIterations: 0 };
     const result = normalizeAssistantSourceLinks(await assistantTraceContext.run(trace, () => answerAdmissionQuestionCore(body, user)));
+    recordAssistantEvent(result, performance.now() - startedAt);
     const traceEvidence = Array.isArray(result?.evidence)
       ? result.evidence.filter(item => item?.id && item?.citationId).slice(0, 5)
       : [];
@@ -3254,6 +3417,7 @@ export async function answerAdmissionQuestion(body, user) {
     }));
     return result;
   } catch (error) {
+    recordAssistantEvent({ outcomeStatus: 'ERROR' }, performance.now() - startedAt);
     console.log(JSON.stringify({
       event: 'assistant_pipeline', traceId, questionHash,
       topics: query?.topics || [], outcome: 'ERROR',
@@ -3306,7 +3470,12 @@ function updateKnowledge(id, body, user) {
   }
   const linkedSource = updated.sourceUrl && (db.officialSources || []).find((source) => canonicalSourceUrl(source.sourceUrl || '') === canonicalSourceUrl(updated.sourceUrl));
   if (updated.status === 'Published' && linkedSource?.syncMeta?.healthStatus === 'unreachable') {
-    throw new HttpError(409, 'SOURCE_UNAVAILABLE', 'This source URL is unreachable. Restore or replace the source and verify it before publishing this answer.');
+    const retainedEvidenceCanBeReconfirmed = body.verifySource === true
+      && Boolean(linkedSource.verifiedAt && linkedSource.extractedText)
+      && (updated.sourceDocumentId === linkedSource.id || updated.provenance?.documentId === linkedSource.id);
+    if (!retainedEvidenceCanBeReconfirmed) {
+      throw new HttpError(409, 'SOURCE_UNAVAILABLE', 'The live source is unreachable and no previously reviewed source snapshot is available. Restore or replace the source before publishing this answer.');
+    }
   }
   if (current.freshnessReview && updated.status === 'Published' && body.verifySource !== true) {
     throw new HttpError(409, 'SOURCE_REVIEW_REQUIRED', 'This answer was withheld after its source changed or became unavailable. Review the current source and explicitly confirm before publishing.');
@@ -3451,7 +3620,10 @@ function publishOfficialSource(id, body, user) {
   const source = (db.officialSources || []).find((item) => item.id === id);
   if (!source) throw notFound('Official source not found.');
   if (Object.keys(body).some(key => !['verifiedText', 'verifiedPages', 'provenance', 'sourceUrl', 'expectedRevision', 'resolveConflicts'].includes(key))) throw badRequest('Invalid source publishing fields.');
-  if (source.syncMeta?.healthStatus === 'unreachable') throw new HttpError(409, 'SOURCE_UNAVAILABLE', 'The source URL is unreachable. Restore it and run source sync again before publishing answers.');
+  if (source.syncMeta?.healthStatus === 'unreachable'
+    && !(source.verifiedAt && source.extractedText && typeof body.verifiedText === 'string' && body.verifiedText.trim())) {
+    throw new HttpError(409, 'SOURCE_UNAVAILABLE', 'The source URL is unreachable and no reviewed source snapshot was provided. Restore it or provide the retained reviewed text before publishing.');
+  }
   if (body.resolveConflicts !== undefined && typeof body.resolveConflicts !== 'boolean') throw badRequest('Conflict resolution confirmation must be a boolean.');
   if ((source.conflicts || []).length && body.resolveConflicts !== true) throw badRequest('Review the detected conflicting facts and explicitly confirm how they should be resolved before publishing.');
   if (source.freshnessImpact?.withheldKnowledgeIds?.length && body.resolveConflicts !== true) throw badRequest('Review the current source against the withheld answers and explicitly confirm before publishing.');
@@ -3704,6 +3876,7 @@ function getOfficialSourceFile(id, user) {
   if (!record.storedFileName) throw notFound('The original file is not stored locally for this source.');
   const filePath = path.resolve(officialSourceDir, record.storedFileName);
   if (!filePath.startsWith(officialSourceDir) || !fs.existsSync(filePath)) throw notFound('Official source file is unavailable.');
+  assertStoredFileReadable(filePath, record.mimeType);
   audit('official_source.file_opened', 'official_source', record.id, user, record.title);
   return { __file: true, filePath, mimeType: record.mimeType || 'application/octet-stream', fileName: record.originalFileName };
 }
@@ -3744,6 +3917,7 @@ function getAssistantAttachmentFile(id, user) {
   if (!canAccessApplicantRecord(user, record.ownerEmail)) throw forbidden();
   const filePath = path.resolve(uploadDir, record.storedFileName);
   if (!filePath.startsWith(uploadDir) || !fs.existsSync(filePath)) throw notFound('Attachment file is unavailable.');
+  assertStoredFileReadable(filePath, record.mimeType);
   audit('assistant_attachment.file_opened', 'assistant_attachment', record.id, user, record.fileName);
   return { __file: true, filePath, mimeType: record.mimeType, fileName: record.fileName };
 }
@@ -3777,6 +3951,17 @@ async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   if (req.method === 'GET' && url.pathname === '/api/document-corpus') {
     requireRole(context, ['staff', 'admin']);
     return documentCorpusStats();
+  }
+  if (req.method === 'GET' && url.pathname === '/api/assistant/operations') {
+    requireRole(context, ['staff', 'admin']);
+    return assistantOperations(getDb(), user.role === 'admin');
+  }
+  const triageMatch = url.pathname.match(/^\/api\/assistant\/operations\/([a-f0-9-]{36})$/);
+  if (req.method === 'PATCH' && triageMatch) {
+    requireRole(context, ['admin']);
+    const reviewed = reviewAssistantEvent(triageMatch[1], body.status);
+    audit('assistant.diagnostic_reviewed', 'diagnostic', reviewed.id, user, reviewed.status);
+    return reviewed;
   }
   if (req.method === 'GET' && url.pathname === '/api/document-corpus/search') {
     requireRole(context, ['staff', 'admin']);

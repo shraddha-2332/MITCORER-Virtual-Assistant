@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "arena": {
+      "source": "solimancifuentes/pstack-codex",
+      "commit": "93bcde3b0287b629450f74037f1a68a06b0c702b",
+      "sourceType": "github",
+      "skillPath": "plugins/pstack-codex/skills/arena/SKILL.md",
+      "computedHash": "e2055e04fc9189f22d495a7d7ede83008488c26dbd61a91372e299be62523d9a"
+    }
+  }
+}

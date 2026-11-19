@@ -17,7 +17,7 @@ The refresh token is an HttpOnly, `SameSite=Strict` cookie scoped to `/api/auth`
 
 ## Auth
 
-Administrator knowledge creation/editing: `POST /api/knowledge`, `PATCH /api/knowledge/:id`. Patches require `expectedRevision`, return 409 for stale edits, and validate publication status, URLs and structured fact tables. See [the complete maintenance contract](MITRA_KNOWLEDGE_MAINTENANCE.md).
+Administrator knowledge creation/editing: `POST /api/knowledge`, `PATCH /api/knowledge/:id`. Patches require `expectedRevision`, return 409 for stale edits, and validate publication status, URLs and structured fact tables. Only designated published records drive maintained fee, hostel/mess and intake facts; other legacy answer rules still need consolidation.
 
 - `POST /api/auth/login`
 - `POST /api/auth/signup`
@@ -40,9 +40,9 @@ Body:
 
 Returns routed guidance, source, next action, and retrieval evidence.
 
-Optional question field `language` accepts `auto` (default), `en`, `mr`, or `hi`, including on `/api/conversations/ask`. Responses include requested/actual language and localization provenance; unsupported preferences return 400. Admin knowledge creation/editing accepts reviewed `translations` keyed by mr/hi, bound to the source-text hash and invalidated by source edits. See [the multilingual contract and limits](MITRA_MULTILINGUAL_RESPONSES.md).
+Optional question field `language` accepts `auto` (default), `en`, `mr`, or `hi`, including on `/api/conversations/ask`. Responses include requested/actual language and localization provenance; unsupported preferences return 400. Admin knowledge creation/editing accepts reviewed `translations` keyed by mr/hi, bound to the source-text hash and invalidated by source edits. Unsupported free text falls back explicitly; Marathi/Hindi quality requires competent-speaker review, with the [review packet](language-review/REVIEW_PACKET.md) awaiting approval.
 
-Both `POST /api/assistant/ask` and the unauthenticated `POST /api/public-assistant/ask` can return `sections` for compound questions. Each section contains `topic`, `title`, `question`, `answer`, `status` and `evidenceIds`. Numbered citations match the returned evidence order; source links retain `{ label, url }`. An ambiguous reference returns `clarification: true` with an evidence-empty question requesting the missing programme/route. See [compound-question behavior](MITRA_COMPOUND_QUESTIONS.md).
+Both `POST /api/assistant/ask` and the unauthenticated `POST /api/public-assistant/ask` can return `sections` for compound questions. Each section contains `topic`, `title`, `question`, `answer`, `status` and `evidenceIds`. Numbered citations match the returned evidence order; source links retain `{ label, url }`. An ambiguous reference returns `clarification: true` with an evidence-empty question requesting the missing programme/route.
 
 The assistant returns deterministic answers from verified records. Gemini can generate a response only when retrieved evidence exists but no direct verified answer matches; it cannot override verified rules or source records.
 
@@ -88,7 +88,7 @@ Assistant attachments support PDF, JPG, and PNG. They are stored as support file
 
 ## Assistant evidence snapshots
 
-Source provenance and freshness are implemented: see [source metadata contract and behavior](MITRA_SOURCE_PROVENANCE.md). Knowledge POST/PATCH accepts optional validated `provenance` and boolean `verifySource`; verification stamps cannot be supplied by clients. Evidence includes safe provenance and `verification: { status, verifiedAt }`, never reviewer identity. Source publishing also accepts reviewed page batches, source URL/provenance and an optional revision precondition. Explicit dates/supersession exclude unavailable evidence; absent dates are not fabricated.
+Source provenance and freshness are implemented. Knowledge POST/PATCH accepts optional validated `provenance` and boolean `verifySource`; verification stamps cannot be supplied by clients. Evidence includes safe provenance and `verification: { status, verifiedAt }`, never reviewer identity. Source publishing also accepts reviewed page batches, source URL/provenance and an optional revision precondition. Explicit dates/supersession exclude unavailable evidence; absent dates are not fabricated. Page-aware publication preserves passage lineage and revision history; conflicting structured facts require clarification or refusal instead of a fabricated resolution.
 
 Public/authenticated answers expose supporting published records in `data.evidence`. Each now includes `revision`, `citationId`, `academicYear` (null when unknown), and `passage: { text, sha256, truncated }` alongside existing ID/title/category/source/URL/score fields. Excerpts are capped at 2,800 characters; the hash covers the full original passage. Compound numbered references follow evidence-array order. Account history retains the evidence snapshot. These fields identify source content; they do not prove every answer claim or establish human verification. No PDF pages or verification dates are invented.
 

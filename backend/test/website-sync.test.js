@@ -4,6 +4,7 @@ import { cleanHtml, hashContent, syncMonitoredWebsiteSources, analyzeContentDrif
 import { createServer } from '../src/server.js';
 import { config } from '../src/config.js';
 import { getDb, resetDbForTests } from '../src/store.js';
+import { createSeedData } from '../src/seed.js';
 
 async function withServer(fn, serverOptions) {
   resetDbForTests();
@@ -205,6 +206,20 @@ test('changed page content withholds every directly linked published answer', as
   assert.equal(result.suspendedRecords, 1);
 });
 
+test('navigation changes do not withhold an unchanged, fully supported programme claim', async () => {
+  const record = structuredClone(createSeedData().knowledge.find(item => item.id === 'KB-10'));
+  const url = record.sourceUrl;
+  const claims = record.facts.programs.map(program => `B.Tech in ${program.name} Sanctioned Intake ${program.intake} Seats Choice Code ${program.choiceCode}`).join(' ');
+  const db = { officialSources: [], knowledge: [record] };
+  let content = `<html><main><h1>Admissions</h1><p>${claims}</p></main></html>`;
+  await syncMonitoredWebsiteSources({ db, sources: [{ title: 'Admissions', url }], fetcher: async () => content, save: false });
+  content = `<html><main><h1>Admissions</h1><p>Updated welcome text.</p><p>${claims}</p></main></html>`;
+  const result = await syncMonitoredWebsiteSources({ db, sources: [{ title: 'Admissions', url }], fetcher: async () => content, save: false });
+  assert.equal(result.changed, 1);
+  assert.equal(result.suspendedRecords, 0);
+  assert.equal(record.status, 'Published');
+});
+
 test('unreachable official source is marked and its linked published answers are withheld', async () => {
   const url = 'https://mitcorer.edu.in/legacy/programmes.php';
   const db = {
@@ -220,6 +235,27 @@ test('unreachable official source is marked and its linked published answers are
   assert.equal(db.officialSources[0].syncMeta.healthStatus, 'unreachable');
   assert.equal(db.knowledge[0].status, 'Review');
   assert.equal(db.knowledge[0].freshnessReview.reason, 'source-unavailable');
+});
+
+test('unavailable generic CET route does not withhold a query-selected institute record', async () => {
+  const instituteUrl = 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901';
+  const db = {
+    officialSources: [],
+    knowledge: [{ id: 'KB-CET', title: 'Institute summary', sourceUrl: instituteUrl,
+      text: 'Institute Code 06901 is listed as Un-Aided.', status: 'Published' }],
+  };
+  const result = await syncMonitoredWebsiteSources({
+    db,
+    sources: [{ title: 'Generic institute summary', url: 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary' }],
+    fetcher: async (url) => {
+      if (url === instituteUrl) return '<html><body><main>Institute Code 06901</main></body></html>';
+      throw new Error('404 Not Found');
+    },
+    save: false,
+  });
+  assert.equal(result.suspendedRecords, 0);
+  assert.equal(db.knowledge[0].status, 'Published');
+  assert.equal(db.knowledge[0].sourceUrl, instituteUrl);
 });
 
 test('changed remote validators quarantine linked answers and discard stale extracted text', async () => {

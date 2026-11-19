@@ -60,6 +60,17 @@ GEMINI_FALLBACK_MODEL=
 ```
 
 Provider keys stay on the backend. Retrieval with generation is not model training. Embeddings use the Gemini key independently of answer generation. Review cited official sources for consequential admission decisions.
+
+### Preparing a new review candidate set
+
+The optional offline builder no longer reads the removed repository evaluation kit. Supply a fresh CSV and a new output path:
+
+```bash
+node scripts/build-human-evaluation-dataset.mjs path/to/fresh-cases.csv path/to/candidates.json
+```
+
+The CSV needs `case_id`, `language`, `topic`, `question`, and `author_reviewer_code` columns. The command writes a candidate JSON file and matching manifest, refuses to overwrite either, and marks independent adjudication as pending. A reviewer must establish authorship, source support, and labels before treating cases as an independent evaluation. The historical 90-case artifact has been marked as a development candidate; the evaluation runner rejects it as an independent set.
+
 ### Official website sync
 
 The admin **Sync college website** action (`POST /api/official-sources/sync`) and `npm run sync:website` start from `https://mitcorer.edu.in/mitcorer/public/index.php`, discover same-origin HTML routes under `/mitcorer/public`, and stage new or changed pages in the official-source review queue. Links to documents, assets, external domains, and paths outside that website section are skipped. The crawl is capped at 250 pages with eight concurrent requests; failed routes are reported for retry.

@@ -1,0 +1,14 @@
+{
+  "total": 150,
+  "inputSha256": "7eb7fb697d75dbea24747836d15bfb1dbab63b96548a8e12ab3c693c8d77b3c0",
+  "flagCounts": {
+    "source-document-required": 54,
+    "institutional-verification-required": 121,
+    "competent-speaker-review-required": 28,
+    "inspect-language-review-metadata": 28,
+    "incomplete-native-language-coverage": 12
+  },
+  "independentFactualAccuracy": null,
+  "humanLanguageScores": null,
+  "passageIntegrityFailures": []
+}

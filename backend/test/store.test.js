@@ -72,6 +72,7 @@ test('removed seed entries stay removed; custom records and empty source librari
     assert.equal(restarted.knowledge.some((item) => item.id === 'KB-2'), false);
     assert.deepEqual(restarted.knowledge.find((item) => item.id === custom.id), custom);
     assert.deepEqual(restarted.officialSources, []);
+    assert.deepEqual(readFromNewProcess(databaseFile).officialSources, []);
     closeDb();
     const loaded = getDb();
     loaded.knowledge = [];
@@ -97,9 +98,11 @@ test('existing legacy collection retains edited knowledge and unrelated data dur
     assert.deepEqual(loaded.documents, [{ id: 'DOC-KEEP' }]);
     assert.deepEqual(loaded.feedback, legacy.feedback);
     assert.deepEqual(loaded.conversations, legacy.conversations);
+    assert.deepEqual(loaded.officialSources, []);
     saveDb();
     const restarted = readFromNewProcess(databaseFile);
     assert.deepEqual(restarted.knowledge.find((item) => item.id === 'KB-2'), legacy.knowledge[0]);
     assert.ok(restarted.knowledge.some((item) => item.id === 'KB-52'));
+    assert.deepEqual(restarted.officialSources, []);
   });
 });

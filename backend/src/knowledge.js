@@ -171,7 +171,7 @@ export function buildMaintainedAnswer(question, normalized, records) {
       managedRecordId: 'unsupported-fee-route', source: 'No verified record', evidence: [], next: '',
       answer: 'I could not find a verified fee amount for that admission route or transport service. B.Tech academic fees must not be used for Polytechnic or bus fees. Please check the applicable notice with the college.' };
     [id, actionView] = query.topics.includes('accommodationFees') ? ['KB-3', 'visit'] : ['KB-2', 'fees'];
-  } else if ((/intake|choice code|program|course|branch/.test(normalized) || (/\b(?:offer|have|available)\b/.test(normalized) && (query.branch.positive.length > 0 || /engineering|b\.?tech/.test(normalized)))) && !/polytechnic|diploma|direct second|\bdse\b|lateral/.test(normalized)) {
+  } else if ((/intake|choice code|programs?|courses?|branches?/.test(normalized) || (/\b(?:offer|have|available)\b/.test(normalized) && (query.branch.positive.length > 0 || /engineering|b\.?tech/.test(normalized)))) && !/polytechnic|diploma|direct second|\bdse\b|lateral/.test(normalized)) {
     [id, actionView] = ['KB-10', 'programs'];
   } else return null;
   const record = records.find((item) => item.id === id && usableKnowledge(item));
@@ -206,6 +206,7 @@ export function buildMaintainedAnswer(question, normalized, records) {
       : `For AY ${year}, the approved ${category} totals are ${money(facts.firstYear[key])} for First Year Engineering and ${money(facts.directSecondYear[key])} for Direct Second Year Engineering.`;
     else if (route) answer = renderFactText(facts, route);
     answer += ' These are annual amounts, not semester-wise amounts and not a semester-wise schedule. The record does not establish an installment split. Category concessions require valid admission and category documents.';
+    if (/\btuition\b/i.test(question)) answer += ' These figures are annual totals; the maintained passage does not establish a tuition-only breakdown.';
   }
   if (facts?.kind === 'accommodationFees') {
     const hostel = query.service.positive.includes('hostel');
@@ -217,6 +218,11 @@ export function buildMaintainedAnswer(question, normalized, records) {
     const program = facts.programs.find(item => understandQuery(item.name).branch.positive.includes(selectedBranch));
     if (!program) return unavailable();
     answer = `For AY ${year}, ${program.name} has sanctioned intake ${program.intake} and choice code ${program.choiceCode}. Intake does not confirm current vacancies or guarantee admission.`;
+  }
+  if (facts?.kind === 'programIntake' && query.branch.positive.length > 1 && !asksForAllPrograms(normalized)) {
+    const selected = query.branch.positive.map(branch => facts.programs.find(item => understandQuery(item.name).branch.positive.includes(branch)));
+    if (selected.some(item => !item)) return unavailable();
+    answer = `For AY ${year}:\n` + selected.map(item => `- ${item.name}: sanctioned intake ${item.intake}; choice code ${item.choiceCode}`).join('\n') + '\n\nIntake does not confirm current vacancies or guarantee admission.';
   }
   return { managedRecordId: id, source: record.source, sourceUrl: record.sourceUrl || '', answer,
     next: '', actionView, actionLabel: 'View official record',

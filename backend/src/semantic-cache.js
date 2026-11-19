@@ -22,13 +22,13 @@ export class SemanticResponseCache {
     return `${language}:${normalizedIntent}:${ctxString}`;
   }
 
-  get(normalizedIntent, language = 'en', context = {}) {
+  get(normalizedIntent, language = 'en', context = {}, validate = () => true) {
     if (!normalizedIntent) return null;
     const key = this.generateKey(normalizedIntent, language, context);
     const entry = this.cache.get(key);
     if (!entry) return null;
 
-    if (Date.now() > entry.expiresAt) {
+    if (Date.now() >= entry.expiresAt || !validate(entry.response, entry.dependencySignature)) {
       this.cache.delete(key);
       return null;
     }
@@ -43,7 +43,7 @@ export class SemanticResponseCache {
     return copy;
   }
 
-  set(normalizedIntent, response, language = 'en', context = {}) {
+  set(normalizedIntent, response, language = 'en', context = {}, dependencySignature = null) {
     if (!normalizedIntent || !response) return;
     // Never cache unverified/insufficient evidence outcomes or clarification requests
     if (response.outcomeStatus === 'INSUFFICIENT_EVIDENCE' || response.clarification || response.source === 'No verified record') {
@@ -62,6 +62,7 @@ export class SemanticResponseCache {
 
     this.cache.set(key, {
       response: JSON.parse(JSON.stringify(response)),
+      dependencySignature,
       cachedAt: Date.now(),
       expiresAt: Date.now() + this.ttlMs,
     });

@@ -15,10 +15,10 @@ test('sources follow answer topics and unsupported routes never use engineering 
   resetDbForTests(createSeedData());
   const ask = async question => { resetRuntimeStateForTests(); return answerAdmissionQuestion({ question }, null); };
   try {
-    assert.equal((await ask('Tell me about the library.')).sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/infrastructure');
+    assert.equal((await ask('Tell me about the library.')).sourceUrl, 'https://mitcorer.edu.in/library.php');
     assert.equal((await ask('What is the railway model room?')).evidence[0].id, 'KB-42');
     const placement = await ask('Who are the recruiters?');
-    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placements')));
+    assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placements-record.php')));
     assert.ok(placement.officialLinks.some(link => link.url.endsWith('/placement/ourrecruiters')));
     assert.ok(!placement.officialLinks.some(link => link.url.includes('youtube')));
     const fees = await ask('What are DSE fees?');

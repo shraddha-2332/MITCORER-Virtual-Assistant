@@ -1,11 +1,12 @@
 import { createRefreshSession } from './refresh-session.mjs';
+import { requestJson } from './request-json.mjs';
 
 // Production uses the same-origin Vite/Nginx/Vercel API proxy so Strict cookies
 // are first-party. Direct cross-site APIs would break browser session isolation.
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function request(path, { token, method = 'GET', body } = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  return requestJson(`${API_BASE_URL}${path}`, {
     method,
     credentials: 'include',
     headers: {
@@ -14,14 +15,6 @@ async function request(path, { token, method = 'GET', body } = {}) {
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const message = payload?.error?.message || 'MITRA API request failed.';
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
-  }
-  return payload.data;
 }
 
 async function upload(path, { token, formData }) {
@@ -123,6 +116,8 @@ export const api = {
   createInquiry: (token, body) => request('/api/inquiries', { token, method: 'POST', body }),
   updateInquiryStatus: (token, id, updates) => request(`/api/inquiries/${id}/status`, { token, method: 'PATCH', body: updates }),
   getFeedback: (token) => request('/api/feedback', { token }),
+  getAssistantOperations: (token) => request('/api/assistant/operations', { token }),
+  reviewAssistantEvent: (token, id, status) => request(`/api/assistant/operations/${encodeURIComponent(id)}`, { token, method: 'PATCH', body: { status } }),
   updateFeedbackStatus: (token, id, updates) => request(`/api/feedback/${id}/status`, { token, method: 'PATCH', body: updates }),
   getAdmissionWorkspace: (token) => request('/api/admission-workspace', { token }),
   updateAdmissionWorkspace: (token, section, value) => request('/api/admission-workspace', { token, method: 'PATCH', body: { section, value } }),
@@ -156,7 +151,6 @@ export const api = {
   publishOfficialSource: (token, id, verifiedText, resolveConflicts = false) => request(`/api/official-sources/${id}/publish`, { token, method: 'PATCH', body: { verifiedText, resolveConflicts } }),
   extractStructuredOfficialSource: (token, id) => request(`/api/official-sources/${id}/extract-structured`, { token, method: 'POST' }),
   openOfficialSource: (token, id) => openProtectedFile(`/api/official-sources/${id}/file`, token),
-  syncOfficialSources: (token) => request('/api/official-sources/sync', { token, method: 'POST' }),
   getReports: (token) => request('/api/reports', { token }),
   getAuditLogs: (token) => request('/api/audit-logs', { token }),
   getPublicFacts: () => request('/api/public-facts'),

@@ -17,6 +17,11 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
   const [translations, setTranslations] = useState(() => ({ mr: record.translations?.mr?.text || '', hi: record.translations?.hi?.text || '' }));
   const [translationsReviewed, setTranslationsReviewed] = useState(false);
   const [sourceReviewed, setSourceReviewed] = useState(false);
+  const unavailableCETSummary = record.freshnessReview?.reason === 'source-unavailable'
+    && record.freshnessReview?.changedSourceUrl?.startsWith('https://fe2026.mahacet.org/StaticPages/frmInstituteSummary');
+  const reviewSourceUrl = unavailableCETSummary
+    ? 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901'
+    : record.freshnessReview?.changedSourceUrl || form.sourceUrl;
   const update = (key, value) => {
     setForm((current) => ({ ...current, [key]: value }));
     setSourceReviewed(false);
@@ -42,7 +47,7 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
   };
   return <section className="formBlock" aria-label="Edit knowledge record">
     <h3>Edit {record.title}</h3>
-    {record.freshnessReview && <div className="decisionResult notice" role="status"><strong>This answer is withheld pending source review.</strong><p>The linked page {record.freshnessReview.reason === 'source-unavailable' ? 'could not be reached' : 'changed after this answer was published'}. Open the source, check that it still supports this exact answer, then confirm the source review before publishing.</p></div>}
+    {record.freshnessReview && <div className="decisionResult notice" role="status"><strong>This answer is withheld pending source review.</strong><p>The linked page {record.freshnessReview.reason === 'source-unavailable' ? 'could not be reached' : 'changed after this answer was published'}. Compare the current page with this record before publishing. If the source is unavailable, use a current official source that directly supports the claim.</p>{reviewSourceUrl && <p><a href={reviewSourceUrl} target="_blank" rel="noreferrer">Open the linked official source</a></p>}<label><input type="checkbox" checked={sourceReviewed} onChange={event => setSourceReviewed(event.target.checked)} /> I checked the current official source and confirm it supports this exact answer.</label>{form.status === 'Published' && !sourceReviewed && <p>Select this confirmation to publish the withheld record.</p>}</div>}
     <form onSubmit={save} aria-busy={busy}>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, display: 'contents' }}>
         <label>Title<input required maxLength={180} value={form.title} onChange={(event) => update('title', event.target.value)} /></label>
@@ -54,7 +59,7 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
         <details className="wide"><summary>Source dates and document references</summary>
           <p>Leave unknown details blank. Academic year identifies scope; validity dates explicitly control when this record can answer questions.</p>
           {[['academicYear', 'Source academic year'], ['documentVersion', 'Document version'], ['section', 'Source section'], ['capturedAt', 'Source captured date'], ['pageStart', 'Start page'], ['pageEnd', 'End page'], ['validFrom', 'Valid from (UTC date)'], ['validUntil', 'Valid until (UTC date)'], ['supersededBy', 'Superseded by knowledge ID']].map(([key, label]) => <label key={key}>{label}<input type={key.startsWith('page') ? 'number' : key === 'capturedAt' || key.startsWith('valid') ? 'date' : 'text'} min={key.startsWith('page') ? '1' : undefined} maxLength={180} value={form.provenance[key] ?? ''} onChange={event => update('provenance', { ...form.provenance, [key]: key.startsWith('page') ? event.target.value === '' ? null : Number(event.target.value) : event.target.value })} /></label>)}
-          <label><input type="checkbox" checked={sourceReviewed} onChange={event => setSourceReviewed(event.target.checked)} /> I verified this content and its document references against the source.</label>
+          {!record.freshnessReview && <label><input type="checkbox" checked={sourceReviewed} onChange={event => setSourceReviewed(event.target.checked)} /> I verified this content and its document references against the source.</label>}
         </details>
         {!record.facts && <label>Record format<select value={form.facts?.kind || ''} onChange={(event) => update('facts', event.target.value ? newFacts(event.target.value) : null)}><option value="">Reviewed text</option><option value="academicFees">Academic fee table</option><option value="accommodationFees">Hostel and mess fee table</option><option value="programIntake">Programme intake table</option></select></label>}
         {!form.facts ? <label className="wide">Verified text<textarea required rows={6} maxLength={100000} value={form.text} onChange={(event) => update('text', event.target.value)} /></label> : <>
@@ -75,7 +80,7 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
           <label>Reviewed Hindi translation<textarea rows={4} maxLength={100000} value={translations.hi} onChange={(event) => { setTranslations((current) => ({ ...current, hi: event.target.value })); setTranslationsReviewed(false); }} /></label>
           <label><input type="checkbox" checked={translationsReviewed} onChange={(event) => setTranslationsReviewed(event.target.checked)} /> I reviewed these translations against the current source text.</label>
         </div>}
-        <button type="submit">{busy ? 'Saving…' : 'Save record'}</button><button type="button" onClick={onCancel}>Cancel</button>
+        <button type="submit" disabled={Boolean(record.freshnessReview && form.status === 'Published' && !sourceReviewed)}>{busy ? 'Saving…' : record.freshnessReview && form.status === 'Published' ? 'Confirm review and publish' : 'Save record'}</button><button type="button" onClick={onCancel}>Cancel</button>
       </fieldset>
       {error && <p className="wide" role="alert">{error} Your edits remain in this form. For a revision conflict, copy them before refreshing to load the latest record.</p>}
     </form>

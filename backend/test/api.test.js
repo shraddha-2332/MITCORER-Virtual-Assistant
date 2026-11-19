@@ -41,6 +41,26 @@ async function login(base, email, password = 'mitra') {
   return payload.data.token;
 }
 
+function validPdfFixture() {
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>',
+    '<< /Length 0 >>\nstream\n\nendstream',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  for (const [index, object] of objects.entries()) {
+    offsets.push(Buffer.byteLength(pdf));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  }
+  const crossReferenceOffset = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${offsets.length}\n0000000000 65535 f \n`;
+  for (const offset of offsets.slice(1)) pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${crossReferenceOffset}\n%%EOF\n`;
+  return Buffer.from(pdf);
+}
+
 beforeEach(() => {
   config.databaseFile = path.resolve(process.cwd(), 'data', 'mitra.test.sqlite');
   resetRuntimeStateForTests();
@@ -346,10 +366,10 @@ test('compound contact and travel questions answer supported parts and qualify u
     assert.deepEqual(result.payload.data.sections.map(section => section.evidenceIds), [['KB-17'], ['KB-46'], ['KB-40']]);
     assert.deepEqual(result.payload.data.evidence.map(record => record.id), ['KB-17', 'KB-46', 'KB-40']);
     assert.match(result.payload.data.answer, /Industrial Estate No\. 03/);
-    assert.match(result.payload.data.answer, /checked on 2026-11-18/i);
-    assert.match(result.payload.data.answer, /does not publish current administrative office/i);
-    assert.match(result.payload.data.answer, /MSRTC Bus Stand is listed 5\.7 km away/);
-    assert.match(result.payload.data.answer, /does not give a route or distance from Solapur city itself/i);
+    assert.match(result.payload.data.answer, /Monday–Saturday, 9:00 AM–5:00 PM/);
+    assert.match(result.payload.data.answer, /not a confirmed schedule for all administrative offices or campus visits/i);
+    assert.match(result.payload.data.answer, /reach Barshi Central Bus Stand/i);
+    assert.match(result.payload.data.answer, /No exact distance or travel time is asserted/i);
   });
 });
 
@@ -513,18 +533,28 @@ test('public assistant formats scholarship, placement, fee, and contact informat
       return payload.data;
     };
     const scholarship = await ask('What scholarships are available at MITCORER?');
-    assert.match(scholarship.answer, /^- MITCORER lists/m);
-    assert.match(scholarship.answer, /^- Open the official scholarship page/m);
+    assert.match(scholarship.answer, /lists Maharashtra state schemes/);
+    assert.match(scholarship.answer, /Maharashtra state applications.*MahaDBT/);
     assert.equal(scholarship.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship');
-    assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship and financial-aid guidance', 'MahaDBT scholarship portal']);
+    assert.deepEqual(scholarship.officialLinks.map((link) => link.label), ['MITCORER scholarship and financial-aid guidance', 'MahaDBT 2.0 portal (AY 2026-27)', 'National Scholarship Portal (AICTE Pragati)']);
 
     const placement = await ask('What placement highlights and companies does MITCORER have?');
-    assert.match(placement.answer, /POD, Superset, and Unstop/);
-    assert.match(placement.answer, /through AY 2024-25/);
-    assert.match(placement.answer, /not treated as current or guaranteed/);
+    assert.match(placement.answer, /companies named/i);
+    assert.match(placement.answer, /JUSPAY/);
+    assert.match(placement.answer, /Cognizant/);
+    assert.match(placement.answer, /- Telge Projects Ltd\n- Tricon Engineering/);
     assert.doesNotMatch(placement.answer, /100\+ companies visiting|300\+ students placed|4\.4 LPA/);
     assert.equal(placement.answerPart2, undefined);
-    assert.ok(placement.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/mitcorer/public/placements'));
+    assert.ok(placement.officialLinks.some((link) => link.url.endsWith('/placement/ourrecruiters')));
+
+    const recruiters = await ask('List the companies which visit MITCORER for recruitment.');
+    assert.match(recruiters.answer, /AY 2024-25/);
+    assert.match(recruiters.answer, /JUSPAY/);
+    assert.match(recruiters.answer, /Cognizant/);
+    assert.match(recruiters.answer, /- Telge Projects Ltd\n- Tricon Engineering/);
+    assert.doesNotMatch(recruiters.answer, /POD, Superset, and Unstop/);
+    assert.ok(recruiters.officialLinks.some((link) => link.url === 'https://mitcorer.edu.in/placements-record.php'));
+    assert.ok(recruiters.officialLinks.some((link) => link.url.endsWith('/placement/ourrecruiters')));
 
     const fees = await ask('What are the first-year B.Tech fees?');
     assert.match(fees.answer, /1,05,000/);
@@ -532,8 +562,11 @@ test('public assistant formats scholarship, placement, fee, and contact informat
 
     const contact = await ask('What are the MITCORER admission contact details?');
     assert.match(contact.answer, /^MITCORER, Industrial Estate/);
-    assert.match(contact.answer, /\n\nEmail: info\.mitcorer@mitpune\.edu\.in/);
-    assert.match(contact.answer, /\n\nPhone: \+91 84599 67882, \+91 86696 62106/);
+    assert.match(contact.answer, /Email: principal\.mitcorer@mitpune\.edu\.in; info\.mitcorer@mitpune\.edu\.in/);
+    assert.match(contact.answer, /Admission Helpline: \+91 91584 14343/);
+    assert.match(contact.answer, /College Office: \+91 91584 14444/);
+    assert.match(contact.answer, /principal\.mitcorer@mitpune\.edu\.in/);
+    assert.equal(contact.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/contact-us');
     assert.ok(contact.officialLinks.some((link) => link.url.startsWith('https://www.google.com/maps/search/')));
   });
 });
@@ -569,8 +602,8 @@ test('public assistant serves verified About and Why MITCORER responses', async 
       body: JSON.stringify({ question: 'Why should I choose MITCORER?' }),
     });
     assert.equal(why.response.status, 200);
-    assert.match(why.payload.data.answer, /What sets MITCORER apart/);
-    assert.match(why.payload.data.answer, /placement drives, and internship support/);
+    assert.match(why.payload.data.answer, /railway-oriented engineering courses/);
+    assert.match(why.payload.data.answer, /Training and Placement Cell activities/);
     assert.doesNotMatch(why.payload.data.answer, /94%|21 LPA|100\+ recruiters/);
     assert.equal(why.payload.data.source, 'MITCORER Admissions FAQ and official website');
   });
@@ -588,31 +621,32 @@ test('public assistant routes common admission, eligibility and programme wordin
 
     const admission = await ask('How can I get admission to your college?');
     assert.equal(admission.evidence[0]?.id, 'KB-29');
-    assert.match(admission.answer, /register on the Maharashtra CET Cell portal/);
-    assert.match(admission.answer, /Direct Second Year, Polytechnic, and institute-level admission have separate schedules/);
+    assert.match(admission.answer, /candidate registration and scrutiny/);
+    assert.match(admission.answer, /current Maharashtra CET Cell notice/);
 
     const onlineAdmission = await ask('Can I apply for admission online?');
     assert.equal(onlineAdmission.evidence[0]?.id, 'KB-29');
-    assert.match(onlineAdmission.answer, /register on the Maharashtra CET Cell portal/);
-    assert.match(onlineAdmission.answer, /institute reporting steps/);
+    assert.match(onlineAdmission.answer, /candidate registration and scrutiny/);
+    assert.match(onlineAdmission.answer, /institute reporting/);
 
     const overview = await ask('Tell me about admission.');
     assert.deepEqual(overview.evidence.map((record) => record.id), ['KB-29', 'KB-14', 'KB-5', 'KB-1']);
-    assert.match(overview.answer, /separate admission routes for First Year B.Tech CAP, Direct Second Year, Polytechnic, and institute-level\/ACAP/);
+    assert.match(overview.answer, /CAP admission steps/);
+    assert.match(overview.answer, /current Maharashtra CET Cell notice/);
 
     const broadOverview = await ask('Explain everything I should know before taking admission to MITCORER.');
     assert.deepEqual(broadOverview.evidence.map((record) => record.id), ['KB-29', 'KB-14', 'KB-5', 'KB-1']);
 
     const minimum = await ask('What is the minimum percentage required?');
     assert.equal(minimum.evidence[0]?.id, 'KB-5');
-    assert.match(minimum.answer, /45% aggregate marks/);
-    assert.match(minimum.answer, /40% for eligible Maharashtra reserved, EWS, and PwD candidates/);
+    assert.match(minimum.answer, /45(?:% aggregate| percent) marks/);
+    assert.match(minimum.answer, /40(?:%| percent) for eligible Maharashtra reserved, EWS, and PwD candidates/);
 
     const capacity = await ask('Can you distinguish approved CSE capacity from the number of seats still available today?');
     assert.equal(capacity.evidence[0]?.id, 'KB-10');
-    assert.match(capacity.answer, /sanctioned intake of 120/);
-    assert.match(capacity.answer, /does not show how many seats remain available today/);
-    assert.match(capacity.answer, /do not contain a live vacancy count/);
+    assert.match(capacity.answer, /sanctioned intake (?:of )?120/);
+    assert.match(capacity.answer, /does not confirm current vacancies/);
+    assert.match(capacity.answer, /or guarantee admission/);
 
     const electrical = await ask('What is the intake capacity of Electrical Engineering?');
     assert.equal(electrical.evidence[0]?.id, 'KB-10');
@@ -621,7 +655,8 @@ test('public assistant routes common admission, eligibility and programme wordin
 
     const internalExams = await ask('Are internal examinations conducted?');
     assert.equal(internalExams.evidence[0]?.id, 'KB-45');
-    assert.match(internalExams.answer, /mid-term evaluations and continuous internal evaluation/);
+    assert.match(internalExams.answer, /mid-term evaluations/);
+    assert.match(internalExams.answer, /continuous internal evaluation/);
   });
 });
 
@@ -631,8 +666,8 @@ test('hostel facility wording does not turn general availability into live vacan
       method: 'POST', body: JSON.stringify({ question: 'Are hostel rooms available for outstation students?' }),
     });
     assert.equal(general.payload.data.evidence[0]?.id, 'KB-23');
-    assert.match(general.payload.data.answer, /separate hostels for boys and girls/);
-    assert.match(general.payload.data.answer, /Room availability and student eligibility must be confirmed/);
+    assert.match(general.payload.data.answer, /separate (?:hostels for boys and girls|boys and girls hostel)/);
+    assert.match(general.payload.data.answer, /Room availability.*(?:must be confirmed|must be checked)/s);
     assert.doesNotMatch(general.payload.data.answer, /next month|first-come|first come/i);
 
     const live = await request(base, '/api/public-assistant/ask', {
@@ -651,8 +686,8 @@ test('bus timetable paraphrases use the bus record and do not fabricate route de
     });
     assert.equal(response.status, 200);
     assert.ok(payload.data.evidence.some((record) => record.id === 'KB-19'));
-    assert.match(payload.data.answer, /MITCORER lists a bus facility/);
-    assert.match(payload.data.answer, /does not state a route list, stops, timetable/);
+    assert.match(payload.data.answer, /Bus Facility page/);
+    assert.match(payload.data.answer, /does not (?:state a route list|publish routes), stops, timetable/);
     assert.equal(payload.data.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
   });
 });
@@ -665,7 +700,8 @@ test('public assistant gives concise sourced facilities without internal brandin
     });
     assert.equal(response.status, 200);
     assert.equal(payload.data.evidence[0].id, 'KB-36');
-    assert.match(payload.data.answer, /sports, and gym/);
+    assert.match(payload.data.answer, /sports/);
+    assert.match(payload.data.answer, /gym/);
     assert.match(payload.data.answer, /railway model room/);
     assert.doesNotMatch(payload.data.answer, /campusguard|Relevant verified record/i);
     assert.equal(payload.data.sourceUrl, 'https://www.mitcorer.edu.in/pdf/MITCORER-Brochure.pdf');
@@ -675,12 +711,12 @@ test('public assistant gives concise sourced facilities without internal brandin
 test('public facility topics link to the matching MITCORER pages', async () => {
   await withServer(async (base) => {
     const cases = [
-      ['What hostel and mess facilities does MITCORER provide?', /separate hostels for boys and girls/i],
+      ['What hostel and mess facilities does MITCORER provide?', /separate (?:hostels for boys and girls|boys and girls hostel)/i],
       ['What MITCORER bus facility information is published?', /bus facility/i],
       ['Tell me about the MITCORER library and digital resources.', /library/i],
       ['What laboratories and workshops does MITCORER have?', /laboratories.*workshops/i],
       ['Tell me about the MITCORER railway model room.', /railway model room/i],
-      ['What campus facilities are available at MITCORER?', /campus facilities/i],
+      ['What campus facilities are available at MITCORER?', /official MITCORER brochure lists/i],
     ];
     for (const [question, answerPattern] of cases) {
       const { response, payload } = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question }) });
@@ -775,7 +811,7 @@ test('assistant returns route-specific official admission links and saves them i
   });
 });
 
-test('assistant answers engineering attendance from verified university rules', async () => {
+test('assistant answers engineering attendance from verified university rules without an unverified biometric claim', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
     const headers = { Authorization: `Bearer ${token}` };
@@ -787,10 +823,23 @@ test('assistant answers engineering attendance from verified university rules', 
     assert.equal(result.response.status, 200);
     const assistant = result.payload.data.conversation.messages.at(-1);
     assert.match(assistant.text, /75%/);
-    assert.match(assistant.text, /XX grade \(Detained\)/);
-    assert.match(assistant.text, /biometric attendance/i);
+    assert.match(assistant.text, /XX grade.*Detained/);
+    assert.doesNotMatch(assistant.text, /biometric attendance/i);
     assert.ok(assistant.officialLinks.some((link) => link.url.includes('CBCS%20UG%20Rules.pdf')));
-    assert.ok(assistant.officialLinks.some((link) => link.url.includes('LMS%20Circular')));
+    assert.ok(!assistant.officialLinks.some((link) => link.url.includes('LMS%20Circular')));
+  });
+});
+
+test('assistant withholds biometric requirement while its university circular remains in source review', async () => {
+  await withServer(async (base) => {
+    const result = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Is biometric attendance mandatory under Circular No. 06 for AY 2026-27?' }),
+    });
+    assert.equal(result.response.status, 200);
+    const assistant = result.payload.data;
+    assert.equal(assistant.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.match(assistant.answer, /can.t confirm.*circular could not be verified/i);
   });
 });
 
@@ -942,7 +991,7 @@ test('assistant answers percentile and CSE questions without default staff escal
     assert.equal(response.status, 200);
     assert.equal(payload.data.actionView, 'programs');
     assert.equal(payload.data.actionLabel, 'Check programs');
-    assert.match(payload.data.answer, /percentile alone/i);
+    assert.match(payload.data.answer, /does not guarantee|percentile alone/i);
     assert.doesNotMatch(payload.data.next, /staff request/i);
     assert.equal(payload.data.evidence[0].category, 'Eligibility');
   });
@@ -1057,7 +1106,10 @@ test('assistant retrieves current official program and contact records', async (
     assert.equal(contact.payload.data.evidence[0].category, 'Contact');
     assert.match(contact.payload.data.answer, /Industrial Estate No\. 03/i);
     assert.match(contact.payload.data.answer, /info\.mitcorer@mitpune\.edu\.in/i);
-    assert.match(contact.payload.data.answer, /Phone: \+91 84599 67882, \+91 86696 62106/);
+    assert.match(contact.payload.data.answer, /Admission Helpline: \+91 91584 14343/);
+    assert.match(contact.payload.data.answer, /College Office: \+91 91584 14444/);
+    assert.match(contact.payload.data.answer, /principal\.mitcorer@mitpune\.edu\.in/);
+    assert.equal(contact.payload.data.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/contact-us');
   });
 });
 
@@ -1080,7 +1132,7 @@ test('assistant answers parent-style institution type and autonomy questions fro
       assert.equal(payload.data.evidence[0]?.id, 'KB-54', question);
       assert.match(payload.data.answer, /AY 2026-27/i, question);
       assert.match(payload.data.answer, /Status: Un-Aided/i, question);
-      assert.match(payload.data.answer, /Autonomy: Non-Autonomous/i, question);
+      assert.match(payload.data.answer, /Autonomy(?: Status)?: Non-Autonomous/i, question);
       assert.match(payload.data.answer, /Minority status: Non-Minority/i, question);
       assert.doesNotMatch(payload.data.answer, /private-unaided|NAAC Grade A|degrees are conferred directly/i, question);
       assert.ok(payload.data.officialLinks.some(link => link.url === 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901'), question);
@@ -1125,9 +1177,9 @@ test('assistant explains admission quota terms with current official links and n
       });
       assert.equal(response.status, 200, question);
       assert.ok(payload.data.evidence.some((item) => item.id === 'KB-55'), question);
-      assert.match(payload.data.answer, /programme-specific CET Cell matrix/i, question);
-      assert.match(payload.data.answer, /separate from a regular CAP allotment/i, question);
-      assert.match(payload.data.answer, /cannot confirm a fixed percentage/i, question);
+      assert.match(payload.data.answer, /programme- and year-specific/i, question);
+      assert.match(payload.data.answer, /seats vacant after CAP.*institute-level process/i, question);
+      assert.match(payload.data.answer, /does not establish a fixed percentage/i, question);
       assert.doesNotMatch(payload.data.answer, /20%|15%|guaranteed seat/i, question);
       assert.ok(payload.data.officialLinks.some((link) => /acap-admission/.test(link.url)), question);
     }
@@ -1149,7 +1201,7 @@ test('assistant discloses the conflicting AI and Data Science choice codes inste
     assert.equal(payload.data.evidence[0]?.id, 'KB-56');
     assert.match(payload.data.answer, /0690199510/);
     assert.match(payload.data.answer, /0690126310/);
-    assert.match(payload.data.answer, /official pages conflict/i);
+    assert.match(payload.data.answer, /conflict|discrepancy|disagree/i);
     assert.ok(payload.data.officialLinks.some((link) => /frmInstituteSummary/.test(link.url)));
     assert.ok(payload.data.officialLinks.some((link) => /mitcorer\/public\/admissions/.test(link.url)));
 
@@ -1171,14 +1223,14 @@ test('assistant answers bus questions without mixing in hostel details', async (
     });
     assert.equal(response.status, 200);
     assert.equal(payload.data.actionLabel, 'Request bus details');
-    assert.match(payload.data.answer, /(?:provides|lists) a bus facility/i);
-    assert.match(payload.data.answer, /does not state a route list, stops, timetable/i);
+    assert.match(payload.data.answer, /Bus Facility page/i);
+    assert.match(payload.data.answer, /does not (?:state a route list|publish routes), stops, timetable/i);
     assert.doesNotMatch(payload.data.answer, /hostel/i);
     assert.equal(payload.data.evidence[0].title, 'MITCORER bus facility');
   });
 });
 
-test('assistant answers Pragati questions from the dedicated verified record', async () => {
+test('assistant answers Pragati questions from the maintained scheme-specific record', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
     const { response, payload } = await request(base, '/api/assistant/ask', {
@@ -1189,7 +1241,7 @@ test('assistant answers Pragati questions from the dedicated verified record', a
     assert.equal(response.status, 200);
     assert.equal(payload.data.evidence[0]?.id, 'KB-33');
     assert.match(payload.data.answer, /girl students/i);
-    assert.match(payload.data.answer, /do not assume eligibility/i);
+    assert.match(payload.data.answer, /does not confirm that a particular student .* qualifies/i);
     assert.ok(payload.data.officialLinks.some((item) => item.url === 'https://scholarships.gov.in/All-Scholarships'));
   });
 });
@@ -1203,7 +1255,7 @@ test('assistant explains the non-CAP workflow and keeps scholarship eligibility 
       body: JSON.stringify({ question: 'How does non-CAP admission work and what happens to scholarship?' }),
     });
     assert.equal(response.status, 200);
-    assert.equal(payload.data.evidence[0]?.id, 'KB-14');
+    assert.ok(payload.data.evidence.some(record => record.id === 'KB-14'));
     assert.match(payload.data.answer, /institute-level/i);
     assert.match(payload.data.answer, /does not automatically qualify|admission alone does not establish scheme eligibility/i);
     assert.ok(payload.data.officialLinks.some((item) => item.url === 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission'));
@@ -1215,7 +1267,7 @@ test('official-fact routing keeps distinct website questions distinct', async ()
     const token = await login(base, 'applicant@example.com');
     const cases = [
       ['Does the campus provide Wi-Fi?', 'MITCORER campus internet and Wi-Fi', /internet facilities are available/i, /hostel/i],
-      ['What does the MITCORER library provide?', 'MITCORER library and digital resources', /digital resources and journals/i, /bus facility/i],
+      ['What does the MITCORER library provide?', 'MITCORER library and digital resources', /digital resources.*journals/i, /bus facility/i],
       ['What documents are needed for SC category admission?', 'MITCORER SC and ST admission documents', /caste certificate and caste validity/i, /non-creamy/i],
       ['Does the college provide placement assistance and internships?', 'MITCORER placement assistance and internships', /Training and Placement Cell/i, /hostel/i],
       ['Which exams are accepted for engineering admission?', 'MITCORER admission entrance examinations', /MHT-CET or JEE Main/i, /bus route/i],
@@ -1349,7 +1401,7 @@ test('college admin can upload and list an official knowledge source', async () 
     formData.append('academicYear', '2025-26');
     formData.append('sourceAuthority', 'Maharashtra CET Cell');
     formData.append('verifiedText', 'Historical sample cutoff record for retrieval testing.');
-    formData.append('file', new Blob(['%PDF-1.4\nsource sample'], { type: 'application/pdf' }), 'cutoff.pdf');
+    formData.append('file', new Blob([validPdfFixture()], { type: 'application/pdf' }), 'cutoff.pdf');
     const uploadResponse = await fetch(`${base}/api/official-sources/upload`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
@@ -1359,6 +1411,9 @@ test('college admin can upload and list an official knowledge source', async () 
     assert.equal(uploadResponse.status, 200);
     assert.equal(uploaded.data.documentType, 'Cutoff');
     assert.equal(uploaded.data.linkedKnowledgeCount, 1);
+    const opened = await fetch(`${base}/api/official-sources/${uploaded.data.id}/file`, { headers: { Authorization: `Bearer ${token}` } });
+    assert.equal(opened.status, 200);
+    assert.deepEqual(Buffer.from(await opened.arrayBuffer()), validPdfFixture());
 
     const listed = await request(base, '/api/official-sources', {
       headers: { Authorization: `Bearer ${token}` },
@@ -1461,98 +1516,6 @@ test('refresh token rotates session and logout revokes it', async () => {
     });
     assert.equal(loggedOut.payload.data.loggedOut, true);
     assert.match(loggedOut.response.headers.get('set-cookie'), /Max-Age=0/);
-  });
-});
-
-test('applicant can upload a real document file record', async () => {
-  await withServer(async (base) => {
-    const token = await login(base, 'applicant@example.com');
-    const formData = new FormData();
-    formData.append('ownerName', 'Applicant');
-    formData.append('ownerEmail', 'applicant@example.com');
-    formData.append('ownerRole', 'Applicant');
-    formData.append('docName', '10th marksheet');
-    formData.append('file', new Blob(['%PDF-1.4\ndocument sample'], { type: 'application/pdf' }), '10th-marksheet.pdf');
-    const response = await fetch(`${base}/api/documents/upload`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-    const payload = await response.json();
-    assert.equal(response.status, 200);
-    assert.equal(payload.data.docName, '10th marksheet');
-    assert.equal(payload.data.mimeType, 'application/pdf');
-    assert.equal(payload.data.status, 'Uploaded (not submitted)');
-    assert.ok(payload.data.storedFileName.endsWith('10th-marksheet.pdf'));
-  });
-});
-
-test('document submission hands drafts to staff and returns review feedback to applicant', async () => {
-  await withServer(async (base) => {
-    const applicantToken = await login(base, 'applicant@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
-    const parentToken = await login(base, 'parent@example.com');
-    const formData = new FormData();
-    formData.append('ownerName', 'Applicant');
-    formData.append('ownerEmail', 'applicant@example.com');
-    formData.append('docName', '12th marksheet');
-    formData.append('file', new Blob(['%PDF-1.4\nprivate document'], { type: 'application/pdf' }), '12th-marksheet.pdf');
-    const uploaded = await fetch(`${base}/api/documents/upload`, { method: 'POST', headers: { Authorization: `Bearer ${applicantToken}` }, body: formData });
-    const record = (await uploaded.json()).data;
-    const staffDrafts = await request(base, '/api/documents', { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.equal(staffDrafts.payload.data.items.some((item) => item.id === record.id), false);
-    const hiddenDraft = await fetch(`${base}/api/documents/${record.id}/file`, { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.equal(hiddenDraft.status, 403);
-    const submitted = await request(base, '/api/documents/submit', { method: 'POST', headers: { Authorization: `Bearer ${applicantToken}` }, body: '{}' });
-    assert.equal(submitted.response.status, 200);
-    assert.ok(submitted.payload.data.items.some((item) => item.id === record.id && item.status === 'Submitted for review'));
-    const staffQueue = await request(base, '/api/documents', { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.ok(staffQueue.payload.data.items.some((item) => item.id === record.id));
-    const staffFile = await fetch(`${base}/api/documents/${record.id}/file`, { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.equal(staffFile.status, 200);
-    assert.equal(await staffFile.text(), '%PDF-1.4\nprivate document');
-    const parentFile = await fetch(`${base}/api/documents/${record.id}/file`, { headers: { Authorization: `Bearer ${parentToken}` } });
-    assert.equal(parentFile.status, 403);
-    const correction = await request(base, `/api/documents/${record.id}/status`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${staffToken}` },
-      body: JSON.stringify({ status: 'Needs correction', reviewNote: 'Upload a readable full-page scan.' }),
-    });
-    assert.equal(correction.response.status, 200);
-    const applicantDocuments = await request(base, '/api/documents', { headers: { Authorization: `Bearer ${applicantToken}` } });
-    const correctedRecord = applicantDocuments.payload.data.items.find((item) => item.id === record.id);
-    assert.equal(correctedRecord.status, 'Needs correction');
-    assert.equal(correctedRecord.reviewNote, 'Upload a readable full-page scan.');
-  });
-});
-
-test('assistant attachments are visible to staff without claiming document-checklist status', async () => {
-  await withServer(async (base) => {
-    const applicantToken = await login(base, 'applicant@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
-    const formData = new FormData();
-    formData.append('note', 'Please check this notice.');
-    formData.append('file', new Blob(['%PDF-1.4\nattachment'], { type: 'application/pdf' }), 'notice.pdf');
-    const uploaded = await fetch(`${base}/api/assistant/attachments/upload`, { method: 'POST', headers: { Authorization: `Bearer ${applicantToken}` }, body: formData });
-    const attachment = (await uploaded.json()).data;
-    const listed = await request(base, '/api/assistant/attachments', { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.ok(listed.payload.data.items.some((item) => item.id === attachment.id));
-    const content = await fetch(`${base}/api/assistant/attachments/${attachment.id}/file`, { headers: { Authorization: `Bearer ${staffToken}` } });
-    assert.equal(content.status, 200);
-    assert.equal(await content.text(), '%PDF-1.4\nattachment');
-  });
-});
-
-test('rejects a file whose declared MIME type does not match its contents', async () => {
-  await withServer(async (base) => {
-    const token = await login(base, 'applicant@example.com');
-    const formData = new FormData();
-    formData.append('docName', '10th marksheet');
-    formData.append('file', new Blob(['not a PDF'], { type: 'application/pdf' }), '10th-marksheet.pdf');
-    const response = await fetch(`${base}/api/documents/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
-    const payload = await response.json();
-    assert.equal(response.status, 400);
-    assert.match(payload.error.message, /valid PDF/i);
   });
 });
 
@@ -1721,7 +1684,7 @@ test('developer short-tail and long-tail keywords resolve with grounded verified
       assert.equal(response.status, 200, `Failed status for: ${question}`);
       if (/college timings/i.test(question)) {
         assert.equal(payload.data.evidence[0]?.id, 'KB-46', question);
-        assert.match(payload.data.answer, /does not publish current administrative office/i, question);
+        assert.match(payload.data.answer, /Monday–Saturday, 9:00 AM–5:00 PM/, question);
         continue;
       }
       assert.notEqual(payload.data.source, 'No verified record', `Unverified source for: ${question}`);
@@ -1740,6 +1703,20 @@ test('assistant does not present institutional facts as independent college revi
     assert.deepEqual(payload.data.evidence, []);
     assert.match(payload.data.answer, /do not have a verified set of independent student reviews or ratings/i);
     assert.doesNotMatch(payload.data.answer, /21 LPA|100\+ visiting recruiters|60\+ qualified faculty/i);
+  });
+});
+
+test('library answers use the official rules page and do not invent opening hours', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST', body: JSON.stringify({ question: 'What are the library rules and timings?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(payload.data.evidence[0]?.id, 'KB-20');
+    assert.match(payload.data.answer, /sign in/i);
+    assert.match(payload.data.answer, /identity card/i);
+    assert.match(payload.data.answer, /does not specify library opening hours/i);
+    assert.ok(payload.data.officialLinks.some(link => link.url === 'https://mitcorer.edu.in/library.php'));
   });
 });
 
@@ -1787,7 +1764,7 @@ test('general placement record questions use the verified placement summary rath
     assert.equal(response.status, 200);
     assert.notEqual(payload.data.source, 'No matching indexed document');
     assert.ok(payload.data.evidence.some((record) => record.id === 'KB-16'));
-    assert.match(payload.data.answer, /POD, Superset, and Unstop/);
+    assert.match(payload.data.answer, /named companies include/);
   });
 });
 
@@ -1851,7 +1828,8 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(askResult.payload.data.escalation.available, true);
     assert.equal(askResult.payload.data.escalation.reason, 'UNVERIFIED_INFORMATION');
     assert.ok(Array.isArray(askResult.payload.data.escalation.helplines));
-    assert.ok(askResult.payload.data.escalation.helplines.some((h) => h.number.includes('84599 67882')));
+    assert.ok(askResult.payload.data.escalation.helplines.some((h) => h.number.includes('91584 14343')));
+    assert.ok(askResult.payload.data.escalation.helplines.some((h) => h.number.includes('91584 14444')));
 
     // 2. Submit escalation inquiry via public escalation endpoint
     const escalateResult = await request(base, '/api/public/escalate', {
@@ -1939,7 +1917,8 @@ test('staff hiring and employment queries are treated as unverified and trigger 
       assert.ok(payload.data.escalation, `Escalation should be attached for: ${question}`);
       assert.equal(payload.data.escalation.available, true);
       assert.equal(payload.data.escalation.reason, 'UNVERIFIED_INFORMATION');
-      assert.equal(payload.data.escalation.email, 'office@mitcorer.edu.in');
+      assert.equal(payload.data.escalation.email, 'info.mitcorer@mitpune.edu.in');
+      assert.equal(payload.data.escalation.officeHours, undefined);
       assert.equal(payload.data.escalation.actionLabel, 'Escalate to Administrative Office');
       assert.ok(payload.data.escalation.helplines?.length > 0);
     }

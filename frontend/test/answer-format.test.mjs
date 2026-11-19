@@ -66,6 +66,19 @@ test('preserves decimal values, abbreviations and qualification text', () => {
   assert.equal(blocks[0].text, text.trim());
 });
 test('renders explicit lists and preserves short multilingual answers', () => {
-  assert.deepEqual(formatAnswer('1. Scorecard\n2. Marksheet'), [{ type: 'list', items: ['Scorecard', 'Marksheet'] }]);
+  assert.deepEqual(formatAnswer('1. Scorecard\n2. Marksheet'), [{ type: 'list', ordered: true, start: 1, items: ['Scorecard', 'Marksheet'] }]);
   assert.deepEqual(formatAnswer('प्रवेशाची माहिती येथे उपलब्ध आहे.'), [{ type: 'paragraph', text: 'प्रवेशाची माहिती येथे उपलब्ध आहे.' }]);
+});
+
+test('bounded Markdown headings and comparisons preserve values without HTML interpretation', () => {
+  const blocks = formatAnswer('## Fees\n\n| Route | Amount |\n| --- | --- |\n| FY | 1,05,000 |\n| DSE | 98,000 |');
+  assert.equal(blocks[0].type, 'heading'); assert.equal(blocks[1].type, 'table');
+  assert.deepEqual(blocks[1].rows, [['FY', '1,05,000'], ['DSE', '98,000']]);
+  assert.equal(formatAnswer('<script>alert(1)</script>')[0].text, '<script>alert(1)</script>');
+});
+
+test('introductory text does not flatten a following procedure into a paragraph', () => {
+  const blocks = formatAnswer('Follow these steps:\n1. Register\n2. Verify documents');
+  assert.equal(blocks[0].type, 'paragraph'); assert.equal(blocks[1].ordered, true);
+  assert.deepEqual(blocks[1].items, ['Register', 'Verify documents']);
 });

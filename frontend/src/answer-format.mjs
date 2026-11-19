@@ -1,6 +1,8 @@
 // Recognise complete maintained tables; unfamiliar prose remains untouched.
 export function formatPublicAnswer(text, next = '') {
   const body = String(text || '').trim();
+  const documents = body.match(/^Admission reporting commonly requires ([\s\S]+)\.$/);
+  if (documents) return [{ type: 'paragraph', text: 'Common admission reporting documents:' }, { type: 'list', items: documents[1].split(/,\s*(?:and\s+)?/).map(item => item.trim()) }];
   const paragraphs = body.split(/\n\s*\n/).filter(Boolean);
   if (paragraphs.length > 1) return paragraphs.flatMap(paragraph => formatPublicAnswer(paragraph, next));
   const lines = body.split('\n').map(line => line.trim()).filter(Boolean);
@@ -60,10 +62,28 @@ export function formatAnswer(text, next = '') {
     body = body.slice(0, -(`Next: ${followUp}`.length)).trim();
   }
   const paragraphs = body.split(/\n\s*\n/).filter(Boolean);
-  return paragraphs.map((paragraph) => {
+  return paragraphs.flatMap((paragraph) => {
     const lines = paragraph.split('\n').map((line) => line.trim()).filter(Boolean);
+    const cells = line => line.replace(/^\||\|$/g, '').split('|').map(cell => cell.trim());
+    if (lines.length >= 3 && lines[0].includes('|') && cells(lines[1]).every(cell => /^:?-{3,}:?$/.test(cell))) {
+      const headers = cells(lines[0]);
+      const rows = lines.slice(2).map(cells);
+      if (headers.length <= 8 && rows.length <= 30 && rows.every(row => row.length === headers.length)) return [{ type: 'table', headers, rows }];
+    }
+    if (lines.some(line => /^#{1,6}\s+/.test(line))) return lines.flatMap(line => /^#{1,6}\s+/.test(line)
+      ? [{ type: 'heading', text: line.replace(/^#{1,6}\s+/, '') }] : formatAnswer(line));
+    const isList = line => /^(?:[-*\u2022]|\d+[.)])\s+/.test(line);
+    if (lines.some(isList) && !lines.every(isList)) {
+      const groups = [];
+      for (const line of lines) {
+        const last = groups.at(-1);
+        if (last && isList(last[0]) === isList(line)) last.push(line); else groups.push([line]);
+      }
+      return groups.flatMap(group => formatAnswer(group.join('\n')));
+    }
     if (lines.every((line) => /^(?:[-*\u2022]|\d+[.)])\s+/.test(line))) {
-      return { type: 'list', items: lines.map((line) => line.replace(/^(?:[-*\u2022]|\d+[.)])\s+/, '')) };
+      const ordered = lines.every(line => /^\d+[.)]\s+/.test(line));
+      return { type: 'list', ...(ordered ? { ordered: true, start: Number(lines[0].match(/^\d+/)[0]) } : {}), items: lines.map((line) => line.replace(/^(?:[-*\u2022]|\d+[.)])\s+/, '')) };
     }
     return { type: 'paragraph', text: paragraph };
   });

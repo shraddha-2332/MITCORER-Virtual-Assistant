@@ -2,7 +2,7 @@ import { normalizeLocalTerms } from './language.js';
 import { extractAcademicYears, branchPatterns, servicePatterns, fieldValues } from './query-scope.js';
 
 // A bounded domain parser, not general language understanding or an LLM classifier.
-const typoVocabulary = ['admission', 'scholarship', 'library', 'hostel', 'document', 'placement', 'transport', 'programme', 'program', 'eligible', 'eligibility', 'intake', 'attendance', 'engineering', 'polytechnic', 'mechanical'];
+const typoVocabulary = ['admission', 'scholarship', 'library', 'hostel', 'document', 'placement', 'transport', 'programme', 'program', 'eligible', 'eligibility', 'intake', 'attendance', 'engineering', 'polytechnic', 'mechanical', 'computer', 'charge'];
 const plural = { fees: 'fee', prices: 'price', charges: 'charge', costs: 'cost', payments: 'payment', installments: 'installment', instalments: 'installment', semesters: 'semester', girls: 'girl', females: 'girl', women: 'girl', boys: 'boy', males: 'boy', men: 'boy', documents: 'document', certificates: 'certificate', scholarships: 'scholarship', placements: 'placement', libraries: 'library', programmes: 'programme', programs: 'program', courses: 'course', branches: 'branch', hostels: 'hostel', journals: 'journal' };
 function oneEdit(left, right) {
   if (Math.abs(left.length - right.length) > 1) return false;
@@ -108,6 +108,14 @@ export function normalizeQuery(input) {
     return candidates.length === 1 ? candidates[0] : word;
   });
   const phrases = [
+    [/\bcomp(?:utr)?\s+engg\b|\bcomputer\s+engg\b/g, 'computer engineering'],
+    [/\bfirst yer\b/g, 'first year'],
+    [/\bchargs\b/g, 'charge'],
+    [/\bfinancial (?:assistance|aid)\b/g, 'scholarship'],
+    [/\b(?:sanctioned|approved)\s+seat\b/g, 'sanctioned intake'],
+    [/\b(?:computer|cse)\s+branch\s+capacity\b/g, 'cse intake'],
+    [/\bcapacity\b/g, 'intake'],
+    [/\b(?:kiti|kitni|kitne)\s+seat\b/g, 'intake'],
     [/\b(?:tuition bill|teaching fee|tuition|price|pricing|payable)\b/g, 'academic fee'],
     [/\b(?:hosstl|hostal|hustel)\b/g, 'hostel'],
     [/\b(?:admision|addmission)\b/g, 'admission'],
@@ -232,6 +240,6 @@ export function splitQueryClauses(query) {
   ];
   let protectedText = query;
   names.forEach((name, index) => { protectedText = protectedText.replaceAll(name, `__branch_${index}__`); });
-  return protectedText.split(/\s+(?:and|also|plus|as well as)\s+|[?;।]+\s*|[.!]\s+(?=(?:what|which|how|tell|show|list|does|is|can)\b)|,\s*(?=(?:what|which|how|tell|show|list|does|is|can)\b)/i)
+  return protectedText.split(/\s+(?:and|also|plus|as well as)\s+|[?;।]+\s*|[.!]\s+(?=(?:what|which|how|tell|show|list|does|is|can)\b)|,\s*(?=(?:what|which|how|tell|show|list|does|is|can|intake|scholarship|hostel|mess|fee|placement)\b)/i)
     .map(part => { names.forEach((name, index) => { part = part.replaceAll(`__branch_${index}__`, name); }); return part.trim(); }).filter(Boolean);
 }

@@ -7,8 +7,9 @@ import { DatabaseSync } from 'node:sqlite';
 import { config } from '../src/config.js';
 import { createSeedData } from '../src/seed.js';
 import { closeDb, loadDb } from '../src/store.js';
+import { answerAdmissionQuestion } from '../src/server.js';
 
-test('office-hours migration publishes the dated verified finding after withdrawing the stale schedule', () => {
+test('office-hours migration replaces the stale absence claim with the supplied admissions-desk schedule', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-office-hours-migration-'));
   const previousDatabaseFile = config.databaseFile;
   const databaseFile = path.join(directory, 'migration.sqlite');
@@ -21,11 +22,18 @@ test('office-hours migration publishes the dated verified finding after withdraw
       'seed-course-code-discrepancy-kb56-v1', 'seed-placement-committee-kb53', 'refresh-placement-committee-kb53-v2',
       'refresh-placement-current-activities-kb16-kb35-v1', 'map-seeded-records-to-current-official-routes-v1',
       'normalize-dse-choice-codes-v1', 'quarantine-unverified-office-hours-kb46-v1',
+      'publish-dated-office-hours-observation-kb46-v2',
     ];
     const record = persisted.knowledge.find((item) => item.id === 'KB-46');
     record.text = 'Hours: 9:30 AM to 5:30 PM';
     record.revision = 4;
     record.status = 'Published';
+    const library = persisted.knowledge.find((item) => item.id === 'KB-20');
+    library.text = 'The public FAQ does not publish borrowing rules, timings, or access eligibility.';
+    const contact = persisted.knowledge.find((item) => item.id === 'KB-17');
+    contact.text = 'MITCORER, Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra 413401.\n\nEmail: info.mitcorer@mitpune.edu.in.\n\nPhone: +91 84599 67882, +91 86696 62106.\n\nWebsite: https://mitcorer.edu.in/.';
+    const transit = persisted.knowledge.find((item) => item.id === 'KB-40');
+    transit.text = `MITCORER campus location and locally published transit directions:\n\n- Campus address: Industrial Estate No. 03, Barshi, Dist. Solapur, Maharashtra - 413401.\n- Barshi Town railway station: 4.7 km from campus via Bhosale Chowk, Cancer Chowk, and Industrial Road.\n- MSRTC Bus Stand Barshi: 5.7 km from campus; Route-I is via Cancer Chowk and Industrial Road, and Route-II is via Bypass, Agalgaon Chowk, Shukla Automobile, and Industrial Road.\n- The contact page does not publish the distance or route from Solapur city, or a college bus route from Solapur. Confirm current travel details with the college.`;
     const sqlite = new DatabaseSync(databaseFile);
     sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
     sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
@@ -35,14 +43,123 @@ test('office-hours migration publishes the dated verified finding after withdraw
     const current = migrated.knowledge.find((item) => item.id === 'KB-46');
     assert.equal(current.status, 'Published');
     assert.equal(current.revision, 5);
-    assert.match(current.text, /checked on 2026-11-18/i);
-    assert.match(current.text, /does not publish current administrative office or admission enquiry desk hours/i);
+    assert.match(current.text, /Monday–Saturday, 9:00 AM–5:00 PM/);
+    assert.match(current.text, /Admission Helpline as \+91 91584 14343 and College Office as \+91 91584 14444/i);
+    assert.doesNotMatch(current.text, /\+91 86696 11211/);
+    assert.match(current.text, /not a confirmed schedule for all administrative offices or campus visits/i);
     assert.doesNotMatch(current.text, /9:30 AM to 5:30 PM/);
-    assert.equal(current.provenance.capturedAt, '2026-11-18');
-    assert.ok(migrated.migrations.includes('publish-dated-office-hours-observation-kb46-v2'));
+    assert.equal(current.provenance.capturedAt, '2026-11-19');
+    assert.ok(migrated.migrations.includes('publish-admissions-desk-hours-kb46-v4'));
+    const currentLibrary = migrated.knowledge.find((item) => item.id === 'KB-20');
+    assert.equal(currentLibrary.sourceUrl, 'https://mitcorer.edu.in/library.php');
+    assert.match(currentLibrary.text, /identity card is compulsory for library access/i);
+    assert.doesNotMatch(currentLibrary.text, /does not publish borrowing rules/i);
+    assert.ok(migrated.migrations.includes('refresh-library-rules-source-kb20-v2'));
+    const currentContact = migrated.knowledge.find((item) => item.id === 'KB-17');
+    assert.equal(currentContact.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/contact-us');
+    assert.match(currentContact.text, /Admission Helpline: \+91 91584 14343/);
+    assert.match(currentContact.text, /College Office: \+91 91584 14444/);
+    assert.match(currentContact.text, /principal\.mitcorer@mitpune\.edu\.in/);
+    const currentTransit = migrated.knowledge.find((item) => item.id === 'KB-40');
+    assert.equal(currentTransit.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/contact-us');
+    assert.match(currentTransit.text, /Kurduvadi Junction, Solapur, Latur, and Mumbai/);
+    assert.match(currentTransit.text, /local station\/bus-stand distances that conflict with the newer page's proximity description/i);
+    assert.doesNotMatch(currentTransit.text, /4\.7 km/);
+    assert.ok(migrated.migrations.includes('refresh-contact-and-transit-page-kb17-kb40-v2'));
   } finally {
     closeDb();
     config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('reviewed current programme and scholarship sources restore public suggestion answers safely', async () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-suggestion-source-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const previousGeminiApiKey = config.geminiApiKey;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  config.geminiApiKey = '';
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = [
+      'seed-entc-hod-kb52', 'seed-placement-committee-kb53', 'seed-institution-status-kb54-v1',
+      'seed-admission-quota-and-search-aliases-v1', 'seed-course-code-discrepancy-kb56-v1',
+      'refresh-placement-committee-kb53-v2', 'map-seeded-records-to-current-official-routes-v1',
+      'normalize-dse-choice-codes-v1', 'canonicalize-official-sources-v1', 'refresh-placement-current-activities-kb16-kb35-v1',
+      'quarantine-unverified-office-hours-kb46-v1', 'canonicalize-official-sources-v2', 'publish-dated-office-hours-observation-kb46-v2',
+    ];
+    const btech = persisted.knowledge.find((item) => item.id === 'KB-10');
+    btech.status = 'Review';
+    btech.freshnessReview = { reason: 'numeric-claim-removed', changedSourceUrl: btech.sourceUrl };
+    const diploma = persisted.knowledge.find((item) => item.id === 'KB-12');
+    diploma.status = 'Review';
+    diploma.text = 'MITCORER Polytechnic branches offered (Sanctioned Intake: 60 each, Total 240 seats).';
+    diploma.sourceUrl = 'https://mitcorer.edu.in/mitcorer/public/department/polytechnic';
+    diploma.freshnessReview = { reason: 'source-unavailable', changedSourceUrl: diploma.sourceUrl };
+    const placement = persisted.knowledge.find((item) => item.id === 'KB-16');
+    placement.text = 'MITCORER Training and Placement Cell coordinates activities. According to information supplied for this project, student activities are shared through POD, Superset, and Unstop.';
+    const scholarship = persisted.knowledge.find((item) => item.id === 'KB-18');
+    scholarship.status = 'Review';
+    scholarship.text = 'MITCORER lists EBC Concession: 50% tuition and AICTE Pragati scholarship (₹50,000/year).';
+    scholarship.freshnessReview = { reason: 'numeric-claim-removed', changedSourceUrl: scholarship.sourceUrl };
+    const pragati = persisted.knowledge.find((item) => item.id === 'KB-33');
+    pragati.status = 'Review';
+    pragati.freshnessReview = { reason: 'source-unavailable', changedSourceUrl: pragati.sourceUrl };
+    persisted.officialSources.push(
+      { id: 'SRC-SYNC-ADMISSIONS', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions', status: 'Review',
+        extractedText: 'Programs Offered: B.Tech in Artificial Intelligence & Data Science; Civil Engineering; Computer Science & Engineering; Electronics & Computer Engineering; Electronics & Telecommunication Engineering; Mechanical & Rail Engineering.' },
+      { id: 'SRC-SYNC-SCHOLARSHIP', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship', status: 'Review',
+        extractedText: 'Rajarshi Chhatrapati Shahu Maharaj Shikshan Shulkh Shishyavrutti Yojna (EBC). National Level Scholarship Scheme: Pragati Scholarship Scheme For Girl Students (Technical Degree).' },
+    );
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    for (const id of ['KB-10', 'KB-12', 'KB-18']) {
+      const record = migrated.knowledge.find((item) => item.id === id);
+      assert.equal(record.status, 'Published', `${id} should be restored from the reviewed current official source`);
+      assert.equal(record.freshnessReview, undefined);
+    }
+    assert.equal(migrated.officialSources.find((item) => item.id === 'SRC-7').sourceUrl,
+      'https://mitcorer.edu.in/Diploma-Admissions-Open-2026-27.html');
+
+    const ask = async (question) => answerAdmissionQuestion({ question }, null);
+    const btechAnswer = await ask('Which B.Tech programmes are available at MITCORER?');
+    assert.equal(btechAnswer.outcomeStatus, 'ANSWERED');
+    assert.deepEqual(btechAnswer.evidence.map((record) => record.id), ['KB-10']);
+
+    const diplomaAnswer = await ask('Which Polytechnic diploma programmes are available at MITCORER?');
+    assert.equal(diplomaAnswer.outcomeStatus, 'ANSWERED');
+    assert.match(diplomaAnswer.answer, /Civil Engineering.*Mechanical Engineering.*Electronics & Telecommunication.*Computer Science & Engineering/s);
+    assert.doesNotMatch(diplomaAnswer.answer, /60 each|240 seats/);
+    assert.deepEqual(diplomaAnswer.evidence.map((record) => record.id), ['KB-12']);
+
+    const recruiterAnswer = await ask('List the companies which visit MITCORER for recruitment.');
+    assert.equal(recruiterAnswer.outcomeStatus, 'ANSWERED');
+    assert.deepEqual(recruiterAnswer.evidence.map((record) => record.id), ['KB-16']);
+    assert.match(recruiterAnswer.answer, /AY 2024-25/);
+    assert.match(recruiterAnswer.answer, /JUSPAY/);
+    assert.match(recruiterAnswer.answer, /Cognizant/);
+    assert.doesNotMatch(recruiterAnswer.answer, /POD, Superset, and Unstop/);
+    for (const question of [
+      'What scholarships are available at MITCORER and where can I apply?',
+      'Where do I apply for MITCORER MahaDBT scholarship schemes?',
+      'What should I check before applying for a MITCORER scholarship?',
+      'Tell me about the AICTE Pragati scholarship for girl students and where to apply.',
+    ]) {
+      const answer = await ask(question);
+      assert.equal(answer.outcomeStatus, 'ANSWERED', question);
+      assert.deepEqual(answer.evidence.map((record) => record.id), [question.includes('AICTE Pragati') ? 'KB-33' : 'KB-18'], question);
+      assert.match(answer.answer, /MahaDBT|NSP|Pragati/i, question);
+    }
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    config.geminiApiKey = previousGeminiApiKey;
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
@@ -212,6 +329,43 @@ test('official-route migration changes only known stale URLs and preserves edits
     assert.equal(migrated.knowledge.find((item) => item.id === 'KB-11').revision, 2);
     assert.ok(!migrated.knowledge.some((item) => item.id === 'KB-23'));
     assert.ok(migrated.migrations.includes('map-seeded-records-to-current-official-routes-v1'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('current scholarship source migration restores the live official URL and retires the stale intake claim', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-scholarship-source-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = ['recover-verified-source-records-v9'];
+    const staleSource = persisted.officialSources.find(item => item.id === 'SRC-20');
+    staleSource.status = 'Review';
+    staleSource.sourceUrl = 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship';
+    const obsoleteClaim = persisted.knowledge.find(item => item.id === 'KB-66');
+    obsoleteClaim.text = 'Stale programme count discrepancy requiring review.';
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    const source = migrated.officialSources.find(item => item.id === 'SRC-20');
+    assert.equal(source.status, 'Published');
+    assert.equal(source.sourceUrl, 'https://www.mitcorer.edu.in/scholarship.php');
+    assert.match(source.extractedText, /AICTE Pragati Scholarship Scheme/);
+    assert.equal(source.syncMeta.healthStatus, 'available');
+    const knowledge = migrated.knowledge.find(item => item.id === 'KB-66');
+    assert.equal(knowledge.status, 'Published');
+    assert.match(knowledge.text, /does not establish B\.Tech programme counts/);
+    assert.doesNotMatch(knowledge.text, /360 Sanctioned Seats/);
+    assert.ok(migrated.migrations.includes('repair-current-scholarship-source-v10'));
   } finally {
     closeDb();
     config.databaseFile = previousDatabaseFile;

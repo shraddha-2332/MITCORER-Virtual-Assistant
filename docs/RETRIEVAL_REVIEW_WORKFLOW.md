@@ -49,7 +49,7 @@ If candidate questions influence a code change, move them into development and o
 
 ## Validation and status
 
-No independently reviewed final retrieval scores have been calculated. The 24 candidates are now exposed development diagnostics; see [test completion and fixes](MITRA_TEST_COMPLETION.md). No independent reviewer approval or formal speaker approval has been assigned. Keyword retrieval remains the production method, with subsequent normalization and answer-routing fixes. The user's acceptance of current language behavior permits continuing work; it is not a competence-based review stamp.
+No independently reviewed final retrieval scores have been calculated. The 24 candidates are now exposed development diagnostics. No independent reviewer approval or formal speaker approval has been assigned. Keyword retrieval remains the production method, with subsequent normalization and answer-routing fixes. The user's acceptance of current language behavior permits continuing work; it is not a competence-based review stamp.
 
 Regression tests check 24 distinct pending candidates, corpus hash binding, English/Marathi/Hindi coverage, rejection of exact development duplicates, source drift and premature review status, and omission of method/rank information from the development packet.
 

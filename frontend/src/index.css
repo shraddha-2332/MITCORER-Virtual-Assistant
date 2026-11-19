@@ -27,7 +27,7 @@ button, input, select, textarea { font: inherit; }
 button { border: 0; }
 
 .publicAssistantShell { position: relative; min-height: 100dvh; overflow: hidden; background: linear-gradient(135deg, #f5f8f7 0%, #eef5f2 52%, #f9fbfa 100%); }
-.publicAssistantShell::before { content: ''; position: absolute; inset: 0; opacity: .08; background: url('./assets/mitcorer-campus.png') center / cover no-repeat; }
+.publicAssistantShell::before { content: ''; position: absolute; inset: 0; opacity: .08; background: url('./assets/mitcorer-campus.webp') center / cover no-repeat; }
 .staffBackLink { padding: 8px 11px; border: 1px solid #cbd8d5; border-radius: 999px; background: #fff; color: #31546b; font-size: 12px; font-weight: 800; cursor: pointer; }
 .assistantLauncher { position: fixed; right: 26px; bottom: 24px; z-index: 5; width: 70px; height: 70px; display: grid; place-items: center; padding: 5px; border: 4px solid #fff; border-radius: 50%; background: #143e62; box-shadow: 0 10px 26px rgba(8,27,44,.3); cursor: pointer; }
 .assistantLauncher img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; background: #fff; }
@@ -69,6 +69,15 @@ button { border: 0; }
 .publicBubble > div:last-child { max-width: 84%; padding: 11px 13px; border: 1px solid #d7deda; border-radius: 5px 12px 12px 12px; background: #fff; color: #172533; box-shadow: 0 2px 7px rgba(17,32,46,.09); font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .publicBubble.user > div:last-child { border-radius: 12px 5px 12px 12px; border-color: #d7e5e0; background: #e4f5ec; }
 .publicBubble p { margin: 0; white-space: pre-line; }
+.publicBubble ol { margin: 9px 0 0; padding-left: 22px; }
+.publicBubble ol li + li { margin-top: 7px; }
+.publicRetry { margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: #e4f5ec; color: #14513c; cursor: pointer; }
+.publicTableScroll { max-width: 100%; overflow-x: auto; margin-top: 9px; }
+.publicTableScroll table { width: 100%; min-width: 0; border-collapse: collapse; font-size: 12px; }
+.publicTableScroll th, .publicTableScroll td { padding: 6px; border: 1px solid #d7deda; text-align: left; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .publicAssistantShell .launcherPulse, .publicAssistantShell .typingDots i { animation: none; }
+}
 .publicBubble p + p, .publicBubble ul, .publicBubble a { margin-top: 9px; }
 .publicBubble ul { padding-left: 18px; margin-bottom: 0; }
 .publicBubble .publicAnswerList { padding: 0; }
@@ -206,7 +215,11 @@ button { border: 0; }
   color: #4b5563;
   border: 1px solid #d1d5db;
 }
-.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: flex-end; padding: 8px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
+.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 42px 42px; gap: 8px; align-items: flex-end; padding: 8px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
+.publicComposer textarea { grid-column: 1; grid-row: 1; }
+.publicComposer > button[type="submit"] { grid-column: 3; grid-row: 1; }
+.publicComposer > .publicVoiceButton { grid-column: 2; grid-row: 1; padding: 0; border: 1px solid #aebfc5; background: #f5f8f7; color: #174d68; }
+.publicComposer > .publicVoiceButton:disabled { opacity: .55; cursor: not-allowed; }
 .publicComposer textarea { width: 100%; min-height: 38px; max-height: 130px; resize: none; border: 1px solid #d9e2dc; border-radius: 8px; outline: 0; color: var(--ink); font-size: 14px; line-height: 1.4; box-sizing: border-box; padding: 8px 10px; overflow-y: hidden; font-family: inherit; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; transition: border-color .15s ease; }
 .publicComposer textarea:focus { border-color: #146548; }
 .publicComposer textarea::-webkit-scrollbar { width: 4px; }
@@ -215,7 +228,7 @@ button { border: 0; }
 .publicComposer button { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 8px; background: #0d2639; color: #fff; cursor: pointer; flex-shrink: 0; }.publicComposer button:disabled { opacity: .45; cursor: default; }
 .publicAssistantPanel > footer { padding: 8px 12px; border-top: 1px solid #edf0ee; background: #fff; color: #71807e; font-size: 10px; line-height: 1.35; text-align: center; }.publicAssistantPanel > footer a { color: #176c50; font-weight: 800; }
 
-.loginPage { min-height: 100dvh; display: flex; flex-direction: column; gap: 24px; background: linear-gradient(rgba(20, 30, 25, .16), rgba(20, 30, 25, .28)), url('./assets/mitcorer-campus.png') center center / cover no-repeat; background-color: #e0e7e2; color: #202724; }
+.loginPage { min-height: 100dvh; display: flex; flex-direction: column; gap: 24px; background: linear-gradient(rgba(20, 30, 25, .16), rgba(20, 30, 25, .28)), url('./assets/mitcorer-campus.webp') center center / cover no-repeat; background-color: #e0e7e2; color: #202724; }
 .loginHeader { padding: 20px 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid rgba(255,255,255,.6); background: rgba(255,255,255,.95); }
 .loginHeader .brandLockup > span { background: #fff; color: #146548; }
 .loginHeader .brandLockup small { color: #69756e; margin-top: 3px; }
@@ -991,26 +1004,26 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .adminWelcome > button:disabled { opacity: .6; cursor: wait; }
 .adminMetricGrid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 13px; }
 .adminMetricGrid article { min-height: 112px; display: grid; align-content: center; gap: 5px; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 6px 20px rgba(24,38,55,.04); }
-.adminMetricGrid span { color: #526779; font-size: 12px; font-weight: 800; }
+.adminMetricGrid span { color: #526779; font-size: 13px; font-weight: 700; }
 .adminMetricGrid strong { color: #123d56; font-size: 29px; line-height: 1; }
-.adminMetricGrid small { color: var(--muted); font-size: 11px; }
+.adminMetricGrid small { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .adminDashboardGrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 15px; }
 .adminActionPanel { padding: 22px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 6px 20px rgba(24,38,55,.04); }
 .adminActionPanel .sectionHead { margin-bottom: 14px; }
 .adminActionPanel .sectionHead h2 { font-size: 19px; }
-.adminActionPanel .sectionHead p { font-size: 12px; }
+.adminActionPanel .sectionHead p { font-size: 13px; }
 .adminShortcutList { display: grid; }
 .adminShortcutList > button { display: grid; grid-template-columns: 28px minmax(0,1fr) 18px; align-items: center; gap: 11px; padding: 13px 2px; border-bottom: 1px solid #edf1f0; background: transparent; color: var(--blue); text-align: left; cursor: pointer; }
 .adminShortcutList > button:last-child { border-bottom: 0; }
 .adminShortcutList > button:hover strong { text-decoration: underline; text-underline-offset: 3px; }
 .adminShortcutList > button > span { display: grid; gap: 3px; }
-.adminShortcutList strong { color: #1b3448; font-size: 13px; }
-.adminShortcutList small { color: var(--muted); font-size: 11px; }
+.adminShortcutList strong { color: #1b3448; font-size: 14px; }
+.adminShortcutList small { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .adminPendingList { display: grid; }
 .adminPendingList > div { display: grid; grid-template-columns: 10px minmax(0,1fr); gap: 10px; padding: 12px 0; border-bottom: 1px solid #edf1f0; }
 .adminPendingList > div > span:last-child { display: grid; gap: 4px; min-width: 0; }
-.adminPendingList strong { overflow: hidden; color: #1b3448; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.adminPendingList small { color: var(--muted); font-size: 11px; }
+.adminPendingList strong { overflow: hidden; color: #1b3448; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.adminPendingList small { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .statusDot { width: 8px; height: 8px; margin-top: 3px; border-radius: 50%; background: #ef9b39; box-shadow: 0 0 0 3px #fff3e1; }
 .adminPendingList > button { display: inline-flex; align-items: center; justify-self: start; gap: 6px; margin-top: 12px; padding: 0; background: transparent; color: var(--green); font-size: 12px; font-weight: 850; cursor: pointer; }
 .adminAllClear { display: flex; align-items: center; gap: 11px; margin-top: 8px; padding: 15px; border: 1px solid #cce5d8; border-radius: 9px; background: #f2faf5; color: var(--green); }
@@ -1049,10 +1062,15 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .applicantPortalEntry { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .answerPortalEntry { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; padding: 8px 11px; border: 1px solid #cbd6d0; border-radius: 7px; color: #146548; font-weight: 650; text-decoration: none; }
 .documentReviewList { display: grid; gap: 13px; }
-.documentReviewPage .pageHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
-.documentReviewPage .pageHeading h1 { margin: 4px 0 6px; }
-.documentReviewPage .pageHeading p { margin: 0; color: #65756d; }
-.documentReviewPage .pageHeading > button { min-height: 38px; padding: 8px 12px; border: 1px solid #cbd6d0; border-radius: 7px; background: #fff; color: #24513e; cursor: pointer; }
+.documentReviewPage { gap: 22px; }
+.documentReviewPage .pageHeading { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 4px 2px 18px; border-bottom: 1px solid var(--line); }
+.documentReviewPage .pageHeading > div { max-width: 760px; }
+.documentReviewPage .pageHeading h1 { margin: 6px 0 8px; font-size: clamp(26px, 3vw, 34px); line-height: 1.15; letter-spacing: -.025em; }
+.documentReviewPage .pageHeading p { max-width: 700px; margin: 0; color: #65756d; font-size: 15px; line-height: 1.55; }
+.documentReviewPage .pageHeading > button { flex: 0 0 auto; min-height: 42px; padding: 9px 16px; border: 1px solid #cbd6d0; border-radius: 8px; background: #fff; color: #24513e; font-size: 14px; font-weight: 650; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
+.documentReviewPage .pageHeading > button:hover:not(:disabled) { border-color: #8ca99b; background: #f5faf7; }
+.documentReviewPage .pageHeading > button:disabled { opacity: .65; cursor: progress; }
+.documentReviewPage > .knowledgeEmpty { min-height: 104px; display: grid; place-items: center; box-sizing: border-box; padding: 24px; border: 1px dashed #cbd9d4; border-radius: 10px; background: #fbfcfb; color: #617168; font-size: 14px; }
 .documentReviewCard { display: grid; gap: 13px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .documentReviewCard .statusPill { padding: 5px 9px; border-radius: 999px; background: #edf4ef; color: #24513e; font-size: 12px; font-weight: 650; }
 .documentReviewCard > header, .documentReviewCard > footer { display: flex; align-items: center; gap: 10px; }
@@ -1093,7 +1111,7 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .applicantDocumentList article span, .applicantDocumentList article p { color: #66756d; font-size: 13px; }
 .applicantDocumentList article p { margin: 3px 0 0; }
 .applicantDocumentList article > div:last-child { display: flex; gap: 8px; }
-.portalPrivacyNote { display: flex; align-items: flex-start; gap: 8px; margin-top: 24px; padding: 12px; border-radius: 8px; background: #f3f7f5; color: #51635a !important; font-size: 13px; }
+.portalPrivacyNote { display: flex; align-items: flex-start; gap: 9px; margin-top: 8px; padding: 12px 14px; border: 1px solid #e3ebe6; border-radius: 8px; background: #f7faf8; color: #51635a !important; font-size: 13px; line-height: 1.5; }
 .portalPrivacyNote svg { flex: 0 0 auto; margin-top: 2px; }
 @media (max-width: 700px) {
   .portalUploadForm { grid-template-columns: 1fr; }
@@ -1104,4 +1122,28 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
   .documentReviewCard > footer { align-items: stretch; flex-direction: column; }
   .documentReviewCard > footer > span { display: none; }
   .documentReviewPage .pageHeading { align-items: flex-start; flex-direction: column; }
+  .documentReviewPage .pageHeading { gap: 14px; }
+  .documentReviewPage .pageHeading > button { width: 100%; }
 }
+.operationsTable { overflow-x: auto; max-width: 100%; }
+.operationsOutcomes { display: flex; flex-wrap: wrap; gap: 1rem; }
+.operationsOutcomes dd { margin: .25rem 0; font-weight: 700; }
+.assistantOperations { scroll-margin-top: 20px; padding: 24px; font-size: 14px; }
+.assistantOperationsHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 20px; }
+.assistantOperationsHead h2 { margin: 5px 0 6px; color: var(--ink); font-size: 22px; line-height: 1.25; }
+.assistantOperationsHead p { margin: 0; font-size: 13px; line-height: 1.5; }
+.assistantOperationsHead button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border-radius: 8px; background: var(--green); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+.assistantOperationsHead button:disabled { opacity: .6; cursor: wait; }
+.assistantOperations > p[role="alert"] { padding: 12px; border-radius: 8px; background: #fff5ee; color: #854d0e; }
+.assistantOperations .adminMetricGrid { margin-bottom: 18px; }
+.assistantOperations h3 { margin: 22px 0 10px; font-size: 16px; }
+.assistantOperations .operationsTable { border: 1px solid var(--line); border-radius: 8px; }
+.assistantOperations .operationsTable table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.assistantOperations .operationsTable th, .assistantOperations .operationsTable td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.assistantOperations .operationsTable th { background: #f5f8f7; font-weight: 700; }
+.assistantOperations .operationsOutcomes { margin: 16px 0; }
+.assistantOperations .operationsOutcomes > div { min-width: 130px; padding: 10px 12px; border-radius: 8px; background: #f5f8f7; }
+.assistantOperations .operationsOutcomes dt { color: var(--muted); font-size: 12px; }
+.assistantOperations, .operationsAnalytics, .operationsTriage { scroll-margin-top: 20px; }
+.operationsTriage { margin-top: 20px; }
+@media (max-width: 620px) { .assistantOperationsHead { flex-direction: column; } }

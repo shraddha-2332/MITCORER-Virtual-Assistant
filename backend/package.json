@@ -18,7 +18,6 @@
     "prepare:developer-review-pilot": "node --no-warnings=ExperimentalWarning scripts/prepare-developer-review-pilot.mjs",
     "freeze:evaluation-corpus": "node --no-warnings=ExperimentalWarning scripts/freeze-evaluation-corpus.mjs",
     "evaluate:judge": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning scripts/run-llm-judge.mjs",
-    "evaluate:ragas": "python scripts/evaluate-ragas.py",
     "evaluate:load": "node --no-warnings=ExperimentalWarning scripts/evaluate-local-load.js",
     "prepare:retrieval-review": "node scripts/prepare-retrieval-review.js",
     "evaluate:paraphrases": "node --no-warnings=ExperimentalWarning scripts/evaluate-paraphrases.js",

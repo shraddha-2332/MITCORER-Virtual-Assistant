@@ -1,0 +1,46 @@
+[
+  {
+    "name": "phase-a",
+    "exitCode": 0
+  },
+  {
+    "name": "backend",
+    "exitCode": 0
+  },
+  {
+    "name": "frontend",
+    "exitCode": 0
+  },
+  {
+    "name": "build",
+    "exitCode": 0
+  },
+  {
+    "name": "lint",
+    "exitCode": 0
+  },
+  {
+    "name": "public",
+    "exitCode": 0
+  },
+  {
+    "name": "workflow-500",
+    "exitCode": 0
+  },
+  {
+    "name": "browser",
+    "exitCode": 0
+  },
+  {
+    "name": "maintainer",
+    "exitCode": 0
+  },
+  {
+    "name": "session",
+    "exitCode": 0
+  },
+  {
+    "name": "audit-150",
+    "exitCode": 0
+  }
+]

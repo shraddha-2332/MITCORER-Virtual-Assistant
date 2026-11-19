@@ -24,7 +24,7 @@ export function listConversations(user, offsetValue) {
 }
 
 export function extractConversationContext(text, existingContext = {}) {
-  const norm = String(text || '').normalize('NFKC').toLocaleLowerCase();
+  const norm = understandQuery(text).normalized;
   const context = { ...(existingContext || {}) };
   const query = understandQuery(text);
   if (query.academicYears.length === 1 && !query.invalidYears.length) {
@@ -88,9 +88,14 @@ export function extractConversationContext(text, existingContext = {}) {
 
   // Keep the requested fact type so a short branch change ("What about Civil?")
   // can replace the entity without losing the question being asked.
-  if (/\b(?:hostel|mess|accommodation|stay|room|warden)\b/.test(norm)) {
+  if (/\b(?:hostel|mess|accommodation)\b/.test(norm) && /\b(?:fee|cost|charge|deposit)\b/.test(norm)) {
+    context.lastTopic = 'accommodationFees';
+    context.service = /\bmess\b/.test(norm) && !/\bhostel\b/.test(norm) ? 'mess' : 'hostel';
+  } else if (/\b(?:hostel|mess|accommodation|stay|room|warden)\b/.test(norm)) {
     context.lastTopic = 'hostel';
-  } else if (/\b(?:fee|fees|cost|tuition|installment|scholarship|concession)\b/.test(norm)) {
+  } else if (/\b(?:scholarship|pragati|mahadbt|nsp)\b/.test(norm) && !/\b(?:fee|cost|tuition)\b/.test(norm)) {
+    context.lastTopic = 'scholarship';
+  } else if (/\b(?:fee|fees|cost|tuition|installment|concession)\b/.test(norm)) {
     context.lastTopic = 'fees';
   } else if (/\b(?:intake|seats?|seat matrix|capacity)\b/.test(norm)) {
     context.lastTopic = 'intake';
@@ -128,6 +133,20 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
     && !/\b(?:intake|sanctioned|seat matrix|cutoffs?|vacanc(?:y|ies))\b/i.test(norm)) return question;
   // Do not attach a branch from a prior subject when the current message explicitly changes topic.
   const previousQuestionText = [...chat.messages].reverse().find(message => message.type === 'user')?.text || '';
+  const previousContext = chat.context || {};
+  if (previousContext.lastTopic === 'scholarship' && /^tell me more[?.! ]*$/i.test(norm)) return 'Tell me about scholarships.';
+  if (/^tell me more[?.! ]*$/i.test(norm) && ['hostel', 'accommodationFees'].includes(previousContext.lastTopic)) return 'What are hostel fees and hostel facilities?';
+  const current = understandQuery(question);
+  const branchLabel = context.branch;
+  const shortBranchSwitch = current.branch.positive.length === 1 && /^(?:and|what about|how about|for)\b/i.test(norm)
+    && !/\b(?:fee|cost|charge|cutoff|intake|lab|hod|eligible|scholarship)\b/i.test(norm);
+  if (shortBranchSwitch && previousContext.lastTopic === 'intake') return `What is the intake for ${branchLabel}${context.academicYear ? ` for ${context.academicYear}` : ''}?`;
+  if (previousContext.lastTopic === 'accommodationFees'
+    && !current.branch.positive.length && !/\b(?:library|bus|transport|admission|scholarship|program|course|academic|engineering|first year|dse|direct second)\b/.test(current.normalized)) {
+    if (/\b(?:food|included|mess)\b/.test(norm)) return `What are the hostel and mess fees${context.academicYear ? ` for ${context.academicYear}` : ''}?`;
+    if (/\b(?:deposit|how much|fee|charge|hostel)\b/.test(norm)) return `What are the ${current.service.positive[0] || previousContext.service || 'hostel'} fees${context.academicYear ? ` for ${context.academicYear}` : ''}?`;
+  }
+  if (previousContext.lastTopic === 'fees' && /^(?:and\s+)?(?:hostel|mess)[?.! ]*$/.test(norm)) return `What are the ${norm.match(/hostel|mess/)[0]} fees?`;
   const previousNormForAdmission = previousQuestionText.normalize('NFKC').toLowerCase();
   // Short route clarifications should complete the pending question (for
   // example, "What documents should I prepare?" -> "for first year").
@@ -258,6 +277,7 @@ export async function askWithHistory(body, user, answerQuestion) {
   if (chat && chat.messages.length >= 200) throw badRequest('This conversation is full. Start a new chat to continue.');
   const updatedContext = extractConversationContext(question, chat?.context || {});
   const contextualQuestion = resolveConversationalQuestion(question, chat, updatedContext);
+  Object.assign(updatedContext, extractConversationContext(contextualQuestion, updatedContext));
   const language = body.language && body.language !== 'auto' ? body.language : selectLanguage(question, 'auto');
   const answer = await answerQuestion({ question: contextualQuestion, language, context: updatedContext }, user);
   const now = nowIso();
@@ -268,7 +288,7 @@ export async function askWithHistory(body, user, answerQuestion) {
   conversation.context = updatedContext;
   conversation.messages.push(
     { id: generateId('MSG'), type: 'user', text: question, createdAt: now },
-    { id: generateId('MSG'), type: 'assistant', text: answer.answer, ...pick(answer, ['source', 'sourceUrl', 'officialLinks', 'next', 'actionView', 'actionLabel', 'sections', 'evidence', 'requestedLanguage', 'responseLanguage', 'localizationStatus', 'languageReviewStatus', 'suggestions', 'escalation']), createdAt: now },
+    { id: generateId('MSG'), type: 'assistant', text: answer.answer, ...pick(answer, ['source', 'sourceUrl', 'sourceLinks', 'relatedLinks', 'officialLinks', 'outcomeStatus', 'next', 'actionView', 'actionLabel', 'sections', 'evidence', 'requestedLanguage', 'responseLanguage', 'localizationStatus', 'languageReviewStatus', 'suggestions', 'escalation']), createdAt: now },
   );
   conversation.updatedAt = now;
   if (!chat) {
@@ -331,6 +351,7 @@ export async function askPublicWithHistory(body, answerQuestion, sessionToken) {
 
   const updatedContext = extractConversationContext(question, chat?.context || {});
   const contextualQuestion = resolveConversationalQuestion(question, chat, updatedContext);
+  Object.assign(updatedContext, extractConversationContext(contextualQuestion, updatedContext));
 
   const language = body.language && body.language !== 'auto' ? body.language : selectLanguage(question, 'auto');
   const answer = await answerQuestion({
@@ -363,7 +384,7 @@ export async function askPublicWithHistory(body, answerQuestion, sessionToken) {
       id: generateId('MSG'),
       type: 'assistant',
       text: answer.answer,
-      ...pick(answer, ['source', 'sourceUrl', 'officialLinks', 'next', 'actionView', 'actionLabel', 'sections', 'evidence', 'requestedLanguage', 'responseLanguage', 'localizationStatus', 'languageReviewStatus', 'suggestions', 'escalation', 'model']),
+      ...pick(answer, ['source', 'sourceUrl', 'sourceLinks', 'relatedLinks', 'officialLinks', 'outcomeStatus', 'next', 'actionView', 'actionLabel', 'sections', 'evidence', 'requestedLanguage', 'responseLanguage', 'localizationStatus', 'languageReviewStatus', 'suggestions', 'escalation', 'model']),
       createdAt: now,
     },
   );

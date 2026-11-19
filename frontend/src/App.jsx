@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Cpu, FileText, LayoutDashboard,
   LockKeyhole, LogOut, Menu, Phone,
-  Send, ShieldCheck, UploadCloud, X,
+  Mic, Send, ShieldCheck, UploadCloud, X,
   PanelLeftClose, PanelLeftOpen, Languages, RefreshCw,
   ThumbsDown, ThumbsUp,
 } from 'lucide-react';
@@ -10,8 +10,9 @@ import feeFirstYearImage from './assets/fee-first-year-2026.jpeg';
 import feeDirectSecondYearImage from './assets/fee-direct-second-year-2026.jpeg';
 import hostelMessFeeImage from './assets/hostel-mess-fee-2026.jpeg';
 import mitcorerLogo from './assets/mitcorer-logo.png';
-import mitcorerCampus from './assets/mitcorer-campus.png';
+import mitcorerCampus from './assets/mitcorer-campus.webp';
 import { api } from './api.js';
+import { AssistantOperations } from './AssistantOperations.jsx';
 import { formatPublicResponse } from './answer-format.mjs';
 import { publicAnswerLinks } from './public-answer-links.mjs';
 import { KnowledgeRecordEditor } from './KnowledgeRecordEditor.jsx';
@@ -183,19 +184,6 @@ function App() {
     }
   };
 
-  const syncOfficialSources = async () => {
-    setAppError('');
-    try {
-      const summary = await api.syncOfficialSources(token);
-      const sourceResult = await api.getOfficialSources(token);
-      setOfficialSources(sourceResult.items || []);
-      return summary;
-    } catch (error) {
-      setAppError(error.message);
-      return null;
-    }
-  };
-
   const handleAdminLogin = async (email, password) => {
     setAppError('');
     try {
@@ -246,8 +234,8 @@ function App() {
         {navOpen && <button className="mobileScrim" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)}><X size={18} /></button>}
         <section className="workspaceBody">
           {appError && <div className="errorBanner">{appError}</div>}
-          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} onSyncWebsite={syncOfficialSources} />}
-          {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onSyncWebsite={syncOfficialSources} onExtractStructuredSource={extractStructuredOfficialSource} />}
+          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
+          {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
           {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
           {view === 'documents' && <DocumentReviewQueue token={token} />}
         </section>
@@ -384,6 +372,7 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
           actionView: answer.actionView,
           actionLabel: answer.actionLabel,
           requestedLanguage: answer.requestedLanguage,
+          responseLanguage: answer.responseLanguage,
           showQuickReplies: !answer.answerPart2,
           choices: retainedChoices || undefined,
           suggestions: answer.suggestions,
@@ -406,7 +395,7 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
       const failure = language === 'mr' ? limited ? 'खूप विनंत्या आल्या आहेत. कृपया थोड्या वेळाने पुन्हा प्रयत्न करा.' : 'सध्या अधिकृत माहिती मिळवता आली नाही. कृपया पुन्हा प्रयत्न करा किंवा प्रवेश कार्यालयाशी संपर्क साधा.'
         : language === 'hi' ? limited ? 'बहुत अधिक अनुरोध आए हैं। कृपया कुछ देर बाद फिर कोशिश करें।' : 'अभी आधिकारिक जानकारी प्राप्त नहीं हो सकी। कृपया फिर कोशिश करें या प्रवेश कार्यालय से संपर्क करें.'
           : limited ? error.message : 'I could not retrieve a verified answer right now. Please try again, or contact the admissions office.';
-      setMessages((items) => [...items, { type: 'assistant', text: failure, choices: retainedChoices || undefined }]);
+      setMessages((items) => [...items, { type: 'assistant', text: failure, choices: retainedChoices || undefined, retryQuestion: question }]);
     } finally {
       setBusy(false);
     }
@@ -477,12 +466,13 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
             <button type="button" onClick={() => setOpen(false)} aria-label="Minimize assistant">−</button>
           </div>
         </header>
-        <div className="publicChatMessages">
+        <div className="publicChatMessages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation">
           <section className="publicCampusWelcome" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,32,51,.78), rgba(7,32,51,.25)), url(${mitcorerCampus})` }}><div><span>MITCORER, Barshi</span><strong>Start your engineering journey.</strong><div className="campusWelcomeActions"><a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Start admission enquiry <ArrowRight size={13} /></a><button type="button" onClick={() => setShowApplicantPortal(true)}>Upload / check documents <ArrowRight size={13} /></button></div></div></section>
-          {messages.map((message, index) => <Fragment key={`${message.type}-${index}`}><article className={`publicBubble ${message.type}`}>
+          {messages.map((message, index) => <Fragment key={`${message.type}-${index}`}><article className={`publicBubble ${message.type}`} lang={['en', 'mr', 'hi'].includes(message.responseLanguage) ? message.responseLanguage : undefined}>
             {message.type === 'assistant' && <div className="publicBubbleAvatar"><img src={mitcorerLogo} alt="" /></div>}
             <div>
               <PublicAnswerBody message={message} />
+              {message.retryQuestion && <button type="button" className="publicRetry" disabled={busy} onClick={() => ask(message.retryQuestion)}>{language === 'mr' ? 'पुन्हा प्रयत्न करा' : language === 'hi' ? 'फिर कोशिश करें' : 'Try again'}</button>}
               {message.type === 'assistant' && message.actionView === 'applicantPortal' && (
                 <button type="button" className="applicantPortalEntry answerPortalEntry" onClick={() => setShowApplicantPortal(true)}>
                   {message.actionLabel || 'Open applicant document portal'} <ArrowRight size={13} />
@@ -502,10 +492,10 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
         </div>
         <form className="publicComposer" onSubmit={(event) => { event.preventDefault(); ask(); }}>
           <textarea ref={textareaRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); ask(); } }} rows={1} placeholder={language === 'mr' ? 'तुमचा प्रश्न येथे लिहा…' : language === 'hi' ? 'अपना प्रश्न यहाँ लिखें…' : 'Type your message here…'} aria-label={language === 'mr' ? 'प्रवेशाबद्दल तुमचा प्रश्न' : language === 'hi' ? 'प्रवेश के बारे में आपका प्रश्न' : 'Ask MIT Barshi admissions'} disabled={busy} />
+          <button type="button" className="publicVoiceButton" aria-label="Voice input planned for a future release" title="Voice input planned for a future release" disabled><Mic size={18} /></button>
           <button type="submit" aria-label={language === 'mr' ? 'प्रश्न पाठवा' : language === 'hi' ? 'प्रश्न भेजें' : 'Send message'} disabled={busy || !input.trim()}><Send size={19} /></button>
         </form>
         <footer>
-          <button type="button" onClick={() => setShowApplicantPortal(true)} className="applicantPortalEntry">Applicant / parent document portal</button>
           <span>Powered by MITCORER{' '}</span>
           <button
             type="button"
@@ -692,12 +682,7 @@ function PublicEscalationCard({ message, language }) {
 
   const escalation = message.escalation || {
     available: true,
-    helplines: [
-      { label: 'Desk 1', number: '+91 84599 67882', tel: '+918459967882' },
-      { label: 'Desk 2', number: '+91 86696 62106', tel: '+918669662106' },
-    ],
-    email: 'info.mitcorer@mitpune.edu.in',
-    officeHours: 'Monday to Saturday, 9:30 AM to 5:30 PM IST',
+    helplines: [],
   };
 
   const handleSubmit = async (e) => {
@@ -741,11 +726,10 @@ function PublicEscalationCard({ message, language }) {
         <span>{headerTitle}</span>
       </div>
       <p className="escalationCardPrompt">{promptText}</p>
-      {language === 'en' && <div className="escalationVerifiedContacts" aria-label="Verified MITCORER admission desk contacts">
-        <span>Admission Enquiry Desk</span>
-        <a href="tel:+918459967882">+91 84599 67882</a>
-        <a href="tel:+918669662106">+91 86696 62106</a>
-        <a href="mailto:info.mitcorer@mitpune.edu.in">info.mitcorer@mitpune.edu.in</a>
+      {(escalation.helplines?.length > 0 || escalation.email) && <div className="escalationVerifiedContacts" aria-label="Published college contacts">
+        <span>{language === 'mr' ? 'महाविद्यालय संपर्क' : language === 'hi' ? 'कॉलेज संपर्क' : 'College contacts'}</span>
+        {(escalation.helplines || []).map(line => <a key={line.tel} href={`tel:${line.tel}`}>{line.number}</a>)}
+        {escalation.email && <a href={`mailto:${escalation.email}`}>{escalation.email}</a>}
       </div>}
       {submitted ? (
         <div className="escalationSuccess">
@@ -761,11 +745,6 @@ function PublicEscalationCard({ message, language }) {
       ) : (
         <>
           <div className="escalationActions">
-            {escalation.helplines?.map((hl) => (
-              <a key={hl.tel} href={`tel:${hl.tel.replace(/[^0-9+]/g, '')}`} className="escalationBtn callBtn">
-                <Phone size={11} /> {hl.number}
-              </a>
-            ))}
             {!showForm && (
               <button
                 type="button"
@@ -874,16 +853,30 @@ function AnswerFeedback({ message, language }) {
 function PublicAnswerBody({ message }) {
   return formatPublicResponse(message).map((block, blockIndex) => {
     if (block.type === 'heading') return <p key={blockIndex}><strong>{block.text}</strong></p>;
+    if (block.type === 'table') return <div key={blockIndex} className="publicTableScroll" tabIndex={0} role="region" aria-label="Answer comparison"><table><thead><tr>{block.headers.map((cell, i) => <th key={i} scope="col">{linkOfficialContact(cell)}</th>)}</tr></thead><tbody>{block.rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{linkOfficialContact(cell)}</td>)}</tr>)}</tbody></table></div>;
     if (block.type === 'programmes' || block.type === 'fees' || block.type === 'cards') {
       return <Fragment key={blockIndex}><p>{block.intro}</p><ul className="publicAnswerList">{block.items.map((item, itemIndex) => <li key={itemIndex}><strong>{item.name}</strong><span>{block.type === 'cards' ? item.detail : block.type === 'fees' ? `INR ${item.amount}` : `Intake: ${item.intake} | Choice code: ${item.choiceCode}`}</span></li>)}</ul></Fragment>;
     }
-    return block.type === 'list' ? <ul key={blockIndex}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{linkOfficialContact(item)}</li>)}</ul> : <p key={blockIndex}>{linkOfficialContact(block.text)}</p>;
+    if (block.type === 'list') {
+      const List = block.ordered ? 'ol' : 'ul';
+      return <List key={blockIndex} {...(block.ordered ? { start: block.start } : {})}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{linkOfficialContact(item)}</li>)}</List>;
+    }
+    return <p key={blockIndex}>{linkOfficialContact(block.text)}</p>;
   });
 }
 
 function linkOfficialContact(text) {
   const value = String(text || '');
-  const contactPattern = /\+91\s*(?:84599\s*67882|86696\s*62106)|info\.mitcorer@mitpune\.edu\.in/gi;
+  const emphasis = [...value.matchAll(/\*\*([^*\n]+)\*\*/g)];
+  if (emphasis.length) {
+    const parts = []; let index = 0;
+    for (const match of emphasis) {
+      parts.push(...[linkOfficialContact(value.slice(index, match.index)), <strong key={`bold-${match.index}`}>{linkOfficialContact(match[1])}</strong>]);
+      index = match.index + match[0].length;
+    }
+    parts.push(linkOfficialContact(value.slice(index))); return parts;
+  }
+  const contactPattern = /\+91[ -]*\d{5}[ -]*\d{5}\b|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
   const parts = [];
   let cursor = 0;
   for (const match of value.matchAll(contactPattern)) {
@@ -897,11 +890,9 @@ function linkOfficialContact(text) {
   return parts.length ? parts : value;
 }
 
-function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenInquiries, onOpenFeedback, onSyncWebsite }) {
+function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenInquiries, onOpenFeedback }) {
   const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0 });
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -926,42 +917,34 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
 
   const publishedKnowledge = knowledge.filter(item => item.status === 'Published').length;
   const reviewKnowledge = knowledge.filter(item => item.status === 'Review');
-  const needsReview = sources.filter(item => {
-    const state = `${item.status || ''} ${item.extractionStatus || ''}`.toLowerCase();
-    return /review|staged|conflict|pending|extract/.test(state);
-  }).length;
-  const pendingSources = sources.filter(item => /review|staged|conflict|pending|extract/i.test(`${item.status || ''} ${item.extractionStatus || ''}`)).slice(0, 5);
-  const launchSync = async () => {
-    if (syncing) return;
-    setSyncing(true);
-    setSyncMessage('');
-    try {
-      const result = await onSyncWebsite();
-      if (result) setSyncMessage(`Sync checked ${result.checked} pages: ${result.changed} staged for review, ${result.conflictCount || 0} conflicts flagged, ${result.unchanged} unchanged.`);
-    } finally { setSyncing(false); }
+  const needsReview = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase())).length;
+  const pendingSources = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase()));
+  const unreachableSources = pendingSources.filter(item => item.syncMeta?.healthStatus === 'unreachable').length;
+  const scrollToSection = (id) => {
+    const target = document.getElementById(id) || document.getElementById('assistant-quality-monitor');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
   return <div className="pageStack adminDashboard">
     <section className="adminWelcome">
       <div><span className="eyebrow">MITCORER · Staff workspace</span><h2>Welcome, {user.name.split(' ')[0]}</h2><p>Manage verified assistant knowledge and review what visitors send to the college.</p></div>
-      <button type="button" onClick={launchSync} disabled={syncing}><RefreshCw size={16} />{syncing ? 'Checking website…' : 'Sync official website'}</button>
     </section>
-    {syncMessage && <div className="decisionResult positive"><strong>{syncMessage}</strong></div>}
     <section className="adminMetricGrid" aria-label="Workspace summary">
       <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
-      <article><span>Sources to review</span><strong>{needsReview}</strong><small>staged pages, files or conflicts</small></article>
+      <article><span>Sources to review</span><strong>{needsReview}</strong><small>{unreachableSources} unreachable; {Math.max(0, needsReview - unreachableSources)} staged or changed</small></article>
       <article><span>Visitor requests</span><strong>{loading ? '…' : reviewCounts.inquiries ?? '—'}</strong><small>{reviewCounts.pendingInquiries ? `${reviewCounts.pendingInquiries} need reply` : 'saved in inbox'}</small></article>
       <article><span>Answer ratings</span><strong>{loading ? '…' : reviewCounts.feedback ?? '—'}</strong><small>{reviewCounts.unhelpfulFeedback ? `${reviewCounts.unhelpfulFeedback} need investigation` : 'visitor helpful / unhelpful'}</small></article>
     </section>
     <section className="adminDashboardGrid">
       <article className="adminActionPanel">
-        <div className="sectionHead"><span className="eyebrow">Daily work</span><h2>Workspace shortcuts</h2><p>Start with the tasks that maintain answer quality.</p></div>
+        <div className="sectionHead"><span className="eyebrow">Admin workspace</span><h2>Workspace shortcuts</h2><p>Open the core assistant management and review tools.</p></div>
         <div className="adminShortcutList">
-          <button type="button" onClick={() => setView('knowledge')}><FileText size={19} /><span><strong>Manage verified knowledge</strong><small>Edit records and review official sources</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={onOpenKnowledge}><FileText size={19} /><span><strong>Knowledge Management</strong><small>Edit, review and retire answer records</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={onOpenSources}><RefreshCw size={19} /><span><strong>Source Verification</strong><small>Review official sources and source changes</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><LayoutDashboard size={19} /><span><strong>Query Analytics</strong><small>View process-level answer outcomes and trends</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => user.role === 'admin' ? scrollToSection('assistant-unanswered-review') : onOpenFeedback()}><ThumbsDown size={19} /><span><strong>Unanswered Questions</strong><small>{user.role === 'admin' ? 'Triage unresolved outcome events' : 'Review visitor-submitted feedback'}</small></span><ArrowRight size={16} /></button>
+          <button type="button" onClick={() => scrollToSection('assistant-quality-monitor')}><Cpu size={19} /><span><strong>AI Quality Monitor</strong><small>Inspect operational outcomes and source health</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
           <button type="button" onClick={() => setView('documents')}><FileText size={19} /><span><strong>Review applicant documents</strong><small>Open submitted files and record review status</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}><ThumbsDown size={19} /><span><strong>Inspect answer feedback</strong><small>Find answers visitors marked unhelpful</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={onOpenSources}><FileText size={19} /><span><strong>Review official sources</strong><small>Check indexed pages, files and source updates</small></span><ArrowRight size={16} /></button>
         </div>
       </article>
       <article className="adminActionPanel">
@@ -977,7 +960,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
             {pendingSources.slice(0, 3).map(item => (
               <div key={item.id}>
                 <span className="statusDot" />
-                <span><strong>{item.title}</strong><small>{item.status || item.extractionStatus || 'Staged for review'}</small></span>
+                <span><strong>{item.title}</strong><small>{item.syncMeta?.lastError || item.extractionStatus || item.status || 'Staged for review'}</small></span>
               </div>
             ))}
             {reviewCounts.unhelpfulFeedback > 0 && (
@@ -987,7 +970,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
               </div>
             )}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
-              {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review staged sources ({pendingSources.length}) <ArrowRight size={15} /></button>}
+              {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review sources ({needsReview}) <ArrowRight size={15} /></button>}
               {reviewKnowledge.length > 0 && <button type="button" onClick={onOpenKnowledge || (() => setView('knowledge'))}>Review withheld knowledge ({reviewKnowledge.length}) <ArrowRight size={15} /></button>}
               {reviewCounts.unhelpfulFeedback > 0 && <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}>Inspect feedback issues ({reviewCounts.unhelpfulFeedback}) <ArrowRight size={15} /></button>}
             </div>
@@ -995,11 +978,12 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
         ) : (
           <div className="adminAllClear">
             <CheckCircle2 size={20} />
-            <span><strong>All official sources & answers verified</strong><small>No staged source changes, withheld knowledge, or unaddressed issue reports require attention.</small></span>
+            <span><strong>No items currently flagged</strong><small>No staged source changes, withheld knowledge, or unaddressed issue reports appear in this workspace.</small></span>
           </div>
         )}
       </article>
     </section>
+    <AssistantOperations token={token} />
     <footer className="adminWorkspaceNote"><ShieldCheck size={16} /><span>Only published, verified records are used for official answers. Staff assignments and review actions in this workspace do not send automatic email or SMS notifications.</span></footer>
   </div>;
 }
@@ -1072,7 +1056,7 @@ function DocumentReviewQueue({ token }) {
     finally { setBusyId(''); }
   };
   return <div className="pageStack documentReviewPage">
-    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Document review queue</h1><p>Only documents submitted for review appear here. Open the file, then mark it ready for reporting or request a correction.</p></div><button type="button" onClick={() => { setLoading(true); reload().catch(loadError => setError(loadError.message || 'Could not refresh the queue.')).finally(() => setLoading(false)); }}>Refresh queue</button></section>
+    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Document review queue</h1><p>Review submitted files, then mark them ready for reporting or request a correction.</p></div><button type="button" disabled={loading} onClick={() => { setLoading(true); setError(''); reload().catch(loadError => setError(loadError.message || 'Could not refresh the queue.')).finally(() => setLoading(false)); }}>{loading ? 'Refreshing…' : 'Refresh queue'}</button></section>
     {error && <div className="errorBanner" role="alert">{error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
     {loading ? <div className="panelBlock">Loading submitted documents…</div> : items.length === 0 ? <div className="knowledgeEmpty">No documents are waiting in the review queue.</div> : <div className="documentReviewList">{items.map(item => <article key={item.id} className="documentReviewCard">
       <header><div><strong>{item.docName}</strong><span>{item.ownerName} · {item.ownerEmail}</span></div><span className="statusPill">{item.status}</span></header>
@@ -1272,14 +1256,12 @@ function Header({ user, setNavOpen, canGoBack, onBack }) {
   );
 }
 
-function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onSyncWebsite, onExtractStructuredSource }) {
+function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onExtractStructuredSource }) {
   const [cdmExtracting, setCdmExtracting] = useState(false);
   const [cdmNotice, setCdmNotice] = useState('');
   const managedUsage = { 'KB-2': 'Public academic fee answers use this record.', 'KB-3': 'Public hostel and mess fee answers use this record.', 'KB-10': 'Public B.Tech intake answers use this record.', 'KB-6': 'Historical seat matrix answers use this record.' };
   const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState('');
   const [form, setForm] = useState({ title: '', category: 'Admissions', source: 'Admin verified source', text: '', status: 'Published' });
   const [sourceForm, setSourceForm] = useState({ title: '', documentType: 'Eligibility', academicYear: '2026-27', sourceAuthority: 'MITCORER / Maharashtra CET Cell', verifiedText: '' });
   const [sourceFile, setSourceFile] = useState(null);
@@ -1342,19 +1324,6 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
     const saved = await onPublishSource(review.id, review.text, review.resolveConflicts);
     if (saved) setReview(null);
   };
-  const handleSync = async () => {
-    if (syncing || !onSyncWebsite) return;
-    setSyncing(true);
-    setSyncStatus('');
-    try {
-      const summary = await onSyncWebsite();
-      if (summary) {
-        setSyncStatus(`Website sync complete: ${summary.checked} sources checked${summary.discovered ? ` (${summary.discovered} pages discovered)` : ''}, including ${summary.linkChecks || 0} external link checks and ${summary.skippedLinkChecks || 0} skipped checks. ${summary.changed} updates staged for review, ${summary.conflictCount || 0} potential numeric conflicts flagged, ${summary.suspendedRecords || 0} linked answers withheld pending source review, ${summary.errors?.length || 0} source checks failed, ${summary.baselined || 0} monitoring baselines recorded, ${summary.unchanged} unchanged.`);
-      }
-    } finally {
-      setSyncing(false);
-    }
-  };
   const archiveRecord = async (item) => {
     if (recordActionBusy) return;
     setRecordActionBusy(item.id);
@@ -1374,9 +1343,8 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   };
   return (
     <div className="pageStack knowledgeManager">
-      <header className="knowledgeHeader"><div><span className="eyebrow">Assistant knowledge</span><h2>Knowledge Base</h2><p>Keep visitor answers organized, traceable to official sources, and ready for retrieval.</p></div><button className="knowledgeSyncButton" type="button" disabled={syncing} onClick={handleSync}><RefreshCw size={16} />{syncing ? 'Syncing official site…' : 'Sync official site'}</button></header>
+      <header className="knowledgeHeader"><div><span className="eyebrow">Assistant knowledge</span><h2>Knowledge Base</h2><p>Keep visitor answers organized, traceable to official sources, and ready for retrieval.</p></div></header>
       <section className="knowledgeStats"><article><span>All records</span><strong>{items.length}</strong></article><article><span>Published</span><strong>{items.filter(item => item.status === 'Published').length}</strong></article><article><span>Needs review</span><strong>{items.filter(item => /review|draft|pending/i.test(item.status || '')).length + sourcesNeedingReview}</strong></article><article><span>Official sources</span><strong>{sources.length}</strong></article></section>
-      {syncStatus && <div className="decisionResult positive"><strong>{syncStatus}</strong></div>}
       {recordActionMessage && <div className="decisionResult positive" role="status"><strong>{recordActionMessage}</strong></div>}
       <nav className="knowledgeTabs" aria-label="Knowledge Base sections">
         <button type="button" className={activeTab === 'records' ? 'active' : ''} onClick={() => setActiveTab('records')}>Knowledge records <span>{items.length}</span></button>

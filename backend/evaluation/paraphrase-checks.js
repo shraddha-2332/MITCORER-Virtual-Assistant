@@ -33,10 +33,10 @@ export function checkParaphrase(id, data, corpus) {
     if (!/does not confirm current vacancies/.test(answer)) failures.push('vacancies_uncertainty');
   } else if (['HOC-07', 'HOC-16', 'HOC-22'].includes(id)) {
     expectRecord('KB-19');
-    if (!answer.includes('does not state a route list')) failures.push('transport_unknown_details');
+      if (!/does not (?:state|publish|give).*(?:route|timetable)/s.test(answer)) failures.push('transport_unknown_details');
   } else if (['HOC-08', 'HOC-17', 'HOC-23'].includes(id)) {
     expectRecord('KB-20');
-    if (!answer.includes('does not publish borrowing rules, timings')) failures.push('library_unknown_details');
+    if (!answer.includes('does not specify library opening hours or borrowing limits/loan periods')) failures.push('library_unknown_details');
   } else if (id === 'HOC-09') {
     expectRecord('KB-26');
     if (!/caste certificate and caste validity/.test(answer)) failures.push('category_documents');

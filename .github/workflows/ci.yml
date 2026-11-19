@@ -5,7 +5,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       NODE_ENV: test
       GEMINI_API_KEY: ""
@@ -38,3 +38,5 @@ jobs:
         working-directory: frontend
       - run: npm run test:maintainer-browser
         working-directory: frontend
+      - name: Run isolated regressions and confirm 150 development scenarios
+        run: node --no-warnings=ExperimentalWarning scripts/verify-phase-a.mjs

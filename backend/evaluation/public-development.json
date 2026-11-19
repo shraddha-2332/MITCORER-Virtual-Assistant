@@ -126,7 +126,7 @@
     {
       "id": "PUB-021", "language": "en", "category": "polytechnic", "answerability": "supported",
       "question": "Which Polytechnic diploma courses and intake are available at MITCORER?",
-      "expectedStatus": 200, "evidenceGroups": [["KB-12"]], "claimGroups": [["Polytechnic"], ["60"], ["Civil Engineering", "Mechanical Engineering"]],
+      "expectedStatus": 200, "evidenceGroups": [["KB-12"]], "claimGroups": [["Diploma"], ["does not establish a current sanctioned intake"], ["Civil Engineering", "Mechanical Engineering"]],
       "behaviorGroups": [], "forbiddenPhrases": [], "expectNoEvidence": false, "expectDevanagari": false
     },
     {
@@ -156,7 +156,7 @@
     {
       "id": "PUB-026", "language": "en", "category": "contact", "answerability": "supported",
       "question": "What is the official contact email and phone number for MITCORER Barshi?",
-      "expectedStatus": 200, "evidenceGroups": [["KB-17"]], "claimGroups": [["info.mitcorer@mitpune.edu.in"], ["84599 67882"], ["Barshi"]],
+      "expectedStatus": 200, "evidenceGroups": [["KB-17"]], "claimGroups": [["info.mitcorer@mitpune.edu.in"], ["91584 14343"], ["Barshi"]],
       "behaviorGroups": [], "forbiddenPhrases": [], "expectNoEvidence": false, "expectDevanagari": false
     },
     {

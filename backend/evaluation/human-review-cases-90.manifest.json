@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "datasetId": "MITRA-HUMAN-EVAL-90-2026-11",
-  "independent": true,
+  "independent": false,
   "createdAt": "2026-11-10T19:39:09.379Z",
   "caseCount": 90,
-  "caseFileSha256": "485965a76f518f64083d79a6ee023c0416ec8c7b8c09a37d5b039cde44ab5b01",
+  "caseFileSha256": "48f3ee9f83d42abde96a1dceb9fe3d9851be8c701c858a9ffcd0b984e9765af4",
   "corpusSha256": "0538021490d757d3682304df6b9fe4a4f60b0df51a9e8729dfa359d1f9743703",
   "breakdown": {
     "byLanguage": {
@@ -17,5 +17,6 @@
       "clarify": 18,
       "abstain": 18
     }
-  }
+  },
+  "reviewStatus": "candidate-needs-independent-adjudication"
 }

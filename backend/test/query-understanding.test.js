@@ -137,12 +137,13 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     }
     const faculty = await ask('How many faculty are there at MITCORER?');
     assert.equal(faculty.evidence[0]?.id, 'KB-35');
-    assert.match(faculty.answer, /60\+ experienced faculty members/);
-    assert.ok(faculty.officialLinks.some(l => l.url.includes('Mandatory-Disclousure.pdf')));
+    assert.match(faculty.answer, /does not establish a current faculty or alumni count/);
+    assert.doesNotMatch(faculty.answer, /60\+/);
 
     const alumni = await ask('How many alumni does MITCORER have?');
     assert.equal(alumni.evidence[0]?.id, 'KB-35');
-    assert.match(alumni.answer, /900\+ graduates/);
+    assert.match(alumni.answer, /does not establish a current faculty or alumni count/);
+    assert.doesNotMatch(alumni.answer, /900\+/);
 
     const affiliation = await ask('Which university is MITCORER affiliated to?');
     assert.equal(affiliation.evidence[0]?.id, 'KB-37');
@@ -160,14 +161,13 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
 
     const station = await ask('What is the nearest railway station to MITCORER?');
     assert.equal(station.evidence[0]?.id, 'KB-40');
-    assert.match(station.answer, /Barshi Town/);
-    assert.match(station.answer, /4\.7 km/);
-    assert.doesNotMatch(station.answer, /Kurduwadi/);
+    assert.match(station.answer, /Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai/);
+    assert.doesNotMatch(station.answer, /4\.7 km|Barshi Town/);
 
     const busStand = await ask('How far is the college from Barshi bus stand?');
     assert.equal(busStand.evidence[0]?.id, 'KB-40');
-    assert.match(busStand.answer, /5\.7 km/);
-    assert.match(busStand.answer, /MSRTC Bus Stand/);
+    assert.match(busStand.answer, /Barshi Central Bus Stand/);
+    assert.doesNotMatch(busStand.answer, /5\.7 km/);
 
     const mitPune = await ask('Is MITCORER Barshi the same as MIT Pune?');
     assert.equal(mitPune.evidence[0]?.id, 'KB-41');
@@ -193,7 +193,7 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.equal(ragging.evidence[0]?.id, 'KB-44');
     assert.match(ragging.answer, /Anti-Ragging/i);
     assert.match(ragging.answer, /Zero-Tolerance/i);
-    assert.match(ragging.answer, /emergency vehicle/i);
+    assert.match(ragging.answer, /emergency vehicle|campus vehicle \/ ambulance/i);
     assert.ok(ragging.officialLinks.some(link => link.url.includes('Anti-Ragging-2025-26.pdf')));
 
     const aids = await ask('Does MITCORER offer Artificial Intelligence and Data Science?');
@@ -220,17 +220,19 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
 
     const officeHours = await ask('What are the office hours and timings at MITCORER?');
     assert.deepEqual(officeHours.evidence.map(record => record.id), ['KB-46']);
-    assert.match(officeHours.answer, /checked on 2026-11-18/i);
-    assert.match(officeHours.answer, /does not publish current administrative office/i);
+    assert.match(officeHours.answer, /Monday–Saturday, 9:00 AM–5:00 PM/);
+    assert.match(officeHours.answer, /not a confirmed schedule for all administrative offices or campus visits/i);
     assert.ok(officeHours.officialLinks.some(link => link.url.endsWith('/mitcorer/public/contact-us')));
 
     const admissionDesk = await ask('When is the admission enquiry desk open?');
     assert.deepEqual(admissionDesk.evidence.map(record => record.id), ['KB-46']);
-    assert.match(admissionDesk.answer, /does not publish current administrative office/i);
+    assert.match(admissionDesk.answer, /Monday–Saturday, 9:00 AM–5:00 PM/);
+    assert.match(admissionDesk.answer, /\+91 91584 14343/);
+    assert.match(admissionDesk.answer, /\+91 91584 14444/);
 
     const railwayDiplomas = await ask('What professional diplomas or specialized railway courses does MITCORER offer?');
     assert.equal(railwayDiplomas.evidence[0]?.id, 'KB-47');
-    assert.match(railwayDiplomas.answer, /Railway Signaling & Telecommunication/i);
+    assert.match(railwayDiplomas.answer, /Railway Signaling (?:&|and) Telecommunication/i);
     assert.match(railwayDiplomas.answer, /Railway Track Technology/i);
     assert.match(railwayDiplomas.answer, /Rolling Stocks and Operations/i);
     assert.match(railwayDiplomas.answer, /Software Technology in Railway/i);
@@ -259,15 +261,15 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(polyCourses.answer, /Computer Science & Engineering/i);
     assert.match(polyCourses.answer, /Civil Engineering/i);
     assert.match(polyCourses.answer, /Mechanical Engineering/i);
-    assert.match(polyCourses.answer, /Electronic & Telecom Engineering/i);
-    assert.match(polyCourses.answer, /60/);
-    assert.ok(polyCourses.officialLinks.some(link => link.url.endsWith('/department/polytechnic')));
+    assert.match(polyCourses.answer, /Electronics & Telecommunication Engineering/i);
+    assert.match(polyCourses.answer, /does not establish a current sanctioned intake/i);
+    assert.ok(polyCourses.officialLinks.some(link => link.url.endsWith('/Diploma-Admissions-Open-2026-27.html')));
     assert.ok(polyCourses.officialLinks.some(link => link.url.includes('msbte.org.in')));
 
     const polyEligibility = await ask('What is the eligibility for polytechnic diploma at MITCORER?');
     assert.equal(polyEligibility.evidence[0]?.id, 'KB-12');
-    assert.match(polyEligibility.answer, /10th Standard \(SSC\)/i);
-    assert.match(polyEligibility.answer, /35%/);
+    assert.match(polyEligibility.answer, /after SSC/i);
+    assert.match(polyEligibility.answer, /applicable DTE\/MSBTE admission rules/i);
 
     const workshop = await ask('What facilities are available in the central workshop at MITCORER?');
     assert.equal(workshop.evidence[0]?.id, 'KB-49');

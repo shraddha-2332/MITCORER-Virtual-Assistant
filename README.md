@@ -9,9 +9,15 @@ Mitra is a public, text-based virtual assistant for MIT College of Railway Engin
 - Admission process information and relevant official links.
 - Hostel, mess, transport, library, laboratories, and placement information.
 - Recognition of common English, Marathi, Hindi, and transliterated topic phrases.
-- English/Marathi/Hindi response selection, native rendering of maintained fee/intake tables, and reviewed passage translations with explicit fallback when unavailable. See [language scope and validation](docs/MITRA_MULTILINGUAL_RESPONSES.md).
+- English/Marathi/Hindi response selection, native rendering of maintained fee/intake tables, and reviewed passage translations with explicit fallback when unavailable. Native wording still needs competent-speaker review; see [the language review packet](docs/language-review/REVIEW_PACKET.md).
 
 Answers depend on the knowledge available in the project. The assistant does not browse the college website live for each question or guarantee admission, scholarships, accommodation, or placements.
+
+## Current Audit and Phase Work
+
+The local Phase B–D changes add role-protected assistant operations, source/checklist routing, an optimized campus image, and short-window aggregate trends. Speech-to-text is future scope; the microphone icon is disabled. See [current completion status](docs/CURRENT_COMPLETION_STATUS.md) for scope, limitations and validation. The [AI review package](docs/answer-review/MITRA_AI_REVIEW.zip) contains the 150 development answers and current execution evidence. Its 150/150 result is a bounded contract check, not independent proof of factual accuracy. Institutional fact checks and Marathi/Hindi speaker approval remain pending.
+
+In the admin workspace, **Check official site for changes** crawls monitored MITCORER pages and stages detected changes and conflicts for human review. It does not automatically approve or publish knowledge. The AI Quality Monitor reports short-term operational outcomes and source health; it does not measure retrieval accuracy. The monitor requires the current backend route at `/api/assistant/operations`, so restart an older running backend after updating the code.
 
 ## Technology Stack
 
@@ -28,7 +34,7 @@ Answers depend on the knowledge available in the project. The assistant does not
 
 1. The user enters a question in the React chat widget.
 2. The frontend sends JSON to POST /api/public-assistant/ask using fetch().
-3. The backend validates the question and applies bounded multilingual query normalization, extracting branch, admission route, academic year, fee category/gender and service scope. Missing or ambiguous details can trigger clarification. See [query understanding and validation](docs/MITRA_QUERY_UNDERSTANDING.md).
+3. The backend validates the question and applies bounded multilingual query normalization, extracting branch, admission route, academic year, fee category/gender and service scope. Missing or ambiguous details can trigger clarification.
 4. It searches only published knowledge using weighted keyword matches, categories, tags, and topic-specific rules. Up to three records are retrieved; a relevance threshold controls whether evidence is attached.
 5. Supported factual questions use direct, programmed answers and stored information.
 6. If no direct rule answers the question but relevant evidence exists, the backend can send the question and up to two records to Gemini.
@@ -57,7 +63,7 @@ The default database is backend/data/mitra.sqlite. SQLite contains a collections
 
 Knowledge records include a title, category, text, source, optional source URL, and publication status. The backend loads the knowledge into memory and saves application changes through store.js.
 
-Seed records in backend/src/seed.js initialize a new database only. Existing databases retain their maintained knowledge and source library during saving and restarting; seed changes do not overwrite records, republish drafts, or reinsert removed entries. Administrators can edit or retire individual records in the knowledge interface, with revision checks preventing stale saves. Academic fees, hostel/mess fees, current B.Tech intake and historical seat-matrix answers use designated maintained published records. New seed records support structured fact tables; older text records remain unchanged until deliberately converted. See [knowledge maintenance](docs/MITRA_KNOWLEDGE_MAINTENANCE.md) for canonical records, API contracts and limitations. Use the protected source review/publish workflow for document updates. Back up data before deliberate migrations; do not delete the database to refresh knowledge. Other answer rules and legacy planner screens still contain independent facts and require later consolidation.
+Seed records in backend/src/seed.js initialize a new database only. Existing databases retain their maintained knowledge and source library during saving and restarting; seed changes do not overwrite records, republish drafts, or reinsert removed entries. Administrators can edit or retire individual records in the knowledge interface, with revision checks preventing stale saves. Academic fees, hostel/mess fees, current B.Tech intake and historical seat-matrix answers use designated maintained published records. New seed records support structured fact tables; older text records remain unchanged until deliberately converted. See [API documentation](docs/API.md) for maintenance contracts and limitations. Use the protected source review/publish workflow for document updates. Back up data before deliberate migrations; do not delete the database to refresh knowledge. Other answer rules and legacy planner screens still contain independent facts and require later consolidation.
 
 The underlying code also retains protected source-management APIs. They are not public chat features and require administrator authentication. Their ingestion code supports TXT/CSV, PDF extraction through Poppler, and English OCR through Tesseract. DOCX/XLSX require manually supplied verified text. Reviewed text is published in chunks of up to 2,800 characters; original source files are stored under backend/official-sources/ when the backend is started from its directory. Docker installs the PDF/OCR tools; local extraction requires those tools separately.
 
@@ -65,17 +71,13 @@ To inspect the database, open backend/data/mitra.sqlite in a SQLite viewer and b
 
 ## Conversation Behavior
 
-Compound questions can return separate supported or unsupported sections with numbered record references. Ambiguous intake references ask which programme is meant; preceding messages do not resolve them. See [compound answering and clarification](docs/MITRA_COMPOUND_QUESTIONS.md) for supported facets and limits.
+Compound questions can return separate supported or unsupported sections with numbered record references. Ambiguous intake references ask which programme is meant; preceding messages do not resolve them. See [API documentation](docs/API.md) for the response contract.
 
 The public widget holds visible messages and a conversation ID in React state. The backend persists exchanges and uses selected category, gender, branch, route, topic and academic-year fields for heuristic follow-ups. Refreshing loses the active conversation ID. Reset deletes the current stored exchange through the protected browser-session endpoint. A 256-bit HttpOnly SameSite=Strict cookie binds each public conversation to its browser session; only its hash is stored. Public conversations expire after 30 idle minutes, are pruned during subsequent public chat/reset requests, and are limited to 200 messages (100 exchanges), with at most 200 public conversations retained. Legacy unbound public conversations are retired during pruning; back up data before upgrading.
 
 Fee follow-ups preserve the original wording and explicit route/year qualifiers. Missing fields can be added from context; ambiguous category/gender questions still request clarification. Fee responses do not append independent hardcoded profile amounts. Recognized critical factual topics bypass optional advisory generation.
 
-For the current research framing, implemented corrections and evidence requirements, see [research scope and evaluation plan](docs/RESEARCH_SCOPE_AND_EVALUATION_PLAN.md). Existing draft comparative results are unverified and must not be presented as measured findings.
-
-Research preparation now includes a [design-and-implementation manuscript](docs/MITRA_RESEARCH_MANUSCRIPT.md), [primary-source literature audit](docs/LITERATURE_VERIFICATION.md), and [independent-review packet](docs/INDEPENDENT_EVALUATION_PACKET.md). Reviewer labels and final independent measurements remain pending.
-
-Run `npm.cmd run evaluate:verifiers` from `backend` for [reproducible synthetic verifier diagnostics](docs/VERIFIER_DEVELOPMENT_DIAGNOSTICS.md). These explicitly report missed invalid answers; `-- --strict` exits nonzero on decision errors. They do not measure live model or independent answer accuracy.
+Run `npm.cmd run evaluate:verifiers` from `backend` for reproducible synthetic verifier diagnostics. These explicitly report missed invalid answers; `-- --strict` exits nonzero on decision errors. They do not measure live model or independent answer accuracy.
 
 ## Local Setup
 
@@ -153,19 +155,19 @@ The existing backend suite includes assistant retrieval, public answers, multili
 
 ## Current Limitations
 
-Public evaluation commands, preserved baseline, observed failures and research limitations are documented in [docs/MITRA_PUBLIC_EVALUATION.md](docs/MITRA_PUBLIC_EVALUATION.md). Run `npm run evaluate:public` from backend for diagnostics or add `-- --strict` to fail on unmet expectations. The initial questions are unreviewed development cases, not a held-out accuracy benchmark.
+Run `npm run evaluate:public` from backend for diagnostics or add `-- --strict` to fail on unmet expectations. The initial questions are unreviewed development cases, not a held-out accuracy benchmark. See [the answer-review packet](docs/answer-review/README.md) for the pending human review requirements.
 
-The offline [keyword versus BM25 comparison](docs/MITRA_BM25_COMPARISON.md) runs with `npm.cmd run evaluate:retrieval` from backend. It compares three ranking methods on the same seeded corpus, keeps the production retriever unchanged, and reports unreviewed development evidence-group metrics and local ranking latency. It does not measure overall answer accuracy.
+The offline keyword versus BM25 comparison runs with `npm.cmd run evaluate:retrieval` from backend. It compares three ranking methods on the same seeded corpus, keeps the production retriever unchanged, and reports unreviewed development evidence-group metrics and local ranking latency. See [retrieval review workflow](docs/RETRIEVAL_REVIEW_WORKFLOW.md); it does not measure overall answer accuracy.
 
 [Miss analysis and relevance-review workflow](docs/RETRIEVAL_REVIEW_WORKFLOW.md) explains the missing passages, links blinded development-review material and prepares 24 unevaluated multilingual paraphrase candidates. Independent labels and a separately authored final held-out set remain pending.
 
-Those 24 candidates were subsequently [executed as development diagnostics](docs/MITRA_TEST_COMPLETION.md), with reproduced crashes and scope errors fixed. They are no longer untouched held-out cases. The API retains published passage snapshots with content hashes; the public evidence expansion has been removed at the user's request. Independent human review remains unverified.
+Those 24 candidates were subsequently executed as development diagnostics, with reproduced crashes and scope errors fixed. They are no longer untouched held-out cases. The API retains published passage snapshots with content hashes; the public evidence expansion has been removed at the user's request. Independent human review remains unverified.
 
-[Maintainer browser E2E](docs/MITRA_MAINTAINER_E2E.md) verifies edits, failures, conflicts, translation staleness, retirement and persistence across a separate backend-process restart. Public maintainer sign-in is deferred at the user's request; this test uses authenticated API fixtures. The public footer retains its original text, and a compact language icon beside minimize selects Automatic, English, Marathi or Hindi. From frontend, run `npm.cmd test` for unit tests and `npm.cmd run test:maintainer-browser` for the isolated browser journey; installed Chrome or Edge is required.
+The maintainer browser E2E check verifies edits, failures, conflicts, translation staleness, retirement and persistence across a separate backend-process restart. Public maintainer sign-in is deferred at the user's request; this test uses authenticated API fixtures. The public footer retains its original text, and a compact language icon beside minimize selects Automatic, English, Marathi or Hindi. From frontend, run `npm.cmd test` for unit tests and `npm.cmd run test:maintainer-browser` for the isolated browser journey; installed Chrome or Edge is required.
 
-[Source freshness and document lineage](docs/MITRA_SOURCE_PROVENANCE.md) adds optional reviewed metadata, explicit validity/supersession checks, page-aware publication, stable passage revisions and structured-conflict refusal. Existing records without metadata remain unknown rather than being marked newly verified. Semantic claim validation and independent final evaluation remain pending.
+Source freshness and document lineage add optional reviewed metadata, explicit validity/supersession checks, page-aware publication, stable passage revisions and structured-conflict refusal. Existing records without metadata remain unknown rather than being marked newly verified. See [API documentation](docs/API.md); semantic claim validation and independent final evaluation remain pending.
 
-[Answer presentation and source audit](docs/MITRA_ANSWER_SOURCE_AUDIT.md) covers every public quick reply and answer family in English, Marathi and Hindi, using seeded and read-only maintained snapshots. Programme and fee rows retain maintained values, compound sections retain their structure, and official links follow the answer topic and requested year. To reproduce the audit, run `node --no-warnings=ExperimentalWarning scripts/audit-answer-sources.js` from backend, then `npm.cmd run test:all-answers-browser` from frontend. Network access and installed Chrome are required. Detailed generated reports and browser screenshots are ignored by Git.
+The [answer audit catalogue](docs/answer-audit/CATALOGUE.md) covers public quick replies and answer families in English, Marathi and Hindi, using seeded and read-only maintained snapshots. Programme and fee rows retain maintained values, compound sections retain their structure, and official links follow the answer topic and requested year. To reproduce the audit, run `node --no-warnings=ExperimentalWarning scripts/audit-answer-sources.js` from backend, then `npm.cmd run test:all-answers-browser` from frontend. Network access and installed Chrome are required. Detailed generated reports and browser screenshots are ignored by Git.
 
 - Bounded keyword/rule/concept retrieval can miss unfamiliar wording or retrieve imperfect matches.
 - Multilingual topic recognition does not guarantee translated direct answers.
@@ -177,5 +179,7 @@ Those 24 candidates were subsequently [executed as development diagnostics](docs
 - Public answer and maintainer browser journeys are covered by isolated checks; live deployment and load testing remain outstanding.
 
 ## Current completion and operations
+
+The approved Phase A accuracy, context, language and UI changes are implemented locally. See [Phase A implementation and validation](docs/PHASE_A_IMPLEMENTATION.md) for the original changes and [current completion status](docs/CURRENT_COMPLETION_STATUS.md) for the later D11 fix and latest local validation. No deployment or institutional-record update was performed.
 
 See [the current completion report](docs/CURRENT_COMPLETION_STATUS.md) for validated behavior, deployment findings, reported faculty review and remaining external dependencies. Older milestone documents remain historical snapshots. See [operations and release instructions](docs/OPERATIONS.md) for same-origin Vercel/Render routing, production credentials, health/readiness checks, verified backups, restore drills and rollback. Do not commit or push the current change set before the user approves it.

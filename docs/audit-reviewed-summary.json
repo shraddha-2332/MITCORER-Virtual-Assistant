@@ -1,0 +1,236 @@
+{
+  "total": 150,
+  "passed": 118,
+  "failed": 32,
+  "errors": 0,
+  "failures": [
+    {
+      "id": "AUD-013",
+      "q": "Computer branch capacity?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-034",
+      "q": "financial assistance",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-038",
+      "q": "hostel chargs",
+      "failures": [
+        "charges_question_answered_as_facilities"
+      ]
+    },
+    {
+      "id": "AUD-043",
+      "q": "admission procedure",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-045",
+      "q": "MITCORER admission steps",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-050",
+      "q": "Mechanical branch madhe kiti seats aahet?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-063",
+      "q": "ग्रंथालयाची माहिती द्या",
+      "failures": [
+        "response_language_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-064",
+      "q": "मैकेनिकल की कितनी सीटें हैं?",
+      "failures": [
+        "response_language_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-067",
+      "q": "प्रवेश के लिए दस्तावेज क्या चाहिए?",
+      "failures": [
+        "response_language_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-068",
+      "q": "कॉलेज का पता क्या है?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-069",
+      "q": "पुस्तकालय की जानकारी दें",
+      "failures": [
+        "response_language_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-070",
+      "q": "छात्रवृत्ति की जानकारी दें",
+      "failures": [
+        "response_language_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-072",
+      "q": "Computer Science and Engineering sanctioned seats?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-076",
+      "q": "Civil Engineering sanctioned seats?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-080",
+      "q": "Mechanical and Rail Engineering sanctioned seats?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-084",
+      "q": "Artificial Intelligence and Data Science sanctioned seats?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-088",
+      "q": "Electronics and Telecommunication Engineering sanctioned seats?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-093",
+      "q": "And Mechanical Engineering?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-100",
+      "q": "Is food included?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-104",
+      "q": "And hostel?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-107",
+      "q": "How much is the deposit?",
+      "failures": [
+        "evidence_or_scope_mismatch",
+        "missing_requested_fact:5,000"
+      ]
+    },
+    {
+      "id": "AUD-108",
+      "q": "What about the mess?",
+      "failures": [
+        "evidence_or_scope_mismatch",
+        "missing_requested_fact:42,000"
+      ]
+    },
+    {
+      "id": "AUD-110",
+      "q": "And Civil?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-111",
+      "q": "Tell me CSE fees, intake, scholarship details and hostel charges.",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-112",
+      "q": "Compare Civil and Computer Engineering intake.",
+      "failures": [
+        "missing_requested_fact:60"
+      ]
+    },
+    {
+      "id": "AUD-113",
+      "q": "List CSE fees and hostel fees.",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-115",
+      "q": "Tell me CSE and mechanical fees and intake.",
+      "failures": [
+        "evidence_or_scope_mismatch",
+        "missing_requested_fact:120",
+        "missing_requested_fact:60"
+      ]
+    },
+    {
+      "id": "AUD-119",
+      "q": "Is it available?",
+      "failures": [
+        "ambiguous_request_answered_with_evidence"
+      ]
+    },
+    {
+      "id": "AUD-131",
+      "q": "Explain the admission process.",
+      "failures": [
+        "procedure_not_structured_as_steps"
+      ]
+    },
+    {
+      "id": "AUD-133",
+      "q": "What are fees and hostel fees?",
+      "failures": [
+        "evidence_or_scope_mismatch"
+      ]
+    },
+    {
+      "id": "AUD-144",
+      "q": "Give me the HOD personal mobile number.",
+      "failures": [
+        "unsupported_request_substituted_with_general_information"
+      ]
+    },
+    {
+      "id": "AUD-147",
+      "q": "What is tomorrow attendance?",
+      "failures": [
+        "unsupported_request_substituted_with_general_information"
+      ]
+    }
+  ]
+}

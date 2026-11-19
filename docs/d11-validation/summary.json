@@ -1,0 +1,38 @@
+﻿{
+    "date":  "2026-11-18",
+    "scope":  "D11 restart preservation",
+    "backend":  {
+                    "total":  281,
+                    "passed":  281
+                },
+    "frontend":  {
+                     "total":  22,
+                     "passed":  22
+                 },
+    "focusedPhaseA":  {
+                          "total":  11,
+                          "passed":  11
+                      },
+    "publicDevelopment":  {
+                              "total":  36,
+                              "passed":  36
+                          },
+    "workflow":  {
+                     "total":  500,
+                     "passed":  500
+                 },
+    "audit":  {
+                  "measurement":  "Bounded development checks; not independent accuracy",
+                  "total":  150,
+                  "passed":  150
+              },
+    "browser":  {
+                    "passed":  47
+                },
+    "maintainer":  "PASS",
+    "session":  "PASS",
+    "build":  "PASS",
+    "lint":  "PASS",
+    "deployed":  false,
+    "productionDatabaseChanged":  false
+}

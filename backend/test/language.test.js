@@ -11,7 +11,7 @@ test('language selection honors explicit preference and does not infer language 
   assert.equal(selectLanguage('हिंदी में बताइए: CSE intake'), 'hi');
   assert.equal(selectLanguage('त्याची प्रवेश क्षमता किती आहे?'), 'mr');
   assert.equal(selectLanguage('Does the library have Hindi books?'), 'en');
-  assert.equal(selectLanguage('Mala hostel fee sanga'), 'en');
+  assert.equal(selectLanguage('Mala hostel fee sanga'), 'mr');
   assert.throws(() => selectLanguage('Fees?', 'zh'), (error) => error.status === 400);
 });
 

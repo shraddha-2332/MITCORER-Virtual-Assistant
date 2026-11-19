@@ -12,6 +12,11 @@ export function selectLanguage(question, preference = 'auto') {
   const named = text.match(/\b(?:answer|reply|respond|speak|explain)\s+(?:to me\s+)?(?:in\s+)?(english|marathi|hindi)\b/)
     || text.match(/^\s*(?:please\s+)?in\s+(english|marathi|hindi)\b/);
   if (named) return { english: 'en', marathi: 'mr', hindi: 'hi' }[named[1]];
+  // Shared nouns (for example प्रवेश) are not language identifiers.
+  if (/(?:आहे|आहेत|किती|सांगा|द्यावे|द्या|माहिती|कोणती|कुठे|काय|मध्ये|साठी|ग्रंथालयाची)/u.test(text)) return 'mr';
+  if (/(?:हैं|है(?:[?।\s]|$)|क्या|कितन|बताइ|बताए|जानकारी|चाहिए|दस्तावेज|के लिए|की |का |कहाँ|कहां|छात्रवृत्ति)/u.test(text)) return 'hi';
+  if (/\b(?:aahe|aahet|kiti|madhe|sathi|mala|sanga|pahijet|konti|kasa|milel|baddal)\b/.test(text)) return 'mr';
+  if (/\b(?:kitni|kitna|hai|hain|mujhe|chahiye|kya|liye|bhejo)\b/.test(text)) return 'hi';
   if (/मराठीत|मराठी/.test(text)) return 'mr';
   if (/हिंदी|हिन्दी/.test(text)) return 'hi';
   const marathi = /मला|सांगा|आहे|किती|मध्ये|त्याची|कोणता|प्रवेश|शुल्क|वसतिगृह/.test(text);
@@ -21,6 +26,8 @@ export function selectLanguage(question, preference = 'auto') {
 
 export function normalizeLocalTerms(question) {
   let text = normalizeDigits(String(question).normalize('NFKC'));
+  text = text.replace(/कॉम्प्युटर|कॉम्प्युटर|कंप्यूटर|कम्प्यूटर/gu, ' computer engineering ')
+    .replace(/(?:कॉलेज\s+का\s+पता)/gu, ' college address ');
   text = text.replace(/^(?:please\s+)?(?:answer|reply|respond)(?:\s+to me)?\s+in\s+(?:english|marathi|hindi)\s*[:,]?\s*(?:and\s+)?/i, '');
   const replacements = [
     // Map institution-level admission phrasing to the same bounded English intent
@@ -135,7 +142,7 @@ const labels = {
     intake: 'स्वीकृत प्रवेश क्षमता', code: 'चॉइस कोड', intakeCaution: 'प्रवेश क्षमता वर्तमान रिक्त सीटों या प्रवेश की गारंटी नहीं है।',
     clarification: 'आप किस पाठ्यक्रम के बारे में पूछ रहे हैं? कृपया पाठ्यक्रम और प्रवेश मार्ग बताएं, जैसे प्रथम वर्ष B.Tech या Polytechnic। इस उत्तर में पिछले संदेशों का संदर्भ उपयोग नहीं किया जाता।',
     unsupported: 'इस भाग के लिए पर्याप्त प्रकाशित आधिकारिक जानकारी उपलब्ध नहीं है। कृपया कॉलेज से विवरण की पुष्टि करें।',
-    fallback: 'इस जानकारी का समीक्षा किया हुआ हिंदी अनुवाद उपलब्ध नहीं है। तथ्यों को बदले बिना मूल अंग्रेजी जानकारी नीचे दी गई है।',
+    fallback: 'इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।',
     bounded: 'कृपया एक बार में अधिकतम चार विषय पूछें, ताकि हर भाग का उत्तर उसके स्रोत के साथ दिया जा सके।',
     titles: { programmes: 'पाठ्यक्रम और प्रवेश क्षमता', academicFees: 'शैक्षणिक शुल्क', accommodationFees: 'छात्रावास और मेस शुल्क', hostel: 'छात्रावास सुविधाएं', transport: 'बस और परिवहन', library: 'पुस्तकालय', seatMatrix: 'ऐतिहासिक सीट जानकारी', unknown: 'अन्य पूछी गई जानकारी' } },
 };
@@ -188,7 +195,13 @@ export function localizeResponse(response, language, query, records, feeSelectio
   if (language === 'en') return { ...response, requestedLanguage: 'en', responseLanguage: 'en', localizationStatus: 'original' };
   const t = labels[language];
   const translate = (text, ids, normalizedQuery, status, managedRecordId, clarificationKind) => {
-    if (status === 'clarification') return { text: clarificationLabels[language]?.[clarificationKind] || (response.sections ? t.clarification : /four topics/.test(text) ? t.bounded : t.clarification), method: 'template' };
+    if (clarificationKind === 'scholarshipDocuments') return { text: language === 'mr'
+      ? 'कोणती शिष्यवृत्ती योजना आणि कोणते शैक्षणिक वर्ष? योजनेच्या सर्वसाधारण माहितीत कागदपत्रांची संपूर्ण यादी नाही. अर्ज करण्यापूर्वी त्या योजनेची सध्याची अधिकृत यादी तपासा. वैयक्तिक कागदपत्रे या चॅटमध्ये पाठवू नका.'
+      : 'किस छात्रवृत्ति योजना और शैक्षणिक वर्ष के लिए दस्तावेज़ चाहिए? योजना के सामान्य विवरण में पूरी दस्तावेज़ सूची नहीं है। आवेदन करने से पहले उस योजना की वर्तमान आधिकारिक सूची देखें। निजी दस्तावेज़ इस चैट में न भेजें।', method: 'template' };
+    if (status === 'clarification') {
+      if (clarificationKind === 'documents') return { text: `${t.fallback}\n\n${text}`, method: 'fallback' };
+      return { text: clarificationLabels[language]?.[clarificationKind] || (response.sections ? t.clarification : /four topics/.test(text) ? t.bounded : t.clarification), method: 'template' };
+    }
     if (status === 'unsupported') return { text: t.unsupported, method: 'template' };
     const record = records.find((item) => item.id === ids[0] && usableKnowledge(item));
     if (record?.facts && managedRecordId === record.id) {
@@ -214,7 +227,10 @@ export function localizeResponse(response, language, query, records, feeSelectio
     sections = sections.map((section) => {
       const localized = translate(section.answer, section.evidenceIds, section.normalizedQuery || section.question, section.status, section.managedRecordId, section.clarificationKind);
       methods.push(localized.method);
-      return { ...section, title: t.titles[section.topic] || t.titles.unknown, answer: localized.text, localizationStatus: localized.method };
+      const titles = language === 'mr'
+        ? { scholarship: 'शिष्यवृत्ती', admissions: 'प्रवेश प्रक्रिया', documents: 'आवश्यक कागदपत्रे', contact: 'पत्ता आणि संपर्क', officeHours: 'कार्यालयीन वेळ' }
+        : { scholarship: 'छात्रवृत्ति', admissions: 'प्रवेश प्रक्रिया', documents: 'आवश्यक दस्तावेज', contact: 'पता और संपर्क', officeHours: 'कार्यालय समय' };
+      return { ...section, title: t.titles[section.topic] || titles[section.topic] || t.titles.unknown, answer: localized.text, localizationStatus: localized.method };
     });
     answer = sections.map((section) => `${section.title}: ${section.answer}${section.evidenceIds.map((id) => ` [${response.evidence.findIndex((item) => item.id === id) + 1}]`).join('')}`).join('\n\n');
   } else {
