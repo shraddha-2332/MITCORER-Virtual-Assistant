@@ -115,7 +115,7 @@ export function buildReviewedPassage(query, language, records) {
   if (!id) return null;
   const record = records.find((item) => item.id === id && usableKnowledge(item));
   const reviewed = record?.translations?.[language];
-  if (!record || !reviewed?.reviewedBy || reviewed.sourceHash !== sourceTextHash(record.text) || !sameNumbers(record.text, reviewed.text)) return null;
+  if (!record || !(reviewed?.reviewedBy || reviewed?.status === 'ai-reviewed-pending-human-review') || reviewed.sourceHash !== sourceTextHash(record.text) || !sameNumbers(record.text, reviewed.text)) return null;
   const years = extractAcademicYears(query).years;
   if (years.some((year) => record.provenance?.academicYear ? record.provenance.academicYear !== year : !record.text.includes(year) && record.academicYear !== year)) return {
     managedRecordId: id, source: 'No verified record', answer: 'No verified record for the requested academic year.', evidence: [], next: '' };
@@ -203,7 +203,7 @@ export function localizeResponse(response, language, query, records, feeSelectio
       return { text: clarificationLabels[language]?.[clarificationKind] || (response.sections ? t.clarification : /four topics/.test(text) ? t.bounded : t.clarification), method: 'template' };
     }
     if (status === 'unsupported') return { text: t.unsupported, method: 'template' };
-    const record = records.find((item) => item.id === ids[0] && usableKnowledge(item));
+    const record = records.find((item) => item.id === ids[0] && (usableKnowledge(item) || typeof item.passage?.text === 'string'));
     if (record?.facts && managedRecordId === record.id) {
       const rendered = renderStructured(record.facts, normalizedQuery, language, feeSelection);
       if (sameNumbers(text, rendered)) return { text: rendered, method: 'template' };
@@ -216,7 +216,11 @@ export function localizeResponse(response, language, query, records, feeSelectio
       }
     }
     const reviewed = record?.translations?.[language];
-    if (record && reviewed && reviewed.sourceHash === sourceTextHash(record.text) && reviewed.reviewedBy && text === record.text && sameNumbers(text, reviewed.text)) return { text: reviewed.text, method: 'maintainer-reviewed' };
+    const sourceText = record?.text || record?.passage?.text;
+    if (record && reviewed && sourceText && reviewed.sourceHash === sourceTextHash(sourceText) && text === sourceText && sameNumbers(text, reviewed.text)) {
+      if (reviewed.reviewedBy) return { text: reviewed.text, method: 'maintainer-reviewed' };
+      if (reviewed.status === 'ai-reviewed-pending-human-review') return { text: reviewed.text, method: 'ai-reviewed' };
+    }
     return { text: `${t.fallback}\n\n${text}`, method: 'fallback' };
   };
   let answer;
@@ -241,6 +245,9 @@ export function localizeResponse(response, language, query, records, feeSelectio
   const fallback = methods.includes('fallback');
   return { ...response, ...(sections ? { sections } : {}), answer, next: '', requestedLanguage: language,
     responseLanguage: fallback ? 'mixed' : language,
-    localizationStatus: fallback ? methods.every((method) => method === 'fallback') ? 'fallback' : 'partial' : methods.every((method) => method === 'maintainer-reviewed') ? 'maintainer-reviewed' : 'template',
-    languageReviewStatus: methods.includes('template') ? 'speaker-review-pending' : fallback ? 'translation-unavailable' : 'maintainer-reviewed' };
+    localizationStatus: fallback ? methods.every((method) => method === 'fallback') ? 'fallback' : 'partial'
+      : methods.every((method) => method === 'ai-reviewed') ? 'ai-reviewed'
+        : methods.every((method) => method === 'maintainer-reviewed') ? 'maintainer-reviewed' : 'template',
+    languageReviewStatus: methods.includes('ai-reviewed') ? 'human-review-pending'
+      : methods.includes('template') ? 'speaker-review-pending' : fallback ? 'translation-unavailable' : 'maintainer-reviewed' };
 }

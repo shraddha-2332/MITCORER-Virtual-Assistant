@@ -6,9 +6,9 @@ import { config } from '../src/config.js';
 import { getDb, resetDbForTests } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
 
-async function withServer(fn, serverOptions) {
+async function withServer(fn) {
   resetDbForTests();
-  const server = createServer(serverOptions);
+  const server = createServer();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   const base = `http://127.0.0.1:${address.port}`;
@@ -119,28 +119,11 @@ test('syncMonitoredWebsiteSources stages changed pages in Review status without 
   assert.equal(updatedSource.status, 'Review');
 });
 
-test('POST /api/official-sources/sync enforces admin authorization and executes website sync', async () => {
-  const rootUrl = 'https://mitcorer.edu.in/mitcorer/public/index.php';
-  const linkedPaths = [
-    '/mitcorer/public/admissions/programmes',
-    '/mitcorer/public/department/cse',
-    '/mitcorer/public/department/civil',
-    '/mitcorer/public/infrastructure/library',
-    '/mitcorer/public/contact-us',
-  ];
-  const mockFetcher = async (url) => {
-    if (url === rootUrl) {
-      return `<html><body>${linkedPaths.map((path) => `<a href="${path}">Official section</a>`).join(' ')}</body></html>`;
-    }
-    return '<html><body><h1>Official MITCORER page</h1><p>Verified website content for deterministic CI synchronization checks.</p></body></html>';
-  };
-
+test('POST /api/official-sources/sync is paused and cannot change records', async () => {
   await withServer(async (base) => {
-    // 1. Unauthenticated request should fail
     const unauth = await request(base, '/api/official-sources/sync', { method: 'POST' });
     assert.equal(unauth.response.status, 401);
 
-    // 2. Applicant request should be forbidden
     const applicantLogin = await request(base, '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -153,22 +136,23 @@ test('POST /api/official-sources/sync enforces admin authorization and executes 
     });
     assert.equal(forbidden.response.status, 403);
 
-    // 3. Admin request succeeds
     const adminLogin = await request(base, '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'admin@mitcorer.edu.in', password: 'mitra' }),
     });
     const adminToken = adminLogin.payload.data.token;
+    const sourcesBefore = getDb().officialSources.length;
+    const knowledgeBefore = getDb().knowledge.map((record) => [record.id, record.status, record.text]);
     const adminSync = await request(base, '/api/official-sources/sync', {
       method: 'POST',
       headers: { Authorization: `Bearer ${adminToken}` },
     });
-    assert.equal(adminSync.response.status, 200);
-    assert.ok(adminSync.payload.data.checked >= 6);
-    assert.ok(typeof adminSync.payload.data.unchanged === 'number');
-    assert.ok(typeof adminSync.payload.data.changed === 'number');
-  }, { officialSourceSyncOptions: { fetcher: mockFetcher } });
+    assert.equal(adminSync.response.status, 409);
+    assert.equal(adminSync.payload.error.code, 'OFFICIAL_SOURCE_SYNC_PAUSED');
+    assert.equal(getDb().officialSources.length, sourcesBefore);
+    assert.deepEqual(getDb().knowledge.map((record) => [record.id, record.status, record.text]), knowledgeBefore);
+  });
 });
 
 test('analyzeContentDrift detects metric changes, academic year updates, and character deltas', () => {

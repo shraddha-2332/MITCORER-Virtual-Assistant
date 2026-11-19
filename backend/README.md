@@ -73,6 +73,4 @@ The CSV needs `case_id`, `language`, `topic`, `question`, and `author_reviewer_c
 
 ### Official website sync
 
-The admin **Sync college website** action (`POST /api/official-sources/sync`) and `npm run sync:website` start from `https://mitcorer.edu.in/mitcorer/public/index.php`, discover same-origin HTML routes under `/mitcorer/public`, and stage new or changed pages in the official-source review queue. Links to documents, assets, external domains, and paths outside that website section are skipped. The crawl is capped at 250 pages with eight concurrent requests; failed routes are reported for retry.
-
-The first sync uses already imported knowledge page URLs to establish a monitoring baseline without creating duplicate review items. Later numeric changes are compared with published claims; likely conflicts or removed numeric claims are withheld from retrieval and the page change is staged for admin review. Publishing requires an explicit conflict confirmation and archives the older source-linked claims. Sync is on demand only: use the admin action or `npm run sync:website`. No recurring scheduler is configured.
+Website sync is paused while the existing official-source inventory is reviewed. The admin endpoint `POST /api/official-sources/sync` returns `409 OFFICIAL_SOURCE_SYNC_PAUSED` and does not fetch pages or change source/knowledge records. The manual `npm run sync:website` command is disabled. Existing uploaded-source review and publishing remain available.

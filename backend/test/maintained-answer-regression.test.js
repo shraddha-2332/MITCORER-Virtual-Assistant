@@ -28,6 +28,27 @@ test('maintained profile edits override literals and retirement prevents reuse',
   assert.deepEqual((await ask('Who is the HOD of Computer Science?')).evidence, []);
 }));
 
+test('faculty questions use published crawled profiles across departments', () => fixture(async ask => {
+  const profile = (id, title, slug, name, field) => ({
+    id, title, sourceUrl: `https://mitcorer.edu.in/mitcorer/public/department/${slug}/faculty`,
+    documentType: 'Faculty', sourceAuthority: 'MITCORER official site', status: 'Published',
+    extractedText: `Faculty Profile\n${name}\nDesignation:\nAssistant Professor\nQualification:\nM.E.\nArea of Research Interest:\n${field}\nTeaching Experience:\n10 years`,
+  });
+  getDb().officialSources = getDb().officialSources.filter(item => !String(item.id || '').startsWith('SRC-FACULTY-'));
+  getDb().officialSources.push(
+    profile('SRC-CSE-FACULTY', 'CSE faculty', 'computer-science-engineering', 'Prof. Example CSE', 'Cloud Computing'),
+    profile('SRC-CIVIL-FACULTY', 'Civil faculty', 'civil-engineering', 'Prof. Example Civil', 'Structures'),
+  );
+  const cse = await ask('List faculties working in Computer Science and Engineering branch?');
+  assert.match(cse.answer, /Prof\. Example CSE/);
+  assert.doesNotMatch(cse.answer, /Prof\. Example Civil/);
+  assert.equal(cse.evidence[0]?.id, 'SRC-CSE-FACULTY');
+  const all = await ask('List faculty profiles for all branches.');
+  assert.match(all.answer, /Prof\. Example CSE/);
+  assert.match(all.answer, /Prof\. Example Civil/);
+  assert.deepEqual(new Set(all.evidence.map(item => item.id)), new Set(['SRC-CSE-FACULTY', 'SRC-CIVIL-FACULTY']));
+}));
+
 test('standard About and Why questions use stable, formatted maintained answers', () => fixture(async ask => {
   const about = await ask('Tell me about MITCORER.');
   assert.ok(about.evidence.some(item => item.id === 'KB-34'));

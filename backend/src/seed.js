@@ -2,8 +2,10 @@ import { hashPassword } from './auth.js';
 import { nowIso } from './utils.js';
 import { renderFactText } from './knowledge.js';
 import { config } from './config.js';
+import facultyProfileCaptures from './faculty-profile-captures.json' with { type: 'json' };
 
 const passwordHash = hashPassword('mitra', 'mitra-seed-salt');
+const placementPlatformsText = 'The project owner reports that MITCORER provides students with these placement platforms: POD, Superset, TalentBattle, and Unstop. Platform access, active drives, student eligibility, and available opportunities may vary; students should confirm current details with the Training and Placement Cell. A platform listing does not guarantee an interview, placement, company, or package.';
 
 export const seedKnowledge = [
   {
@@ -265,8 +267,22 @@ export const seedKnowledge = [
     category: 'Placement',
     source: 'MITCORER Admissions FAQ',
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placements',
-    tags: ['placement assistance', 'placement cell', 'training and placement', 'internship', 'internships'],
+    tags: ['placement assistance', 'placement cell', 'training and placement', 'internship', 'internships', 'placement platform', 'placement platforms', 'POD', 'Superset', 'TalentBattle', 'Unstop'],
     text: 'MITCORER states that a dedicated Training and Placement Cell supports placement and training, and that internship opportunities are provided as part of academic training. This does not guarantee placement, an internship, a company, or a package for an individual student.',
+    status: 'Published',
+  },
+  {
+    id: 'KB-69',
+    title: 'MITCORER placement platforms reported by project owner',
+    category: 'Placement',
+    source: 'Project-owner-provided information; not independently verified on an official public page',
+    tags: ['placement platform', 'placement platforms', 'platforms for placements', 'POD', 'Superset', 'TalentBattle', 'Unstop'],
+    provenance: { capturedAt: '2026-11-19', section: 'Placement platforms', verifiedFrom: 'Information supplied by the project owner; public-source verification pending.' },
+    text: placementPlatformsText,
+    translations: {
+      mr: { text: 'प्रकल्पाच्या मालकाने दिलेल्या माहितीनुसार, MITCORER विद्यार्थ्यांना प्लेसमेंटसाठी POD, Superset, TalentBattle आणि Unstop हे प्लॅटफॉर्म उपलब्ध करून देते. सध्याच्या ड्राइव्ह, खाते प्रवेश आणि पात्रतेची खात्री Training and Placement Cell कडून करा. प्लॅटफॉर्मची नावे दिल्याने मुलाखत, नोकरी, कंपनी किंवा पॅकेजची हमी मिळत नाही.', sourceHash: '6c807f31b208b0ca1125c50493d95d434d2c44e0eaf562065c35d7ed162f8f97', status: 'ai-reviewed-pending-human-review' },
+      hi: { text: 'परियोजना के स्वामी द्वारा दी गई जानकारी के अनुसार, MITCORER छात्रों को प्लेसमेंट के लिए POD, Superset, TalentBattle और Unstop प्लेटफ़ॉर्म उपलब्ध कराता है। वर्तमान ड्राइव, खाते तक पहुँच और पात्रता की पुष्टि Training and Placement Cell से करें। इन प्लेटफ़ॉर्म के नाम से साक्षात्कार, नौकरी, कंपनी या पैकेज की गारंटी नहीं मिलती।', sourceHash: '6c807f31b208b0ca1125c50493d95d434d2c44e0eaf562065c35d7ed162f8f97', status: 'ai-reviewed-pending-human-review' },
+    },
     status: 'Published',
   },
   {
@@ -844,6 +860,7 @@ export const seedOfficialSources = [
   { id: 'SRC-23', title: 'MITCORER bus facility', documentType: 'Transport', academicYear: 'Not specified', sourceAuthority: 'MITCORER official website', originalFileName: 'bus', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/infrastructure/bus', status: 'Published', extractionStatus: 'Three buses, stated capacity 60 each and Wi-Fi verified; routes, schedule, availability, and fee not published', linkedKnowledgeCount: 1 },
   { id: 'SRC-24', title: 'MITCORER hostel page source-quality issue (superseded)', documentType: 'Facilities', academicYear: 'Not specified', sourceAuthority: 'MITCORER official website', originalFileName: 'hostel-accommodations', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations', status: 'Archived', extractionStatus: 'Superseded by the MITCORER official FAQ hostel entry; the new infrastructure route did not provide hostel details', linkedKnowledgeCount: 1 },
   { id: 'SRC-25', title: 'MITCORER scholarship listing and programme-intake guidance', documentType: 'Source Review', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'scholarship.php', sourceUrl: 'https://mitcorer.edu.in/scholarship.php', status: 'Published', extractionStatus: 'Current scholarship page lists schemes but not B.Tech programme counts or approved intake; use the admissions page and CET Cell seat matrix for those facts', linkedKnowledgeCount: 1 },
+  ...facultyProfileCaptures.map((source) => ({ ...source, originalFileName: new URL(source.sourceUrl).pathname.split('/').at(-1), linkedKnowledgeCount: 0 })),
 ];
 
 export function createSeedData() {

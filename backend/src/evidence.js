@@ -8,6 +8,12 @@ export function publicEvidence(record, at = Date.now()) {
   const revision = Number.isSafeInteger(record.revision) && record.revision >= 0 ? record.revision : 0;
   return { id: record.id, title: record.title, category: record.category, source: record.source,
     sourceUrl: record.sourceUrl || '', score: record.score, revision,
+    ...(record.translations && typeof record.translations === 'object' ? { translations: Object.fromEntries(
+      ['mr', 'hi'].filter(language => record.translations[language]?.text && record.translations[language]?.sourceHash)
+        .map(language => [language, { text: record.translations[language].text, sourceHash: record.translations[language].sourceHash,
+          ...(record.translations[language].reviewedBy ? { reviewedBy: record.translations[language].reviewedBy } : {}),
+          ...(record.translations[language].status ? { status: record.translations[language].status } : {}) }])
+    ) } : {}),
     academicYear: record.facts?.academicYear || record.provenance?.academicYear || record.academicYear || null,
     provenance: record.provenance ? validatePublicProvenance(record.provenance) : {}, verification: sourceReview(record),
     citationId: `${record.id}:${revision}:${hash.slice(0, 12)}`,

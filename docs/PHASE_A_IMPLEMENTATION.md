@@ -66,7 +66,7 @@ Old expectations tied to literal wording were updated to check maintained conten
 
 - PUB-021 now requires the record's explicit lack of a verified current Polytechnic intake, rather than an unsupported intake of 60.
 - Faculty/alumni tests now reject counts absent from their maintained record.
-- Placement support uses KB-24. POD/Superset/Unstop are not asserted when the maintained passage does not name them; dated recruiter information remains linked to KB-16.
+- General placement support uses KB-24. Platform questions use KB-69, which records the project-owner-provided list (POD, Superset, TalentBattle, Unstop) and marks public-source verification as pending. Dated recruiter information remains linked to KB-16.
 - Scholarship-specific evidence uses the available published scheme record, with a published general-record fallback when the scheme record is withheld.
 - Ordered-list expectations now require preserved ordering. Equivalent source wording is accepted for attendance, transport caveats, admissions and institutional classifications.
 

@@ -75,7 +75,7 @@ Real upload supports PDF, JPG, and PNG. Staff/admin can update review status.
 - `POST /api/knowledge`
 - `GET /api/official-sources`
 - `POST /api/official-sources/upload`
-- `POST /api/official-sources/sync` (admin-triggered automated crawl of monitored college website pages, staging changes into Review)
+- `POST /api/official-sources/sync` (admin-only; currently paused and returns `409 OFFICIAL_SOURCE_SYNC_PAUSED` without changing records)
 - `GET /api/official-sources/:id/extracted-text`
 - `PATCH /api/official-sources/:id/publish`
 - `GET /api/official-sources/:id/file`

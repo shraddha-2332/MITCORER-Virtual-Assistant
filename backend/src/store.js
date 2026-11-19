@@ -35,6 +35,8 @@ const RECOVER_VERIFIED_SOURCE_RECORDS_MIGRATION = 'recover-verified-source-recor
 const REPAIR_CURRENT_SCHOLARSHIP_SOURCE_MIGRATION = 'repair-current-scholarship-source-v10';
 const NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION = 'normalize-scholarship-source-title-v11';
 const FORMAT_MITCORER_PROFILE_MIGRATION = 'format-maintained-college-profile-v12';
+const OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION = 'import-official-faculty-profile-captures-v13';
+const PLACEMENT_PLATFORMS_MIGRATION = 'seed-project-owner-placement-platforms-kb69-v1';
 // Current seeds already contain these upgrades. Record them atomically with
 // initialization so a later restart cannot reinterpret a deletion as an upgrade.
 const CURRENT_SEED_MIGRATIONS = [
@@ -49,6 +51,8 @@ const CURRENT_SEED_MIGRATIONS = [
   OFFICIAL_SITE_CRAWL_SOURCE_DEDUP_MIGRATION, RESTORE_SUPPORTED_PILL_CLAIMS_MIGRATION,
   RECOVER_VERIFIED_SOURCE_RECORDS_MIGRATION, REPAIR_CURRENT_SCHOLARSHIP_SOURCE_MIGRATION,
   NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION, FORMAT_MITCORER_PROFILE_MIGRATION,
+  PLACEMENT_PLATFORMS_MIGRATION,
+  OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION,
 ];
 const seededSpecificRouteCorrections = {
   'KB-15': 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
@@ -727,6 +731,42 @@ export function loadDb() {
         record.updatedAt = new Date().toISOString();
       }
       db.migrations.push(FORMAT_MITCORER_PROFILE_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(PLACEMENT_PLATFORMS_MIGRATION)) {
+      const platformRecord = seedKnowledge.find((record) => record.id === 'KB-69');
+      if (platformRecord && !db.knowledge.some((record) => record.id === platformRecord.id)) {
+        const now = new Date().toISOString();
+        db.knowledge.push({ ...structuredClone(platformRecord), revision: 1, createdAt: now, updatedAt: now });
+      }
+      const placementRecord = db.knowledge.find((record) => record.id === 'KB-24');
+      const placementSeed = seedKnowledge.find((record) => record.id === 'KB-24');
+      if (placementRecord && placementSeed) {
+        placementRecord.tags = [...new Set([...(placementRecord.tags || []), 'placement platform', 'placement platforms', 'POD', 'Superset', 'TalentBattle', 'Unstop'])];
+      }
+      db.migrations.push(PLACEMENT_PLATFORMS_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION)) {
+      const now = new Date().toISOString();
+      const captures = seedOfficialSources.filter(item => String(item.id || '').startsWith('SRC-FACULTY-'));
+      const canonicalUrl = value => String(value || '').replace(/^https:\/\/www\./i, 'https://').replace(/\/+$/, '').toLowerCase();
+      if (db.officialSources.length) {
+        for (const capture of captures) {
+          const existing = db.officialSources.find(item => item.id === capture.id
+            || canonicalUrl(item.sourceUrl) === canonicalUrl(capture.sourceUrl));
+          if (existing && existing.status !== 'Published') continue;
+          if (existing) {
+            Object.assign(existing, structuredClone(capture), {
+              id: existing.id, uploadedBy: existing.uploadedBy || 'system:official-faculty-crawl',
+              createdAt: existing.createdAt || now, updatedAt: now,
+            });
+          } else {
+            db.officialSources.unshift({ ...structuredClone(capture), uploadedBy: 'system:official-faculty-crawl', createdAt: now, updatedAt: now });
+          }
+        }
+      }
+      db.migrations.push(OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION);
       didMigrate = true;
     }
     if (hadDemoInquiries || hadDemoDocuments || didMigrate) {

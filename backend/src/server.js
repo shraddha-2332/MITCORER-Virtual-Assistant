@@ -13,6 +13,7 @@ import { validateKnowledgeFields, buildMaintainedAnswer, academicFeeSelection, p
 import { selectLanguage, localizeResponse, buildReviewedPassage } from './language.js';
 import { buildClarificationAnswer, buildCompoundAnswer, buildContextualPassage } from './question-plan.js';
 import { publicEvidence } from './evidence.js';
+import { buildFacultyDirectoryAnswer } from './faculty-directory.js';
 import { normalizeQuery, matchesIntent, understandQuery, isEmploymentQuery } from './query-understanding.js';
 import { asksForAllPrograms } from './query-scope.js';
 import { resolveSourceUrl, sourceRecord, uniqueSourceLinks } from './source-links.js';
@@ -22,7 +23,6 @@ import { badRequest, forbidden, HttpError, notFound, tooManyRequests, unauthoriz
 import { getDb, loadDb, saveDb, checkStorageReady } from './store.js';
 import { generateId, jsonResponse, nowIso, pick, requireString } from './utils.js';
 import { verifyGeneratedAnswer, classifyAnswerOutcome, verifySlotGrounding } from './grounding.js';
-import { syncMonitoredWebsiteSources } from './website-sync.js';
 import { computeConceptScore, getSemanticVectorScores, removeKnowledgeVector, syncKnowledgeVectorIndex } from './semantic.js';
 import { semanticResponseCache } from './semantic-cache.js';
 import { inspectPromptSafety } from './safety-guard.js';
@@ -1896,6 +1896,22 @@ function buildPlacementAnswer(question) {
   };
 }
 
+function buildPlacementPlatformsAnswer(question, records) {
+  const normalized = normalizeIntentText(question);
+  const isPlacementTopic = /\b(?:placement|recruitment|recruiter|career)\b/.test(normalized);
+  const asksWhereDrivesAreShared = /\b(?:where|share|updates?|drives?|opportunities)\b/.test(normalized);
+  if (!isPlacementTopic || !(/\bplatforms?\b/.test(normalized) || asksWhereDrivesAreShared)) return null;
+  const record = records.find((item) => item.id === 'KB-69' && usableKnowledge(item));
+  if (!record) return null;
+  return {
+    recordId: record.id,
+    source: record.source,
+    answer: record.text,
+    officialLinks: [{ label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/mitcorer/public/placements' }],
+    next: '', actionView: 'placements', actionLabel: 'Check current placement opportunities',
+  };
+}
+
 function buildPlacementAssistanceAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/placement assistance|placement cell|training and placement|internship|internships/.test(normalized)) return null;
@@ -2907,6 +2923,14 @@ async function answerAdmissionQuestionCore(body, user) {
   const queryScope = understandQuery(question);
   const language = selectLanguage(question, body.language);
   const normalized = normalizeIntentText(question);
+  const placementPlatforms = buildPlacementPlatformsAnswer(question, getDb().knowledge);
+  if (placementPlatforms) {
+    const record = getDb().knowledge.find((item) => item.id === placementPlatforms.recordId && usableKnowledge(item));
+    const evidence = record ? [publicEvidence({ ...record, score: 200 }, Date.now())] : [];
+    const response = { ...placementPlatforms, evidence, model: 'deterministic-rag-fallback', outcomeStatus: evidence.length ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE' };
+    audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
+    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
   const privateContact = /\b(?:personal|private)\s+(?:mobile|phone|whatsapp|contact|number)/i.test(question);
   const reviewBoundary = reviewBoundaryResponse(question, language);
   if (reviewBoundary) return reviewBoundary;
@@ -2918,6 +2942,13 @@ async function answerAdmissionQuestionCore(body, user) {
       outcomeStatus: 'INSUFFICIENT_EVIDENCE',
       answer: 'I can’t confirm whether biometric attendance is mandatory for AY 2026–27 because the university circular could not be verified. Please confirm with the university or college before relying on this requirement.',
     }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
+  }
+  const facultyDirectory = buildFacultyDirectoryAnswer(question, getDb().officialSources || []);
+  if (facultyDirectory) {
+    const evidence = facultyDirectory.evidence.map(record => publicEvidence(record, Date.now()));
+    const response = { ...facultyDirectory, evidence, model: 'deterministic-rag-fallback' };
+    audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
+    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
   }
   const refinement = user ? null : refinedAnswer(question, normalized, getDb().knowledge);
   if (refinement) {
@@ -3922,7 +3953,7 @@ function getAssistantAttachmentFile(id, user) {
   return { __file: true, filePath, mimeType: record.mimeType, fileName: record.fileName };
 }
 
-async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
+async function handleApi(req) {
   const url = new URL(req.url, 'http://localhost');
   const user = getUserFromRequest(req);
   const context = { user };
@@ -4046,7 +4077,7 @@ async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   }
   if (req.method === 'POST' && url.pathname === '/api/official-sources/sync') {
     requireRole({ user }, ['admin']);
-    return syncMonitoredWebsiteSources({ db: getDb(), user, saveFn: saveDb, auditFn: audit, ...officialSourceSyncOptions });
+    throw new HttpError(409, 'OFFICIAL_SOURCE_SYNC_PAUSED', 'Official website sync is paused while the current source inventory is reviewed. No sources or knowledge records were changed.');
   }
   const officialSourceExtractionMatch = url.pathname.match(/^\/api\/official-sources\/([^/]+)\/extracted-text$/);
   if (req.method === 'GET' && officialSourceExtractionMatch) return getOfficialSourceExtractedText(officialSourceExtractionMatch[1], user);
@@ -4095,7 +4126,7 @@ async function handleApi(req, { officialSourceSyncOptions = {} } = {}) {
   throw notFound('API route not found.');
 }
 
-export function createServer({ officialSourceSyncOptions = {} } = {}) {
+export function createServer() {
   loadDb();
   if (prunePublicConversations()) saveDb();
   if (config.geminiApiKey && config.geminiApiKey !== 'test-unused-key' && process.env.NODE_ENV !== 'test') {
@@ -4117,7 +4148,7 @@ export function createServer({ officialSourceSyncOptions = {} } = {}) {
       return;
     }
     try {
-      const payload = await handleApi(req, { officialSourceSyncOptions });
+      const payload = await handleApi(req);
       if (payload?.__stream) {
         res.writeHead(200, {
           'Content-Type': 'text/event-stream',

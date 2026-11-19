@@ -169,14 +169,25 @@ test('recruiter list question returns named, dated companies instead of placemen
   });
 });
 
-test('placement support uses its maintained record without unsupported platform names', async () => {
+test('placement-platform questions return the project-owner-provided platform list', async () => {
   await testHarness(async (ask) => {
-    const answer = await ask('What placement support and platforms are available for students?');
+    const answer = await ask('Which platforms are provided for placements?');
     assert.equal(answer.outcomeStatus, 'ANSWERED');
-    assert.match(answer.answer, /Training and Placement Cell/);
-    assert.deepEqual(answer.evidence.map(record => record.id), ['KB-24']);
-    assert.match(answer.answer, /placement and training/i);
-    assert.doesNotMatch(answer.answer, /POD|Superset|Unstop/);
+    assert.deepEqual(answer.evidence.map(record => record.id), ['KB-69']);
+    assert.match(answer.answer, /POD, Superset, TalentBattle, and Unstop/);
+    assert.match(answer.answer, /project owner reports/i);
     assert.doesNotMatch(answer.answer, /JUSPAY|Cognizant/);
+    const marathi = await ask('Which platforms are provided for placements?', 'mr');
+    assert.equal(marathi.responseLanguage, 'mr');
+    assert.equal(marathi.languageReviewStatus, 'human-review-pending');
+    assert.match(marathi.answer, /TalentBattle/);
+    const hindi = await ask('Which platforms are provided for placements?', 'hi');
+    assert.equal(hindi.responseLanguage, 'hi');
+    assert.equal(hindi.languageReviewStatus, 'human-review-pending');
+    assert.match(hindi.answer, /TalentBattle/);
+
+    const drives = await ask('Where are current MITCORER placement activities and drives shared?');
+    assert.deepEqual(drives.evidence.map(record => record.id), ['KB-69']);
+    assert.match(drives.answer, /POD, Superset, TalentBattle, and Unstop/);
   });
 });
