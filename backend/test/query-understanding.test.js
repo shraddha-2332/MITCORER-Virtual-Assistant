@@ -88,7 +88,9 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     ]) {
       const pathway = await answerAdmissionQuestion({ question, language }, null);
       assert.equal(pathway.evidence[0]?.id, 'KB-14', question);
-      assert.match(pathway.answer, /submit the current institute form/i, question);
+      assert.match(pathway.answer, language === 'mr'
+        ? /सध्याचा संस्थेचा अर्ज सादर करावा/
+        : /वर्तमान संस्थान फॉर्म जमा करें/, question);
       assert.doesNotMatch(pathway.answer, /Centralized Admission Process|MHT-CET 2026|JEE Main Paper-I|option forms/i, question);
     }
     const hindi = await ask('प्रथम वर्ष की फीस तथा छात्रावास की फीस बताइए।');

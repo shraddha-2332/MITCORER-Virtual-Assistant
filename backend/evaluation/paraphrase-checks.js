@@ -33,10 +33,16 @@ export function checkParaphrase(id, data, corpus) {
     if (!/does not confirm current vacancies/.test(answer)) failures.push('vacancies_uncertainty');
   } else if (['HOC-07', 'HOC-16', 'HOC-22'].includes(id)) {
     expectRecord('KB-19');
-      if (!/does not (?:state|publish|give).*(?:route|timetable)/s.test(answer)) failures.push('transport_unknown_details');
+    const hasTransportLimit = /[\u0900-\u097F]/.test(answer)
+      ? /मार्ग.*(?:वेळापत्रक|समय-सारणी).*(?:दिलेले नाही|नहीं दिया|प्रकाशित नहीं)/s.test(answer)
+      : /does not (?:state|publish|give).*(?:route|timetable)/s.test(answer);
+    if (!hasTransportLimit) failures.push('transport_unknown_details');
   } else if (['HOC-08', 'HOC-17', 'HOC-23'].includes(id)) {
     expectRecord('KB-20');
-    if (!answer.includes('does not specify library opening hours or borrowing limits/loan periods')) failures.push('library_unknown_details');
+    const hasLibraryLimit = /[\u0900-\u097F]/.test(answer)
+      ? /(?:ग्रंथालय.*वेळ.*नमूद नाही|पुस्तकालय.*समय.*नहीं बताई गई)/s.test(answer)
+      : answer.includes('does not specify library opening hours or borrowing limits/loan periods');
+    if (!hasLibraryLimit) failures.push('library_unknown_details');
   } else if (id === 'HOC-09') {
     expectRecord('KB-26');
     if (!/caste certificate and caste validity/.test(answer)) failures.push('category_documents');
