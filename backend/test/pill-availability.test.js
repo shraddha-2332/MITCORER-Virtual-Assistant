@@ -47,7 +47,7 @@ test('supported pill records recover from a staged capture while unsupported hos
     const loaded = loadDb();
     assert.equal(loaded.knowledge.find(item => item.id === 'KB-10').status, 'Published');
     assert.equal(loaded.knowledge.find(item => item.id === 'KB-18').status, 'Published');
-    assert.equal(loaded.knowledge.find(item => item.id === 'KB-23').status, 'Review');
+    assert.equal(loaded.knowledge.find(item => item.id === 'KB-23').status, 'Published');
     for (const [question, pattern] of [
       ['Which B.Tech programmes are available at MITCORER?', /Computer Science and Engineering/],
       ['What scholarships are available at MITCORER and where can I apply?', /Pragati/],

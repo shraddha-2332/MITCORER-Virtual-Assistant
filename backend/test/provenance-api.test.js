@@ -45,7 +45,7 @@ test('expired managed facts and future passages are suppressed in retrieval, nat
   await call('/api/knowledge/KB-16', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   const placement = await call('/api/public-assistant/ask', { question: 'placement highlights' });
   assert.deepEqual(placement.data.evidence, []); assert.doesNotMatch(placement.data.answer, /21 LPA/);
-  await call('/api/knowledge/KB-32', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
+  await call('/api/knowledge/KB-31', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   assert.deepEqual((await call('/api/public-assistant/ask', { question: 'attendance requirement' })).data.evidence, []);
 }));
 test('review action persists, edits invalidate its binding, and historical scope remains available', async () => fixture(async (call, token) => {

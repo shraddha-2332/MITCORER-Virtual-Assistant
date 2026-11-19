@@ -9,6 +9,7 @@ import { askPublicWithHistory } from '../src/conversations.js';
 const originalFetch = globalThis.fetch;
 const originalKey = config.geminiApiKey;
 const originalGroqKey = config.groqApiKey;
+const advisoryQuestion = 'How does MITCORER support practical learning?';
 beforeEach(() => {
   config.databaseFile = ':memory:';
   config.geminiApiKey = '';
@@ -30,7 +31,7 @@ test('successful advisory generation is verified without a context initializatio
     calls++;
     return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'MITCORER provides practical learning facilities.' }] } }] }) };
   };
-  const answer = await answerAdmissionQuestion({ question: 'Why should I choose MITCORER?', language: 'en' }, null);
+  const answer = await answerAdmissionQuestion({ question: advisoryQuestion, language: 'en' }, null);
   assert.equal(calls, 1);
   assert.equal(answer.model, config.geminiModel);
   assert.equal(answer.answer, 'MITCORER provides practical learning facilities.');
@@ -44,7 +45,7 @@ test('Groq can answer advisory questions and reports the actual provider model',
     calls.push({ url, body: JSON.parse(options.body) });
     return { ok: true, json: async () => ({ choices: [{ message: { content: 'MITCORER provides practical learning facilities.' } }] }) };
   };
-  const answer = await answerAdmissionQuestion({ question: 'Why should I choose MITCORER?', language: 'en' }, null);
+  const answer = await answerAdmissionQuestion({ question: advisoryQuestion, language: 'en' }, null);
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /api\.groq\.com/);
   assert.equal(answer.model, `groq:${config.groqModel}`);
@@ -62,7 +63,7 @@ test('an ungrounded Groq answer falls through to Gemini before deterministic fal
     }
     return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'MITCORER provides practical learning facilities.' }] } }] }) };
   };
-  const answer = await answerAdmissionQuestion({ question: 'Why should I choose MITCORER?', language: 'en' }, null);
+  const answer = await answerAdmissionQuestion({ question: advisoryQuestion, language: 'en' }, null);
   assert.equal(calls.length, 2);
   assert.match(calls[0], /api\.groq\.com/);
   assert.match(calls[1], /generativelanguage\.googleapis\.com/);
@@ -75,12 +76,12 @@ test('unsupported and failed advisory generations retain the deterministic fallb
   config.geminiApiKey = 'test-unused-key';
   for (const draft of ['You have guaranteed admission.', 'Tuition costs INR 9,99,999.']) {
     globalThis.fetch = async () => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: draft }] } }] }) });
-    const answer = await answerAdmissionQuestion({ question: 'Why should I choose MITCORER?', language: 'en' }, null);
+    const answer = await answerAdmissionQuestion({ question: advisoryQuestion, language: 'en' }, null);
     assert.equal(answer.model, 'deterministic-rag-fallback');
     assert.doesNotMatch(answer.answer, /guaranteed admission|9,99,999/);
   }
   globalThis.fetch = async () => { throw new Error('Simulated upstream failure'); };
-  const answer = await answerAdmissionQuestion({ question: 'Why should I choose MITCORER?', language: 'en' }, null);
+  const answer = await answerAdmissionQuestion({ question: advisoryQuestion, language: 'en' }, null);
   assert.equal(answer.model, 'deterministic-rag-fallback');
 });
 

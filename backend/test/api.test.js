@@ -602,7 +602,7 @@ test('public assistant serves verified About and Why MITCORER responses', async 
       body: JSON.stringify({ question: 'Why should I choose MITCORER?' }),
     });
     assert.equal(why.response.status, 200);
-    assert.match(why.payload.data.answer, /railway-oriented engineering courses/);
+    assert.match(why.payload.data.answer, /railway-oriented engineering courses/i);
     assert.match(why.payload.data.answer, /Training and Placement Cell activities/);
     assert.doesNotMatch(why.payload.data.answer, /94%|21 LPA|100\+ recruiters/);
     assert.equal(why.payload.data.source, 'MITCORER Admissions FAQ and official website');

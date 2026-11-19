@@ -569,10 +569,13 @@ export function loadDb() {
     }
     if (!migrations.has(RECOVER_VERIFIED_SOURCE_RECORDS_MIGRATION)) {
       const now = new Date().toISOString();
+      const hasSourceInventory = (db.officialSources || []).length > 0;
       const records = new Map((db.knowledge || []).map((record) => [record.id, record]));
       const seedById = new Map(seedKnowledge.map((record) => [record.id, record]));
       const refreshEvidence = (id, sourceId, url, title, text, authority, matches) => {
-        if (!matches) return false;
+        // Preserve an intentionally empty legacy source library; recovery may
+        // refresh known sources, but must not recreate a library a maintainer cleared.
+        if (!hasSourceInventory || !matches) return false;
         let source = (db.officialSources || []).find((item) => item.id === sourceId)
           || (db.officialSources || []).find((item) => item.sourceUrl === url);
         if (!source) {
