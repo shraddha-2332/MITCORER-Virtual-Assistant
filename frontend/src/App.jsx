@@ -1249,8 +1249,9 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
           : nextInquiries.find(item => item.id === previous?.id) || null;
         if (initial) initial = { ...initial, type: previous.type };
         if (!initial && !previous) {
-          const first = nextInquiries[0] || nextFeedback[0] || null;
-          initial = first ? { ...first, type: first.question && 'helpful' in first ? 'feedback' : 'inquiry' } : null;
+          const isFeedback = initialTab === 'feedback';
+          const first = (isFeedback ? nextFeedback : nextInquiries)[0];
+          initial = first ? { ...first, type: isFeedback ? 'feedback' : 'inquiry' } : null;
         }
         setSelected(initial);
         selectedRef.current = initial;
@@ -1266,7 +1267,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       }).catch(loadError => setError(loadError.message || 'Could not load the review inbox.'))
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [token, refreshCount]);
+  }, [token, refreshCount, initialTab]);
   const allRows = [
     ...inquiries.map(item => ({ ...item, type: 'inquiry' })),
     ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer', status: item.status || (item.helpful ? 'Appreciated' : 'Needs review') })),
@@ -1283,6 +1284,19 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
     setStaffNote(item.resolutionNote || '');
     setError('');
     setNotice('');
+  };
+  const openTab = (nextTab) => {
+    if (nextTab === tab) return;
+    setTab(nextTab);
+    const first = allRows.find(item => nextTab === 'feedback'
+      ? item.type === 'feedback'
+      : item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved'));
+    if (first) choose(first);
+    else {
+      selectedRef.current = null;
+      setSelected(null);
+      setNotice('');
+    }
   };
   const saveAssignment = async () => {
     if (!selected || selected.type !== 'inquiry') return;
@@ -1323,15 +1337,15 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       <AdminRefreshButton loading={loading} onClick={() => { setNotice(''); setLoading(true); setRefreshCount(count => count + 1); }} />
     </AdminPageHeader>
     <div className="reviewInboxTabs">
-        <button type="button" className={tab === 'inquiries' ? 'active' : ''} onClick={() => setTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
-        <button type="button" className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
+        <button type="button" className={tab === 'inquiries' ? 'active' : ''} aria-pressed={tab === 'inquiries'} disabled={loading || saving} onClick={() => openTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
+        <button type="button" className={tab === 'feedback' ? 'active' : ''} aria-pressed={tab === 'feedback'} disabled={loading || saving} onClick={() => openTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
         {tab === 'inquiries' && <button type="button" aria-pressed={unresolvedOnly} className={unresolvedOnly ? 'active' : ''} onClick={() => setUnresolvedOnly(value => !value)}>Unresolved only</button>}
     </div>
     {error && <div className="errorBanner">{error}</div>}
     {notice && <AdminStatus>{notice}</AdminStatus>}
     {loading ? <div className="panelBlock">Loading review inbox…</div> : visibleRows.length === 0 ? (
       <div className="panelBlock">{tab === 'inquiries' && unresolvedOnly ? 'No unresolved visitor requests.' : `No ${tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.`}</div>
-    ) : <section className="inquiryWorkspace">
+    ) : <section className={`inquiryWorkspace${selectedIsVisible ? ' hasDetail' : ''}`}>
       <div className="inquiryList" aria-label={tab === 'inquiries' ? 'Visitor requests' : 'Answer feedback'}>
         {visibleRows.map(item => <button key={`${item.type}-${item.id}`} type="button" className={selected?.id === item.id ? 'active' : ''} onClick={() => choose(item)}>
           <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.topic || (item.model ? `Answer feedback · ${item.model}` : 'General request')}</small></div>

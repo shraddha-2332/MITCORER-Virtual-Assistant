@@ -815,8 +815,10 @@ button { border: 0; }
 .inquiryTimeline blockquote { margin: 14px 0 0; padding: 12px; border-left: 3px solid var(--green); background: #eef8f3; }
 .inquiryTimeline blockquote p { margin: 5px 0; color: #29493d; }
 .inquiryTimeline blockquote small { color: var(--muted); }
-.inquiryWorkspace { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); min-height: 500px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 8px 26px rgba(24,38,55,.06); }
-.inquiryList { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: #f8fbfa; }
+.inquiryWorkspace { display: grid; grid-template-columns: minmax(0, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 8px 26px rgba(24,38,55,.06); }
+.inquiryWorkspace.hasDetail { grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); }
+.inquiryList { display: flex; flex-direction: column; background: #f8fbfa; }
+.inquiryWorkspace.hasDetail > .inquiryList { border-right: 1px solid var(--line); }
 .inquiryList > button { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 10px; padding: 15px; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
 .inquiryList > button:hover, .inquiryList > button.active { background: #eaf4f0; }
 .inquiryList > button.active { box-shadow: inset 3px 0 var(--green); }
@@ -923,7 +925,9 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 
 @media (max-width: 1180px) {
   .chatWorkspace, .authScreen, .documentView, .visitGrid, .feeRecord, .capTimeline, .ruleGrid, .reviewGrid, .decisionPanel, .admissionGrid, .inquiryWorkspace { grid-template-columns: 1fr; }
-  .inquiryList { border-right: 0; border-bottom: 1px solid var(--line); max-height: 340px; overflow-y: auto; }
+  .inquiryWorkspace.hasDetail { grid-template-columns: minmax(0, 1fr); }
+  .inquiryList { max-height: 340px; overflow-y: auto; }
+  .inquiryWorkspace.hasDetail > .inquiryList { border-right: 0; border-bottom: 1px solid var(--line); }
   .readinessCards { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .decisionForm { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .scholarshipPage .decisionPanel { grid-template-columns: 1fr; }

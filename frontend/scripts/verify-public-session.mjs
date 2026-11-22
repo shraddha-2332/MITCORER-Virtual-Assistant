@@ -225,6 +225,7 @@ try {
   await activity.getByText('Referred the request to the admissions desk.', { exact: true }).waitFor();
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
   await staffPage.getByRole('button', { name: /Answer feedback/ }).click();
+  await staffPage.locator('.inquiryDetail').getByText('I accepted my CAP seat and paid the fee. What is remaining?', { exact: true }).waitFor();
   await staffPage.getByRole('button', { name: 'Refresh' }).click();
   await staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: 'I accepted my CAP seat and paid the fee.' }).click();
   await staffPage.locator('.inquiryDetail').getByText('I accepted my CAP seat and paid the fee. What is remaining?', { exact: true }).waitFor();
