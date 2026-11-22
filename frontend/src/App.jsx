@@ -229,7 +229,7 @@ function App() {
   }
 
   return (
-    <div className={`appShell ${sidebarCollapsed ? 'sidebarCollapsed' : ''}`}>
+    <div className="appShell">
       <Sidebar user={user} view={view} setView={navigateTo} navOpen={navOpen} setNavOpen={setNavOpen} collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} onLogout={logout} />
       <main className="workspace">
         <Header user={user} setNavOpen={setNavOpen} canGoBack={viewHistory.length > 0} onBack={returnToPreviousView} />
@@ -1115,21 +1115,21 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
     localStorage.setItem('mitra.sidebarCollapsed', String(next));
   };
   return (
-    <aside className={`sidebar ${navOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+    <aside id="admin-sidebar" className={`sidebar ${navOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebarBrandRow">
         <div className="brandLockup compact"><span className="collegeLogo"><img src={mitcorerLogo} alt="MITCORER logo" /></span><div><strong>MITCORER</strong><small>Admin workspace</small></div></div>
-        <button className="sidebarToggle" type="button" onClick={toggleCollapsed} aria-label={collapsed ? 'Open sidebar' : 'Close sidebar'} title={collapsed ? 'Open sidebar' : 'Close sidebar'}>{collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}</button>
+        <button className="sidebarToggle" type="button" onClick={toggleCollapsed} aria-expanded={!collapsed} aria-controls="admin-sidebar" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>{collapsed ? <PanelLeftOpen size={19} aria-hidden="true" /> : <PanelLeftClose size={19} aria-hidden="true" />}</button>
       </div>
       <nav className="sideNav" aria-label="Admin workspace">
-        <button className={view === 'overview' ? 'active' : ''} type="button" onClick={() => openView('overview')} title={collapsed ? 'Overview' : undefined} aria-label={collapsed ? 'Overview' : undefined}><LayoutDashboard size={17} /><span>Overview</span></button>
-        <button className={view === 'knowledge' ? 'active' : ''} type="button" onClick={() => openView('knowledge')} title={collapsed ? 'Knowledge Base' : undefined} aria-label={collapsed ? 'Knowledge Base' : undefined}>
-          <FileText size={17} /><span>Knowledge Base</span>
+        <button className={view === 'overview' ? 'active' : ''} type="button" onClick={() => openView('overview')}><span>Overview</span></button>
+        <button className={view === 'knowledge' ? 'active' : ''} type="button" onClick={() => openView('knowledge')}>
+          <span>Knowledge Base</span>
         </button>
-        {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')} title={collapsed ? 'Review inbox' : undefined} aria-label={collapsed ? 'Review inbox' : undefined}>
-          <Phone size={17} /><span>Review inbox</span>
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')}>
+          <span>Review inbox</span>
         </button>}
-        {['staff', 'admin'].includes(user.role) && <button className={view === 'applicant-workspaces' ? 'active' : ''} type="button" onClick={() => openView('applicant-workspaces')} title={collapsed ? 'Applicant Progress' : undefined} aria-label={collapsed ? 'Applicant Progress' : undefined}>
-          <LayoutDashboard size={17} /><span>Applicant Progress</span>
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'applicant-workspaces' ? 'active' : ''} type="button" onClick={() => openView('applicant-workspaces')}>
+          <span>Applicant Progress</span>
         </button>}
       </nav>
       <div className="accountFooter" title={user.email}>

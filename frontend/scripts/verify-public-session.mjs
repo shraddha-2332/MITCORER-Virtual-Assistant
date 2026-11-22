@@ -264,6 +264,14 @@ try {
     }
   }
 
+  assert.equal(await staffNav.locator('button svg').count(), 0);
+  await staffPage.getByRole('button', { name: 'Collapse sidebar' }).click();
+  assert.equal(await staffPage.locator('#admin-sidebar').evaluate(element => element.offsetWidth), 152);
+  await staffNav.getByRole('button', { name: 'Overview', exact: true }).click();
+  await staffPage.locator('.adminPageHeader').getByRole('heading', { name: 'Overview', exact: true }).waitFor();
+  await staffPage.getByRole('button', { name: 'Expand sidebar' }).click();
+  assert.equal(await staffPage.locator('#admin-sidebar').evaluate(element => element.offsetWidth), 270);
+
   assert.deepEqual(errors, []);
   console.log('PASS: browser session isolation and reset, CAP and reporting guidance, checklist save and reload, staff inbox and checklist workflows, and dashboard expiry alerts with Knowledge Base navigation.');
 } finally {
