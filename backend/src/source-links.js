@@ -14,6 +14,8 @@ export const verifiedUrlRewrites = {
   'https://www.mitcorer.edu.in/training-and-placement-cell.php': 'https://mitcorer.edu.in/placement-cell.php',
   'https://mitcorer.edu.in/training-placement.php': 'https://mitcorer.edu.in/placement-cell.php',
   'https://www.mitcorer.edu.in/training-placement.php': 'https://mitcorer.edu.in/placement-cell.php',
+  'https://mitcorer.edu.in/our-mou.php': 'https://mitcorer.edu.in/mou.php',
+  'https://mitcorer.edu.in/campus-life.php': '',
 };
 
 export const missingReferences = {

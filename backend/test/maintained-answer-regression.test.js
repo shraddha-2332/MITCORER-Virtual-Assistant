@@ -21,6 +21,27 @@ async function fixture(run) {
   finally { closeDb(); fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
+test('developer review regressions preserve fee scope and personal outcome limits', () => fixture(async ask => {
+  const fee = await ask('For 2026-27 DSE, what fee is listed for OBC girls?');
+  assert.equal(fee.outcomeStatus, 'ANSWERED');
+  assert.match(fee.answer, /18,362/);
+  assert.doesNotMatch(fee.answer, /Other requested information/);
+  for (const [language, question, answer] of [
+    ['mr', 'यावर्षी माझी शिष्यवृत्तीची रक्कम नेमकी कोणत्या तारखेला जमा होईल?', /पडताळू शकत नाही/],
+    ['hi', 'इस वर्ष मेरी छात्रवृत्ति की राशि ठीक किस तारीख को जमा होगी?', /पुष्टि नहीं कर सकता/],
+    ['mr', 'अर्ज केल्यास मला वैयक्तिकरीत्या AICTE Pragati शिष्यवृत्ती मंजूर होईल का?', /मंजुरी/],
+    ['hi', 'आवेदन करने पर क्या मुझे व्यक्तिगत रूप से AICTE Pragati छात्रवृत्ति मंजूर होगी?', /मंज़ूरी/],
+    ['mr', 'पुढील वर्षी कोणती कंपनी मला नोकरी देईल आणि 10 LPA पॅकेजची हमी देता का?', /हमी देऊ शकत नाही/],
+  ]) {
+    const response = await ask(question, language);
+    assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE', question);
+    assert.equal(response.responseLanguage, language);
+    assert.deepEqual(response.evidence, []);
+    assert.match(response.answer, answer);
+    assert.ok(response.officialLinks.length);
+  }
+}));
+
 test('fee exclusions, placement preparation, and visit requests keep the requested scope', () => fixture(async ask => {
   for (const question of [
     "Tell me the fees for CSE, but don't include hostel and transportation charges.",
@@ -39,6 +60,7 @@ test('fee exclusions, placement preparation, and visit requests keep the request
     const response = await ask(question);
     assert.equal(response.outcomeStatus, 'ANSWERED');
     assert.deepEqual(response.evidence.map(record => record.id), ['KB-43']);
+    assert.ok(response.sourceLinks.some(link => /placement-ready-program\.php$/.test(link.url)));
     assert.match(response.answer, /quantitative aptitude/i);
     assert.match(response.answer, /mock interviews/i);
   }

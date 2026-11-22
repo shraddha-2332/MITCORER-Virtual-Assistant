@@ -1997,7 +1997,7 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalatedInquiry.topic, 'Human Escalation');
     assert.equal(escalatedInquiry.routingQueue, 'MITCORER Staff Triage');
     assert.equal(escalatedInquiry.assignedTo, '');
-    assert.match(escalatedInquiry.messages[0].text, /Human Escalation from Mitra Assistant/);
+    assert.equal(escalatedInquiry.messages[0].text, 'MITRA recorded a request for staff follow-up.');
 
     const feedbackResult = await request(base, '/api/public/feedback', {
       method: 'POST',

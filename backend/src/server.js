@@ -495,7 +495,7 @@ export function createPublicEscalatedInquiry(body) {
     messages: [
       {
         id: generateId('MSG'),
-        text: `[Human Escalation from Mitra Assistant]: Question was not found in verified knowledge base. Applicant Question: "${question}"`,
+        text: 'MITRA recorded a request for staff follow-up.',
         authorName: 'Mitra Assistant',
         authorRole: 'system',
         createdAt: now,
@@ -3268,7 +3268,36 @@ async function answerAdmissionQuestionCore(body, user) {
   const language = selectLanguage(originalQuestion, body.language);
   const normalized = normalizeIntentText(question);
   const asksPersonalPragatiApproval = /\bpragati\b/.test(normalized)
-    && /\b(?:will i(?: personally)? (?:be approved|qualify|get|receive)|am i (?:eligible|approved)|approve my application)\b/i.test(question);
+    && /\b(?:will i(?: personally)? (?:be approved|qualify|get|receive)|am i (?:eligible|approved)|approve my application)\b|(?:मला|माझा).{0,90}(?:मंजूर|मान्य)|(?:मुझे|मेरी).{0,90}(?:मंजूर|मंज़ूर|स्वीकृत)/iu.test(question);
+  const asksNativePaymentDate = /\bscholarship\b/.test(normalized)
+    && /(?:माझी|माझ्या|मेरी|मेरे)/u.test(question)
+    && /(?:तारख|दिनांक|तारीख|कधी|कब)/u.test(question)
+    && /(?:जमा|वितरण|भुगतान)/u.test(question);
+  const asksNativePlacementGuarantee = /(?:नोकरी|प्लेसमेंट|पॅकेज|पैकेज)/u.test(question)
+    && /(?:मला|माझ्या|मुझे|मेरी|मेरे)/u.test(question)
+    && /(?:हमी|गारंटी|हमखास)/u.test(question);
+  if (asksNativePaymentDate || asksNativePlacementGuarantee) {
+    const payment = {
+      en: 'I cannot verify your individual scholarship payment date. Check your application status on the official portal for your scheme.',
+      mr: 'तुमच्या शिष्यवृत्तीची रक्कम नेमकी कधी जमा होईल हे मी पडताळू शकत नाही. संबंधित योजनेच्या अधिकृत पोर्टलवर तुमच्या अर्जाची स्थिती तपासा.',
+      hi: 'मैं आपकी छात्रवृत्ति की भुगतान तिथि की पुष्टि नहीं कर सकता। संबंधित योजना के आधिकारिक पोर्टल पर अपने आवेदन की स्थिति देखें।',
+    };
+    const placement = {
+      en: 'I cannot predict which company will hire you or guarantee any placement or package. Ask the Training and Placement Cell about current drives and eligibility.',
+      mr: 'कोणती कंपनी तुम्हाला नोकरी देईल हे मी सांगू शकत नाही किंवा कोणत्याही पॅकेजची हमी देऊ शकत नाही. सध्याच्या भरती आणि पात्रतेसाठी प्रशिक्षण व प्लेसमेंट विभागाशी संपर्क साधा.',
+      hi: 'मैं यह नहीं बता सकता कि कौन सी कंपनी आपको नौकरी देगी या किसी पैकेज की गारंटी दे सकता हूँ। मौजूदा भर्ती और पात्रता के लिए प्लेसमेंट विभाग से संपर्क करें।',
+    };
+    const officialLinks = asksNativePaymentDate ? getOfficialScholarshipLinks(question) : [
+      { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' },
+    ];
+    return {
+      source: 'No verified record', evidence: [], officialLinks,
+      answer: (asksNativePaymentDate ? payment : placement)[language],
+      requestedLanguage: language, responseLanguage: language,
+      localizationStatus: language === 'en' ? 'original' : 'template',
+      model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    };
+  }
   const vacancyRequestedNow = (/\b(?:current|currently|now|available|remaining|this year|this academic year)\b.{0,55}\b(?:seat\s+)?(?:vacanc(?:y|ies)|vacant|unfilled)\b|\b(?:vacanc(?:y|ies)|vacant|unfilled)\b.{0,55}\b(?:current|currently|now|available|remaining|this year|this academic year)\b/i.test(normalized)
     || /\b(?:seats? (?:still )?(?:left|remaining|open now)|(?:remaining|vacant|unfilled) seats?|seats? (?:are )?still available)\b/.test(normalized))
     && (queryScope.branch.positive.length > 0 || /\b(?:engineering|b\.?tech|course|branch|admission|cap)\b/i.test(normalized))
@@ -3414,7 +3443,11 @@ async function answerAdmissionQuestionCore(body, user) {
     const record = getDb().knowledge.find(item => item.id === 'KB-43' && usableKnowledge(item));
     const preparation = record?.text?.split('\n').filter(line =>
       /^- (?:Corporate Readiness Program|Professional Grooming)\b/i.test(line)) || [];
-    const evidence = preparation.length ? [publicEvidence(sourceRecord(record), Date.now())] : [];
+    const evidence = preparation.length ? [publicEvidence(sourceRecord({
+      ...record,
+      sourceUrl: record.sourceUrl === 'https://mitcorer.edu.in/our-mou.php'
+        ? 'https://www.mitcorer.edu.in/placement-ready-program.php' : record.sourceUrl,
+    }), Date.now())] : [];
     const response = {
       source: evidence.length ? record.source : 'No verified record',
       answer: evidence.length

@@ -254,7 +254,8 @@ export async function defaultLinkChecker(value, timeoutMs = 8000) {
     };
     let checked = await requestSafely('HEAD', url);
     let response = checked.response;
-    if (response.status === 403 || response.status === 405 || response.status === 501) {
+    // Some official portals return 404 for HEAD while serving the same page over GET.
+    if ([403, 404, 405, 501].includes(response.status)) {
       response.body?.cancel().catch(() => {});
       checked = await requestSafely('GET', checked.target);
       response = checked.response;

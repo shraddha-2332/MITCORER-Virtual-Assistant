@@ -267,6 +267,22 @@ test('default link checker skips unapproved hosts without making a network reque
   assert.equal(result.skipped, true);
 });
 
+test('default link checker verifies a HEAD 404 with GET', async () => {
+  const originalFetch = globalThis.fetch;
+  const methods = [];
+  globalThis.fetch = async (_url, { method }) => {
+    methods.push(method);
+    return new Response(null, { status: method === 'HEAD' ? 404 : 200 });
+  };
+  try {
+    const result = await defaultLinkChecker('https://fe2026.mahacet.org/StaticPages/HomePage');
+    assert.equal(result.ok, true);
+    assert.deepEqual(methods, ['HEAD', 'GET']);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('default link checker refuses redirects outside approved hosts before following them', async () => {
   const originalFetch = globalThis.fetch;
   let requests = 0;

@@ -76,6 +76,22 @@ Frontend: `npm.cmd ci`, `npm.cmd test`, `npm.cmd run lint`, `npm.cmd run build`,
 
 The GitHub Actions workflow runs backend checks/evaluators and frontend unit/build/critical browser checks without model credentials. Its cloud run is not verified until the approved changes are pushed and Actions executes.
 
+## Workflow verification checklist
+
+Start the backend and frontend in separate terminals with `npm.cmd run dev` from their respective directories. Open `http://127.0.0.1:5173` and confirm `http://127.0.0.1:4000/api/ready` returns HTTP 200. Use disposable accounts and a test database for write actions.
+
+| Workflow | Steps and expected result |
+| --- | --- |
+| Public chat and retrieval | Ask for first-year tuition excluding hostel and bus charges. Confirm the answer omits those services. Then ask “For 2026-27 DSE, what fee is listed for OBC girls?” and check the INR 18,362 figure and its source. Ask for the PAHSU exam timetable and open the official link. Start a new chat and confirm the old context clears. |
+| Languages and placement | Ask in Marathi and Hindi for your own scholarship payment date and personal Pragati approval. MITRA should explain that it cannot verify either outcome, in the chosen language, and link to the official portal. Ask for a guaranteed package and check that no recruiter or package is promised. Ask how to prepare for placements and open the Placement Ready Program citation. |
+| Applicant | Sign in as a test applicant, select an admission route, record a checklist item, and reload. Confirm the change persists. Sign in as another applicant and confirm their workspace is independent. |
+| Staff | Sign in as staff, open Review Inbox, and check that a test inquiry can be reviewed. Verify that the knowledge record write operation is reserved for admins. |
+| Admin | Sign in as an admin, review a disposable official source, save it, and confirm it stays out of public answers until published. Publish it, then verify the answer and citation in a separate guest session. Edit the same test record from two admin sessions and confirm a stale save returns a revision conflict. |
+| Layout and accessibility | Repeat public and admin navigation in Chrome and Edge at mobile and desktop widths. Tab through the widget, forms, and editor, checking visible focus and an ordered tab sequence. With a screen reader, verify that login errors and new chat messages are announced. |
+| Release and recovery | Confirm the deployed commit and both health and readiness endpoints. Repeat the role checks with test accounts. Restore a verified backup to a new directory, start an isolated instance, and check readiness and a known record. Run capacity checks against staging at the expected traffic level. |
+
+Run `npm.cmd run test:public-session-browser`, `npm.cmd run test:language-browser`, and `npm.cmd run test:maintainer-browser` from `frontend` for repeatable local workflow checks. Run `npm.cmd run evaluate:public -- --strict` from `backend` for the public answer contract.
+
 ## Release and rollback
 
 1. Review the concrete diff and obtain the user's commit/push approval.

@@ -815,7 +815,7 @@ button { border: 0; }
 .inquiryTimeline blockquote { margin: 14px 0 0; padding: 12px; border-left: 3px solid var(--green); background: #eef8f3; }
 .inquiryTimeline blockquote p { margin: 5px 0; color: #29493d; }
 .inquiryTimeline blockquote small { color: var(--muted); }
-.inquiryWorkspace { display: grid; grid-template-columns: minmax(290px, .8fr) minmax(420px, 1.2fr); min-height: 500px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 8px 26px rgba(24,38,55,.06); }
+.inquiryWorkspace { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); min-height: 500px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 8px 26px rgba(24,38,55,.06); }
 .inquiryList { display: flex; flex-direction: column; border-right: 1px solid var(--line); background: #f8fbfa; }
 .inquiryList > button { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 7px 10px; padding: 15px; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
 .inquiryList > button:hover, .inquiryList > button.active { background: #eaf4f0; }
@@ -830,6 +830,14 @@ button { border: 0; }
 .inquiryDetail dd { margin: 4px 0 0; color: var(--ink); font-size: 13px; font-weight: 750; overflow-wrap: anywhere; }
 .inquiryQuestion { padding: 14px; border-left: 3px solid var(--blue); background: #f1f7fa; }
 .inquiryQuestion p { margin: 7px 0 0; line-height: 1.6; }
+.inquiryQuestion h3, .requestActivity h3 { margin: 0; color: var(--ink); font-size: 14px; font-weight: 650; }
+.inquiryQuestion h3 + p, .inquiryFollowUp, .requestActivity li p { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.inquiryFollowUp { margin: 12px 0; color: var(--muted); }
+.requestActivity ol { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none; }
+.requestActivity li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfa; }
+.requestActivity li strong { font-size: 13px; font-weight: 650; }
+.requestActivity li p { margin: 3px 0; white-space: pre-wrap; }
+.requestActivity li small { display: flex; flex-wrap: wrap; gap: 3px 10px; color: var(--muted); font-size: 12px; }
 .staffReplyHistory { display: grid; gap: 8px; margin-top: 14px; }
 .staffReplyHistory div { padding: 11px; border-radius: 6px; background: #eef8f3; }
 .staffReplyHistory p { margin: 5px 0; line-height: 1.5; }
@@ -859,17 +867,14 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .knowledgeGrid h3 { margin: 6px 0 8px; color: var(--ink); }
 .knowledgeGrid p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 13px; }
 .knowledgeGrid footer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--blue); font-size: 12px; font-weight: 850; }
-.knowledgeManager { gap: 16px; }
-.knowledgeHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(115deg, #fff 55%, #f0f7f5); }
-.knowledgeHeader h2 { margin: 5px 0; color: var(--ink); font-size: 26px; }
-.knowledgeHeader p, .knowledgePaneHead p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.knowledgePaneHead p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .knowledgeSyncButton, .knowledgePrimaryAction { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 13px; border: 1px solid #b9d3cb; border-radius: 8px; background: #fff; color: var(--green); font-size: 12px; font-weight: 850; cursor: pointer; }
 .knowledgeSyncButton:disabled, .knowledgePrimaryAction:disabled { cursor: wait; opacity: .65; }
 .knowledgeStats { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
 .knowledgeStats article { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .knowledgeStats span { color: var(--muted); font-size: 11px; font-weight: 750; }
 .knowledgeStats strong { color: var(--ink); font-size: 23px; }
-.knowledgeTabs { display: flex; gap: 5px; padding: 5px; border-bottom: 1px solid var(--line); background: #f7faf9; }
+.knowledgeTabs { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; border-bottom: 1px solid var(--line); background: #f7faf9; }
 .knowledgeTabs button { display: inline-flex; align-items: center; gap: 9px; padding: 10px 13px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font-size: 12px; font-weight: 800; cursor: pointer; }
 .knowledgeTabs button.active { border-bottom-color: var(--green); color: var(--green); }
 .knowledgeTabs button span { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: #e8f0ed; text-align: center; font-size: 10px; }
@@ -982,7 +987,7 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 }
 
 @media (max-width: 700px) {
-  .knowledgeHeader, .knowledgePaneHead { align-items: stretch; flex-direction: column; }
+  .knowledgePaneHead { align-items: stretch; flex-direction: column; }
   .knowledgeSyncButton, .knowledgePrimaryAction { align-self: flex-start; }
   .knowledgeStats { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .knowledgeFilters { grid-template-columns: 1fr; }
@@ -1041,18 +1046,21 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
   font-weight: 500;
 }
 
-.reviewInboxTabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.reviewInboxTabs { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .reviewInboxTabs > button:not(.inlineAction) { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 750; cursor: pointer; }
 .reviewInboxTabs > button.active { border-color: var(--green); background: #eaf4f0; color: var(--green); }
 .reviewInboxTabs > button span { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: rgba(20,101,72,.1); font-size: 11px; }
-.reviewInboxTabs > .inlineAction { margin-left: auto; }
-
-.adminDashboard { max-width: 1240px; margin: 0 auto; }
-.adminWelcome { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 26px 28px; border: 1px solid #c8ddd5; border-radius: 14px; background: linear-gradient(115deg, #f0f8f4 0%, #fff 72%); box-shadow: 0 10px 28px rgba(24,38,55,.05); }
-.adminWelcome h2 { margin: 5px 0 0; color: #102f43; font-size: 28px; letter-spacing: -.02em; }
-.adminWelcome p { margin: 7px 0 0; color: var(--muted); }
-.adminWelcome > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 0 15px; border-radius: 8px; background: var(--green); color: white; font-weight: 800; cursor: pointer; white-space: nowrap; }
-.adminWelcome > button:disabled { opacity: .6; cursor: wait; }
+.adminPage { max-width: 1240px; margin-inline: auto; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+.adminPageHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: clamp(14px, 3vw, 22px); border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.adminPageHeader > div { min-width: 0; }
+.adminPageHeader h2 { margin: 0; color: var(--ink); font-size: clamp(21px, 3vw, 26px); line-height: 1.2; }
+.adminPageHeader p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.adminRefreshButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 12px; border: 1px solid #b9d3cb; border-radius: 7px; background: #fff; color: var(--green); font-size: 13px; font-weight: 650; cursor: pointer; }
+.adminRefreshButton:hover:not(:disabled) { background: #eef8f3; }
+.adminRefreshButton:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.adminRefreshButton:disabled { opacity: .65; cursor: wait; }
+.adminStatus { justify-self: start; display: flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid #b8dfcd; border-radius: 7px; background: #f0faf5; color: var(--green); font-size: 14px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.adminStatus > svg { flex-shrink: 0; }
 .adminMetricGrid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 13px; }
 .adminMetricGrid article { min-height: 112px; display: grid; align-content: center; gap: 5px; padding: 18px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 6px 20px rgba(24,38,55,.04); }
 .adminMetricGrid span { color: #526779; font-size: 13px; font-weight: 700; }
@@ -1100,8 +1108,6 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
   .adminDashboardGrid { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
-  .adminWelcome { align-items: flex-start; flex-direction: column; padding: 21px; }
-  .adminWelcome h2 { font-size: 24px; }
   .adminMetricGrid { gap: 9px; }
   .adminMetricGrid article { min-height: 100px; padding: 13px; }
   .adminMetricGrid strong { font-size: 25px; }
@@ -1337,8 +1343,8 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
   .applicantDocumentList article { align-items: flex-start; flex-direction: column; }
 }
 
-.applicantAdminFilters { grid-template-columns: minmax(220px,1fr) auto; align-items: end; }
-.applicantAdminFilters > span { padding: 10px 0; color: var(--muted); font-size: 12px; }
+.applicantAdminFilters { grid-template-columns: minmax(0,1fr) auto; align-items: end; }
+.applicantAdminFilters > span { padding: 9px 0; color: var(--muted); font-size: 13px; }
 .applicantAdminList { display: grid; gap: 12px; }
 .applicantAdminCard { display: grid; gap: 14px; padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 6px 18px rgba(24,38,55,.04); }
 .applicantAdminCard > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid #e7eeea; }
@@ -1350,9 +1356,10 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .applicantAdminDetails section { min-width: 0; padding: 12px; border: 1px solid #e7eeea; border-radius: 8px; background: #fbfcfb; }
 .applicantAdminDetails h3 { margin: 0 0 8px; color: #29483a; font-size: 12px; }
 .applicantAdminDetails p { margin: 0; color: #4d6257; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.applicantAdminDetails ul { display: grid; gap: 4px; margin: 0; padding-inline-start: 17px; color: var(--ink); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .applicantAdminDetails small { display: block; margin-top: 5px; color: #748179; font-size: 10px; line-height: 1.4; }
 .applicantAdminDetails dl { display: grid; gap: 6px; margin: 0; }
-.applicantAdminDetails dl > div { display: grid; grid-template-columns: minmax(95px,.55fr) minmax(0,1fr); gap: 8px; font-size: 11px; }
+.applicantAdminDetails dl > div { display: grid; grid-template-columns: minmax(95px,.75fr) minmax(0,1fr); gap: 8px; font-size: 12px; line-height: 1.45; }
 .applicantAdminDetails dt { color: #6c7972; }
 .applicantAdminDetails dd { margin: 0; color: #34483e; font-weight: 700; overflow-wrap: anywhere; }
 .applicantAdminCard > footer { color: var(--muted); font-size: 10px; }

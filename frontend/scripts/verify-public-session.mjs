@@ -199,6 +199,10 @@ try {
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
   await staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: inquiryQuestion }).click();
   await staffPage.locator('.inquiryDetail').getByText(inquiryId, { exact: true }).waitFor();
+  const activity = staffPage.getByRole('region', { name: 'Request activity' });
+  await activity.getByText('MITRA system update', { exact: true }).waitFor();
+  await activity.getByText('MITRA recorded a request for staff follow-up.', { exact: true }).waitFor();
+  assert.equal(await activity.getByText(inquiryQuestion, { exact: false }).count(), 0);
   await staffPage.getByLabel('Queue status').selectOption('In progress');
   const savedRequest = staffPage.waitForResponse(response => response.request().method() === 'PATCH'
     && response.url().endsWith(`/api/inquiries/${inquiryId}/status`));
@@ -216,6 +220,9 @@ try {
   assert.equal(getDb().inquiries.find(item => item.id === inquiryId).status, 'Resolved');
   await unresolvedFilter.click();
   await requestRow.waitFor();
+  await requestRow.click();
+  await activity.getByText('Internal staff note', { exact: true }).waitFor();
+  await activity.getByText('Referred the request to the admissions desk.', { exact: true }).waitFor();
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
   await staffPage.getByRole('button', { name: /Answer feedback/ }).click();
   await staffPage.getByRole('button', { name: 'Refresh' }).click();
@@ -227,13 +234,34 @@ try {
   await staffPage.getByRole('button', { name: 'Save feedback status', exact: true }).click();
   assert.equal((await feedbackSaved).status(), 200);
   assert.equal(getDb().feedback.find(item => item.id === feedbackId).status, 'Resolved');
+  const saveNotice = staffPage.getByRole('status').filter({ hasText: 'Feedback marked as resolved.' });
+  await saveNotice.waitFor();
+  assert.equal(await saveNotice.evaluate(element => getComputedStyle(element).fontSize), '14px');
+  await staffPage.getByRole('button', { name: 'Refresh' }).click();
+  await staffPage.locator('.inquiryDetail').getByText('I accepted my CAP seat and paid the fee. What is remaining?', { exact: true }).waitFor();
+  await saveNotice.waitFor({ state: 'hidden' });
 
-  await staffNav.getByRole('button', { name: 'Saved admission checklists', exact: true }).click();
+  await staffNav.getByRole('button', { name: 'Applicant Progress', exact: true }).click();
+  await staffPage.getByRole('heading', { name: 'Applicant Progress', exact: true }).waitFor();
   const savedChecklist = staffPage.locator('.applicantAdminCard').filter({ hasText: applicantEmail });
   await savedChecklist.getByText(`${applicantEmail} · Applicant account`, { exact: true }).waitFor();
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   await savedChecklist.getByText('10th marksheet', { exact: true }).waitFor();
   assert.equal(await staffNav.getByRole('button', { name: 'Document review', exact: true }).count(), 0);
+
+  await staffPage.getByRole('button', { name: 'Refresh progress', exact: true }).click();
+  await staffPage.getByRole('status').getByText('Progress refreshed.', { exact: true }).waitFor();
+  await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
+  for (const width of [320, 768, 1440]) {
+    await staffPage.setViewportSize({ width, height: 900 });
+    for (const name of ['Overview', 'Knowledge Base', 'Review inbox', 'Applicant Progress']) {
+      if (width <= 820) await staffPage.getByRole('button', { name: 'Open navigation' }).click();
+      await staffNav.getByRole('button', { name, exact: true }).click();
+      await staffPage.locator('.adminPageHeader').getByRole('heading', { name, exact: true }).waitFor();
+      assert.ok(await staffPage.locator('.workspaceBody').evaluate(element =>
+        element.scrollWidth <= element.clientWidth + 1), `${name} overflows at ${width}px`);
+    }
+  }
 
   assert.deepEqual(errors, []);
   console.log('PASS: browser session isolation and reset, CAP and reporting guidance, checklist save and reload, staff inbox and checklist workflows, and dashboard expiry alerts with Knowledge Base navigation.');

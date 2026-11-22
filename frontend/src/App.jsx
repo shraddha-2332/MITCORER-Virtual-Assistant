@@ -831,7 +831,7 @@ function PublicEscalationCard({ message, language }) {
     ? 'तुमची विनंती MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली जाईल. ती आपोआप एखाद्या विशिष्ट सल्लागाराकडे पाठवली जात नाही. तातडीसाठी खालील क्रमांकांवर कॉल करा:'
     : language === 'hi'
       ? 'आपका अनुरोध MITCORER कर्मचारी समीक्षा कतार में दर्ज होगा। यह अपने आप किसी विशेष परामर्शदाता को नहीं भेजा जाता। तत्काल सहायता के लिए नीचे दिए गए नंबरों पर कॉल करें:'
-      : 'Enter a phone number or email you can access. Staff can see it in Admin → Review Inbox → Requests and contact you manually; the system does not send a reply automatically. For urgent help, call one of the numbers below:';
+      : 'Enter a phone number or email address where staff can reach you. Staff will review your request and may contact you directly.';
 
   return (
     <div className="escalationCard" role="region" aria-label="MITCORER staff inquiry">
@@ -840,6 +840,9 @@ function PublicEscalationCard({ message, language }) {
         <span>{headerTitle}</span>
       </div>
       <p className="escalationCardPrompt">{promptText}</p>
+      {language !== 'mr' && language !== 'hi' && escalation.helplines?.length > 0 && (
+        <p className="escalationCardPrompt">For urgent help, call one of the numbers below.</p>
+      )}
       {(escalation.helplines?.length > 0 || escalation.email) && <div className="escalationVerifiedContacts" aria-label="Published college contacts">
         <span>{language === 'mr' ? 'महाविद्यालय संपर्क' : language === 'hi' ? 'कॉलेज संपर्क' : 'College contacts'}</span>
         {(escalation.helplines || []).map(line => <a key={line.tel} href={`tel:${line.tel}`}>{line.number}</a>)}
@@ -1058,10 +1061,8 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     const target = document.getElementById(id) || document.getElementById('assistant-quality-monitor');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-  return <div className="pageStack adminDashboard">
-    <section className="adminWelcome">
-      <div><span className="eyebrow">MITCORER · Staff workspace</span><h2>Welcome, {user.name.split(' ')[0]}</h2><p>Manage verified assistant knowledge and review what visitors send to the college.</p></div>
-    </section>
+  return <div className="pageStack adminPage">
+    <AdminPageHeader title="Overview" description={`Welcome, ${user.name.split(' ')[0]}. Review visitor requests and maintain assistant knowledge.`} />
     <section className="adminMetricGrid" aria-label="Operations summary">
       <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
       <article><span>Sources to review</span><strong>{needsReview}</strong><small>{unreachableSources} unreachable; {Math.max(0, needsReview - unreachableSources)} staged or changed</small></article>
@@ -1073,7 +1074,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
         <div className="adminPendingList">
           {reviewCounts.inquiryError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Visitor requests unavailable</strong><small>{reviewCounts.inquiryError}</small></span></div>}
           {reviewCounts.feedbackError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Answer feedback unavailable</strong><small>{reviewCounts.feedbackError}</small></span></div>}
-          {reviewCounts.applicantError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Saved admission checklists unavailable</strong><small>{/API route not found/i.test(reviewCounts.applicantError) ? 'Backend deployment is missing the saved admission checklists route. Update the backend service, then retry.' : reviewCounts.applicantError}</small></span></div>}
+          {reviewCounts.applicantError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Applicant progress unavailable</strong><small>{/API route not found/i.test(reviewCounts.applicantError) ? 'Update the backend service to enable Applicant Progress.' : reviewCounts.applicantError}</small></span></div>}
           {reviewCounts.pendingInquiries > 0 && <div><span className="statusDot" /><span><strong>{reviewCounts.pendingInquiries} visitor request{reviewCounts.pendingInquiries === 1 ? '' : 's'} open</strong><small>Check the inbox for requests that still need a reply.</small></span></div>}
           {reviewCounts.unhelpfulFeedback > 0 && <div><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>{reviewCounts.unhelpfulFeedback} answer rating issue{reviewCounts.unhelpfulFeedback === 1 ? '' : 's'}</strong><small>Investigate visitor feedback marked unhelpful.</small></span></div>}
           {reviewKnowledge.slice(0, 2).map(item => <div key={item.id}><span className="statusDot" style={{ background: '#d97706' }} /><span><strong>{item.title}</strong><small>Knowledge record needs source review.</small></span></div>)}
@@ -1086,7 +1087,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
           {reviewCounts.unhelpfulFeedback > 0 && <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}>Inspect answer feedback <ArrowRight size={15} /></button>}
           {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review sources ({needsReview}) <ArrowRight size={15} /></button>}
           {reviewKnowledge.length > 0 && <button type="button" onClick={onOpenKnowledge}>Review knowledge ({reviewKnowledge.length}) <ArrowRight size={15} /></button>}
-          {reviewCounts.applicants > 0 && <button type="button" onClick={() => setView('applicant-workspaces')}>Saved admission checklists ({reviewCounts.applicants}) <ArrowRight size={15} /></button>}
+          {reviewCounts.applicants > 0 && <button type="button" onClick={() => setView('applicant-workspaces')}>Applicant Progress ({reviewCounts.applicants}) <ArrowRight size={15} /></button>}
         </div>
       </article>
       <article className="adminActionPanel">
@@ -1095,7 +1096,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
           <button type="button" onClick={onOpenKnowledge}><FileText size={18} /><span><strong>Knowledge Base</strong><small>Edit, verify and retire answer records</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={onOpenSources}><RefreshCw size={18} /><span><strong>Source Verification</strong><small>Review official sources and changes</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={18} /><span><strong>Review inbox</strong><small>Visitor requests and answer feedback</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Saved admission checklists</strong><small>{reviewCounts.applicantError ? 'Checklists unavailable' : loading ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Applicant Progress</strong><small>{reviewCounts.applicantError ? 'Progress unavailable' : loading ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><Cpu size={18} /><span><strong>AI quality and analytics</strong><small>Inspect answer outcomes and unresolved patterns</small></span><ArrowRight size={15} /></button>
           {user.role === 'admin' && <button type="button" onClick={() => scrollToSection('assistant-unanswered-review')}><ThumbsDown size={18} /><span><strong>Unanswered questions</strong><small>Triage unresolved assistant outcomes</small></span><ArrowRight size={15} /></button>}
         </div>
@@ -1127,8 +1128,8 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
         {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')} title={collapsed ? 'Review inbox' : undefined} aria-label={collapsed ? 'Review inbox' : undefined}>
           <Phone size={17} /><span>Review inbox</span>
         </button>}
-        {['staff', 'admin'].includes(user.role) && <button className={view === 'applicant-workspaces' ? 'active' : ''} type="button" onClick={() => openView('applicant-workspaces')} title={collapsed ? 'Saved admission checklists' : undefined} aria-label={collapsed ? 'Saved admission checklists' : undefined}>
-          <LayoutDashboard size={17} /><span>Saved admission checklists</span>
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'applicant-workspaces' ? 'active' : ''} type="button" onClick={() => openView('applicant-workspaces')} title={collapsed ? 'Applicant Progress' : undefined} aria-label={collapsed ? 'Applicant Progress' : undefined}>
+          <LayoutDashboard size={17} /><span>Applicant Progress</span>
         </button>}
       </nav>
       <div className="accountFooter" title={user.email}>
@@ -1142,6 +1143,23 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
 
 function hasSavedAdmissionChecklist({ cap }) {
   return Boolean(cap?.stage || cap?.status);
+}
+
+function AdminPageHeader({ title, description, children }) {
+  return <header className="adminPageHeader">
+    <div><h2>{title}</h2><p>{description}</p></div>
+    {children}
+  </header>;
+}
+
+function AdminRefreshButton({ loading, onClick, label = 'Refresh' }) {
+  return <button className="adminRefreshButton" type="button" disabled={loading} onClick={onClick}>
+    <RefreshCw size={15} aria-hidden="true" />{loading ? 'Refreshing…' : label}
+  </button>;
+}
+
+function AdminStatus({ children }) {
+  return <div className="adminStatus" role="status"><CheckCircle2 size={16} aria-hidden="true" />{children}</div>;
 }
 
 function ApplicantWorkspaceReview({ token }) {
@@ -1165,14 +1183,17 @@ function ApplicantWorkspaceReview({ token }) {
   const visibleItems = items.filter(item => !normalizedSearch || `${item.ownerName} ${item.ownerEmail}`.toLowerCase().includes(normalizedSearch));
   const refresh = () => {
     setLoading(true); setError(''); setNotice('');
-    reload().then(() => setNotice('Checklists refreshed.'))
+    reload().then(() => setNotice('Progress refreshed.'))
       .catch(loadError => setError(loadError.message || 'Could not refresh saved admission checklists.'))
       .finally(() => setLoading(false));
   };
-  return <div className="pageStack applicantAdminPage">
-    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Saved admission checklists</h1><p>See the route, latest step and documents applicants or parents marked as prepared. Progress is self-reported.</p></div><button type="button" disabled={loading} onClick={refresh}>{loading ? 'Refreshing…' : 'Refresh checklists'}</button></section>
-    <div className="knowledgeFilters applicantAdminFilters"><label>Find an applicant<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name or account email" /></label><span>{visibleItems.length} of {items.length} checklists</span></div>
-    {error && <div className="errorBanner" role="alert">{/API route not found/i.test(error) ? <><strong>Saved admission checklists route is missing from this backend version.</strong> Update the backend service to the current code, then refresh this page. The request cannot be fixed by changing applicant account data.</> : error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
+  return <div className="pageStack adminPage">
+    <AdminPageHeader title="Applicant Progress" description="View progress reported by applicants and parents.">
+      <AdminRefreshButton loading={loading} onClick={refresh} label="Refresh progress" />
+    </AdminPageHeader>
+    <div className="knowledgeFilters applicantAdminFilters"><label>Find an applicant<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name or account email" /></label><span>{visibleItems.length} of {items.length} records</span></div>
+    {error && <div className="errorBanner" role="alert">{/API route not found/i.test(error) ? 'Update the backend service to enable Applicant Progress, then refresh this page.' : error}</div>}
+    {notice && <AdminStatus>{notice}</AdminStatus>}
     {loading ? <div className="panelBlock">Loading applicant workspaces…</div> : visibleItems.length === 0 ? <div className="knowledgeEmpty">{items.length ? 'No applicants match this search.' : 'No admission checklists have been saved yet.'}</div> : <div className="applicantAdminList">{visibleItems.map(item => {
       const route = item.cap?.route || item.programs?.route;
       const channel = item.cap?.channel;
@@ -1226,6 +1247,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
         let initial = previous?.type === 'feedback'
           ? nextFeedback.find(item => item.id === previous.id) || null
           : nextInquiries.find(item => item.id === previous?.id) || null;
+        if (initial) initial = { ...initial, type: previous.type };
         if (!initial && !previous) {
           const first = nextInquiries[0] || nextFeedback[0] || null;
           initial = first ? { ...first, type: first.question && 'helpful' in first ? 'feedback' : 'inquiry' } : null;
@@ -1272,7 +1294,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       selectedRef.current = nextSelected;
       setSelected(nextSelected);
       setStaffNote('');
-      setNotice('Saved. Assignment is internal only; this does not email/text the submitter or assignee.');
+      setNotice('Request updated.');
     } catch (saveError) { setError(saveError.message || 'Could not update this inquiry.'); }
     finally { setSaving(false); }
   };
@@ -1285,7 +1307,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       const nextSelected = { ...updated, type: 'feedback' };
       selectedRef.current = nextSelected;
       setSelected(nextSelected);
-      setNotice(`Saved. Feedback status marked as ${status}.`);
+      setNotice(updated.status === 'Resolved' ? 'Feedback marked as resolved.' : 'Feedback status updated.');
     } catch (saveError) {
       setError(saveError.message || 'Could not update feedback status.');
     } finally {
@@ -1293,22 +1315,20 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
     }
   };
   const contactHref = selected?.contact?.includes('@') ? `mailto:${selected.contact}` : selected?.contact ? `tel:${selected.contact.replace(/[^0-9+]/g, '')}` : '';
-  const hasStaffResponse = (selected?.messages || []).some(entry => ['staff', 'admin'].includes(entry.authorRole));
+  const requestActivity = selected?.messages || [];
+  const hasStaffNote = requestActivity.some(entry => ['staff', 'admin'].includes(entry.authorRole));
 
-  return <div className="pageStack">
-    <div className="sectionHead">
-      <span className="eyebrow">Staff review</span>
-      <h2>Review inbox</h2>
-      <p>One place for visitor requests and answer ratings. Requests are stored locally in the application database; they are not automatically emailed or assigned.</p>
-      <div className="reviewInboxTabs">
+  return <div className="pageStack adminPage">
+    <AdminPageHeader title="Review inbox" description="Review visitor requests and answer feedback.">
+      <AdminRefreshButton loading={loading} onClick={() => { setNotice(''); setLoading(true); setRefreshCount(count => count + 1); }} />
+    </AdminPageHeader>
+    <div className="reviewInboxTabs">
         <button type="button" className={tab === 'inquiries' ? 'active' : ''} onClick={() => setTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
         <button type="button" className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
         {tab === 'inquiries' && <button type="button" aria-pressed={unresolvedOnly} className={unresolvedOnly ? 'active' : ''} onClick={() => setUnresolvedOnly(value => !value)}>Unresolved only</button>}
-        <button className="inlineAction secondary" type="button" disabled={loading} onClick={() => { setLoading(true); setRefreshCount(count => count + 1); }}><RefreshCw size={15} /> Refresh</button>
-      </div>
     </div>
     {error && <div className="errorBanner">{error}</div>}
-    {notice && <div className="decisionResult positive"><strong>{notice}</strong></div>}
+    {notice && <AdminStatus>{notice}</AdminStatus>}
     {loading ? <div className="panelBlock">Loading review inbox…</div> : visibleRows.length === 0 ? (
       <div className="panelBlock">{tab === 'inquiries' && unresolvedOnly ? 'No unresolved visitor requests.' : `No ${tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.`}</div>
     ) : <section className="inquiryWorkspace">
@@ -1327,7 +1347,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
           <div><dt>Received</dt><dd>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : 'Unknown'}</dd></div>
           {selected.type === 'inquiry' ? <><div><dt>Reference</dt><dd>{selected.id}</dd></div><div><dt>Contact</dt><dd>{contactHref ? <a href={contactHref}>{selected.contact}</a> : selected.contact || 'Not provided'}</dd></div><div><dt>Assigned to</dt><dd>{selected.assignedTo || 'Unassigned'}</dd></div></> : <><div><dt>Model</dt><dd>{selected.model || 'Unknown'}</dd></div><div><dt>Vote</dt><dd>{selected.helpful ? 'Helpful' : 'Not helpful'}</dd></div></>}
         </dl>
-        <div className="inquiryQuestion"><strong>Visitor question</strong><p>{selected.question || 'No question was recorded.'}</p></div>
+        <section className="inquiryQuestion"><h3>Visitor’s question</h3><p>{selected.question || 'No question was recorded.'}</p></section>
         {selected.type === 'feedback' ? <>
           <div className="inquiryQuestion">
             <strong>Assistant answer</strong>
@@ -1365,13 +1385,28 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
             </button>
           </div>
         </> : <>
-          {(selected.messages || []).length > 0 && <div className="staffReplyHistory">{selected.messages.map(entry => <div key={entry.id}><strong>{entry.authorName || entry.authorRole}</strong><p>{entry.text}</p><small>{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : ''}</small></div>)}</div>}
+          <p className="inquiryFollowUp">Contact the visitor by phone or email using the details above. Assignments and internal notes stay in the Review Inbox.</p>
+          {requestActivity.length > 0 && <section className="requestActivity" aria-label="Request activity">
+            <h3>Request activity</h3>
+            <ol>{requestActivity.map(entry => {
+              const isSystem = entry.authorRole === 'system';
+              const isStaff = ['staff', 'admin'].includes(entry.authorRole);
+              const legacyEscalation = isSystem && entry.text?.startsWith('[Human Escalation from Mitra Assistant]:');
+              return <li key={entry.id}>
+                <strong>{isSystem ? 'MITRA system update' : isStaff ? 'Internal staff note' : entry.authorName || 'Request update'}</strong>
+                <p>{legacyEscalation ? 'MITRA recorded a request for staff follow-up.' : entry.text}</p>
+                {((isStaff && entry.authorName) || entry.createdAt) && <small>
+                  {isStaff && entry.authorName && <span>{entry.authorName}</span>}
+                  {entry.createdAt && <time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString()}</time>}
+                </small>}
+              </li>;
+            })}</ol>
+          </section>}
           <label className="staffReply">Assign to staff member (name or email)<input type="text" maxLength={120} value={assignedTo} onChange={event => setAssignedTo(event.target.value)} placeholder="Enter a verified MITCORER staff contact" /></label>
           <label className="staffReply">Queue status<select value={status} onChange={event => setStatus(event.target.value)}>{['Unassigned', 'Needs reply', 'In progress', 'Resolved'].map(value => <option key={value}>{value}</option>)}</select></label>
           <label className="staffReply">Internal note<textarea rows={3} maxLength={1500} value={staffNote} onChange={event => setStaffNote(event.target.value)} placeholder="Record an action taken. This note is not sent to the visitor." /></label>
-          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffResponse && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving…' : 'Save request'}</button></div>
-          {status === 'Resolved' && !hasStaffResponse && !staffNote.trim() && <small>Add an internal note before resolving this request.</small>}
-          <small>Use the displayed contact details to respond. Saving an assignment does not notify anyone automatically.</small>
+          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffNote && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving…' : 'Save request'}</button></div>
+          {status === 'Resolved' && !hasStaffNote && !staffNote.trim() && <small>Add an internal note before resolving this request.</small>}
         </>}
       </article>}
     </section>}
@@ -1489,10 +1524,10 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
     } finally { setRecordActionBusy(''); }
   };
   return (
-    <div className="pageStack knowledgeManager">
-      <header className="knowledgeHeader"><div><span className="eyebrow">Assistant knowledge</span><h2>Knowledge Base</h2><p>Keep visitor answers organized, traceable to official sources, and ready for retrieval.</p></div></header>
+    <div className="pageStack adminPage">
+      <AdminPageHeader title="Knowledge Base" description="Manage answer records and review official sources." />
       <section className="knowledgeStats"><article><span>All records</span><strong>{items.length}</strong></article><article><span>Published</span><strong>{items.filter(item => item.status === 'Published').length}</strong></article><article><span>Needs review</span><strong>{items.filter(item => /review|draft|pending/i.test(item.status || '')).length + sourcesNeedingReview}</strong></article><article><span>Official sources</span><strong>{sources.length}</strong></article></section>
-      {recordActionMessage && <div className="decisionResult positive" role="status"><strong>{recordActionMessage}</strong></div>}
+      {recordActionMessage && <AdminStatus>{recordActionMessage}</AdminStatus>}
       <nav className="knowledgeTabs" aria-label="Knowledge Base sections">
         <button type="button" className={activeTab === 'records' ? 'active' : ''} onClick={() => setActiveTab('records')}>Knowledge records <span>{items.length}</span></button>
         <button type="button" className={activeTab === 'sources' ? 'active' : ''} onClick={() => setActiveTab('sources')}>Official sources <span>{sources.length}</span></button>

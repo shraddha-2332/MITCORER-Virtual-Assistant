@@ -86,6 +86,7 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (/mou|corporate readiness|railway signaling|railway track|railway technology|railway diploma|railway modules/.test(normalized)) return null;
   const request = normalized.replace(/^i (?:want|plan|would like) to visit (?:the college|the campus|mitcorer)[.!]\s+(?=(?:share|show|give)(?: me)?\s+(?:the\s+)?(?:location|address|contact details?)\b)/i, '');
   let parts = clauses(request).filter(part => !/^(?:(?:for|in|ay|academic year)\s+)*(?:20\d{2}[-–/]\d{2,4})[?. ]*$/i.test(part));
+  if (parts.length > 1 && /^for (?:ay )?20\d{2}[-–/]\d{2,4} (?:dse|direct second year|first year)(?: engineering)?$/i.test(parts[0])) parts = parts.slice(1);
   if (/\bscholarship\b/.test(normalized) && parts.length === 2 && /^(?:where|how)(?: (?:can|do|should) i)?(?: to)? apply[?. ]*$/.test(parts[1])) return null;
   // A branch comparison is one attribute applied independently to each entity.
   const compared = understandQuery(normalized).branch.positive;

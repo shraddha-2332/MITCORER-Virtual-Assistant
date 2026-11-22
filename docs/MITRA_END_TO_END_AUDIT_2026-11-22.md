@@ -1,5 +1,13 @@
 # MITRA end-to-end audit
 
+## Final fixes follow-up
+
+The six actionable developer-diagnostic mismatches now have regression coverage. The diagnostic improved from 79/90 to 85/90. The five remaining label differences concern three admission guarantees, a future hostel availability guarantee, and a bus route timetable or fare absent from published evidence. The answers preserve those limits.
+
+Placement guidance now links to the official Placement Ready Program, the old MoU URL resolves to the current MoU page, and the retired campus-life citation is omitted pending a source that supports the full record. The training alias continues to resolve to the Placement Cell. Both CET links returned HTTP 200 on GET, so the checker now retries HEAD 404 responses with GET. The NSP scheme list loaded in the web verifier, while the direct local GET timed out. [Placement Ready Program](https://www.mitcorer.edu.in/placement-ready-program.php) · [Industry MoUs](https://mitcorer.edu.in/mou.php) · [National Scholarship Portal](https://scholarships.gov.in/All-Scholarships)
+
+The [workflow verification checklist](OPERATIONS.md#workflow-verification-checklist) covers local and release checks for public chat, applicants, staff, admins, accessibility, and recovery.
+
 ## Final verification · 22 November 2026
 
 The local application passed its core regression suites. Live health checks passed. Answer quality, some official source links, and production operations still have open verification items.
@@ -119,7 +127,7 @@ The public widget calls the Vite or production proxy, which forwards to the Node
 
 The seven original answer regressions passed with and without the document index. The 150-case suite also passed in both configurations, and a forced failure confirmed that the runner exits with code 1. The later fee, placement, and visit fixes passed six targeted requests against a maintained SQLite snapshot. A local 100-request smoke test at concurrency 5 also passed.
 
-- Resolve the six actionable diagnostic mismatches. Obtain human review of the broader question bank against current official evidence.
-- Recheck the six link exceptions, reconcile the 15 crawl failures, and review real-provider grounding. Extend behavioral coverage and check links outside the published records and document index.
+- Obtain human review of the broader question bank against current official evidence.
+- Review the campus-life record against an equivalent official source, reconcile the 15 crawl failures, and review real-provider grounding. Extend behavioral coverage and check links outside the published records and document index.
 - Obtain native-speaker sign-off and institutional factual verification. Extend browser coverage beyond Edge and Chrome and complete assistive-technology checks.
 - Verify deployment of the local fixes, authenticated production workflows, Docker runtime, production load capacity, and production backup and restore.
