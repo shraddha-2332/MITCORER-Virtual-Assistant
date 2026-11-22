@@ -1166,17 +1166,22 @@ function AdminStatus({ children }) {
   return <div className="adminStatus" role="status"><CheckCircle2 size={16} aria-hidden="true" />{children}</div>;
 }
 
-function ApplicantWorkspaceReview({ token }) {
-  const [items, setItems] = useState([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+function useAdminNotice() {
   const [notice, setNotice] = useState('');
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(() => setNotice(''), 4000);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+  return [notice, setNotice];
+}
+
+function ApplicantWorkspaceReview({ token }) {
+  const [items, setItems] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useAdminNotice();
   const reload = async () => {
     const result = await api.getApplicantWorkspaces(token);
     setItems((result.items || []).filter(hasSavedAdmissionChecklist));
@@ -1241,7 +1246,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
   const [refreshCount, setRefreshCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useAdminNotice();
 
   useEffect(() => {
     let active = true;
@@ -1450,7 +1455,8 @@ function Header({ user, setNavOpen, canGoBack, onBack }) {
 
 function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', initialSearch = '', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onExtractStructuredSource }) {
   const [cdmExtracting, setCdmExtracting] = useState(false);
-  const [cdmNotice, setCdmNotice] = useState('');
+  const [cdmNotice, setCdmNotice] = useAdminNotice();
+  const [cdmError, setCdmError] = useState('');
   const managedUsage = { 'KB-2': 'Public academic fee answers use this record.', 'KB-3': 'Public hostel and mess fee answers use this record.', 'KB-10': 'Public B.Tech intake answers use this record.', 'KB-6': 'Historical seat matrix answers use this record.' };
   const [editing, setEditing] = useState(null);
   const editorRef = useRef(null);
@@ -1471,7 +1477,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   const [recordStatus, setRecordStatus] = useState('All statuses');
   const [showRecordForm, setShowRecordForm] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
-  const [recordActionMessage, setRecordActionMessage] = useState('');
+  const [recordActionMessage, setRecordActionMessage] = useAdminNotice();
   const [recordActionBusy, setRecordActionBusy] = useState('');
   const filteredRecords = items
     .filter((item) => recordCategory === 'All categories' || item.category === recordCategory)
@@ -1577,7 +1583,8 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
             <h2>{review.title}</h2>
             <p>{review.status}</p>
           </div>
-          {cdmNotice && <div className="decisionResult positive" style={{ marginBottom: '1rem' }}><strong>{cdmNotice}</strong></div>}
+          {cdmNotice && <AdminStatus>{cdmNotice}</AdminStatus>}
+          {cdmError && <div className="errorBanner" role="alert">{cdmError}</div>}
           <div style={{ marginBottom: '0.75rem' }}>
             <button
               className="inlineAction secondary"
@@ -1587,6 +1594,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
                 if (!review?.id || !onExtractStructuredSource) return;
                 setCdmExtracting(true);
                 setCdmNotice('');
+                setCdmError('');
                 try {
                   const result = await onExtractStructuredSource(review.id);
                   const facts = result?.structuredFacts;
@@ -1598,10 +1606,10 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
                     }));
                     setCdmNotice(`Extracted ${facts.keyFacts.length} structured facts via CDM schema!`);
                   } else {
-                    setCdmNotice('CDM returned no structured keyFacts.');
+                    setCdmError('No structured facts were extracted.');
                   }
                 } catch (err) {
-                  setCdmNotice(`CDM extraction failed: ${err.message}`);
+                  setCdmError(`CDM extraction failed: ${err.message}`);
                 } finally {
                   setCdmExtracting(false);
                 }
@@ -1659,7 +1667,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
               />
             </label>
             <button type="submit" disabled={publishingSource || !review.text.trim() || review.syncMeta?.healthStatus === 'unreachable' || ((review.conflicts.length > 0 || review.freshnessImpact?.withheldKnowledgeIds?.length > 0) && !review.resolveConflicts)}><CheckCircle2 size={17} /> {publishingSource ? 'Publishing…' : 'Publish verified knowledge'}</button>
-            <button className="miniEditBtn" type="button" onClick={() => { setReview(null); setCdmNotice(''); }}>Cancel</button>
+            <button className="miniEditBtn" type="button" onClick={() => { setReview(null); setCdmNotice(''); setCdmError(''); }}>Cancel</button>
           </form>
         </section>
       )}

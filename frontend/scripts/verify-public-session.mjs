@@ -232,6 +232,9 @@ try {
   await staffPage.getByRole('button', { name: 'Save request', exact: true }).click();
   assert.equal((await savedRequest).status(), 200);
   assert.equal(getDb().inquiries.find(item => item.id === inquiryId).status, 'In progress');
+  const requestNotice = staffPage.getByRole('status').filter({ hasText: 'Request updated.' });
+  await requestNotice.waitFor();
+  await requestNotice.waitFor({ state: 'hidden', timeout: 7000 });
   const requestRow = staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: inquiryQuestion });
   const unresolvedFilter = staffPage.getByRole('button', { name: 'Unresolved only' });
   await unresolvedFilter.click();
@@ -261,9 +264,9 @@ try {
   const saveNotice = staffPage.getByRole('status').filter({ hasText: 'Feedback marked as resolved.' });
   await saveNotice.waitFor();
   assert.equal(await saveNotice.evaluate(element => getComputedStyle(element).fontSize), '14px');
+  await saveNotice.waitFor({ state: 'hidden', timeout: 7000 });
   await staffPage.getByRole('button', { name: 'Refresh' }).click();
   await staffPage.locator('.inquiryDetail').getByText('I accepted my CAP seat and paid the fee. What is remaining?', { exact: true }).waitFor();
-  await saveNotice.waitFor({ state: 'hidden' });
 
   await staffNav.getByRole('button', { name: 'Applicant Progress', exact: true }).click();
   await staffPage.getByRole('heading', { name: 'Applicant Progress', exact: true }).waitFor();
