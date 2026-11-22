@@ -619,7 +619,6 @@ function ApplicantPortalAccess({ onClose, onAuthenticate }) {
       <button type="button" className="portalModalClose" onClick={onClose} disabled={busy} aria-label="Close checklist sign-in"><X size={18} /></button>
       <span className="eyebrow">Save your admission checklist</span>
       <h2 id="applicant-portal-title">{mode === 'login' ? 'Sign in to save your checklist' : 'Create an applicant account'}</h2>
-      <p>Use an applicant or parent account to save your checklist and return later. Authorized admissions staff can view saved progress.</p>
       {error && <div className="errorBanner" role="alert">{error}</div>}
       <form onSubmit={submit} className="portalAccessForm">
         {mode === 'signup' && <>
@@ -630,7 +629,10 @@ function ApplicantPortalAccess({ onClose, onAuthenticate }) {
         </>}
         <label>Email<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
         <label>Password<input type="password" required minLength={mode === 'signup' ? 12 : undefined} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} /></label>
-        {mode === 'signup' && <small>Use at least 12 characters. Keep your account credentials private.</small>}
+        {mode === 'signup' && <>
+          <small>Use at least 12 characters. Keep your account credentials private.</small>
+          <small>Authorized admissions staff can view your saved checklist progress.</small>
+        </>}
         <button type="submit" disabled={busy || (mode === 'signup' && !admissionRoute)}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
       </form>
       <button type="button" className="portalModeToggle" disabled={busy} onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>
