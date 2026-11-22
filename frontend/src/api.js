@@ -117,6 +117,7 @@ export const api = {
   updateInquiryStatus: (token, id, updates) => request(`/api/inquiries/${id}/status`, { token, method: 'PATCH', body: updates }),
   getFeedback: (token) => request('/api/feedback', { token }),
   getAssistantOperations: (token) => request('/api/assistant/operations', { token }),
+  getAssistantAnalytics: (token) => request('/api/assistant/analytics', { token }),
   reviewAssistantEvent: (token, id, status) => request(`/api/assistant/operations/${encodeURIComponent(id)}`, { token, method: 'PATCH', body: { status } }),
   updateFeedbackStatus: (token, id, updates) => request(`/api/feedback/${id}/status`, { token, method: 'PATCH', body: updates }),
   getAdmissionWorkspace: (token) => request('/api/admission-workspace', { token }),

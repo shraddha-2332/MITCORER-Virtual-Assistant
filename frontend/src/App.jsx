@@ -13,6 +13,7 @@ import mitcorerLogo from './assets/mitcorer-logo.png';
 import mitcorerCampus from './assets/mitcorer-campus.webp';
 import { api } from './api.js';
 import { AssistantOperations } from './AssistantOperations.jsx';
+import { AssistantAnalytics } from './AssistantAnalytics.jsx';
 import { formatPublicResponse } from './answer-format.mjs';
 import { publicAnswerLinks } from './public-answer-links.mjs';
 import { KnowledgeRecordEditor } from './KnowledgeRecordEditor.jsx';
@@ -239,6 +240,7 @@ function App() {
           {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenKnowledgeRecord={(id) => { setKnowledgeInitialTab('records'); navigateTo('knowledge', id); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
           {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} initialSearch={knowledgeInitialSearch} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
           {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
+          {view === 'analytics' && <AssistantAnalytics token={token} />}
           {view === 'applicant-workspaces' && <ApplicantWorkspaceReview token={token} />}
         </section>
       </main>
@@ -1126,6 +1128,7 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
         <button className={view === 'knowledge' ? 'active' : ''} type="button" onClick={() => openView('knowledge')}>
           <span>Knowledge Base</span>
         </button>
+        <button className={view === 'analytics' ? 'active' : ''} type="button" onClick={() => openView('analytics')}><span>Analytics</span></button>
         {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')}>
           <span>Review inbox</span>
         </button>}

@@ -11,6 +11,7 @@ import { createPublicSession } from '../src/public-session.js';
 import { askPublicWithHistory } from '../src/conversations.js';
 import { selectLanguage } from '../src/language.js';
 import { documentCorpusStats, searchDocumentCorpus } from '../src/document-corpus.js';
+import { assistantUsageReport } from '../src/assistant-analytics.js';
 
 async function fixture(run) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-phase-a-'));
@@ -20,6 +21,54 @@ async function fixture(run) {
   try { await run((question, language = 'en') => answerAdmissionQuestion({ question, language }, null)); }
   finally { closeDb(); fs.rmSync(dir, { recursive: true, force: true }); }
 }
+
+test('general application questions explain the verified CAP steps and count as answered', () => fixture(async ask => {
+  for (const question of ['How do I apply for admission?', 'How can I apply for admission?', 'How to apply for admission?']) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'ANSWERED', question);
+    assert.match(response.answer, /register with the Maharashtra CET Cell/i);
+    assert.match(response.answer, /which route are you applying through/i);
+    assert.ok(response.evidence.some(record => record.id === 'KB-29'));
+  }
+  const admissions = assistantUsageReport().questions.find(group => group.id === 'admissions');
+  assert.deepEqual(admissions, { id: 'admissions', label: 'General admission questions', total: 3, answered: 3, evidenceGap: 0, other: 0 });
+
+  getDb().knowledge.find(record => record.id === 'KB-29').status = 'Archived';
+  const response = await ask('How do I apply for admission?');
+  assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.deepEqual(response.evidence, []);
+}));
+
+test('everyday phrasing reaches the relevant answer or an explicit verification limit', () => fixture(async ask => {
+  for (const [question, recordId, expected] of [
+    ['How do I apply for diploma admission?', 'KB-12', /Post-SSC Diploma admission notice/],
+    ['How can I apply for Polytechnic admission?', 'KB-12', /Post-SSC Diploma admission notice/],
+    ['How do I apply for direct second year admission?', 'KB-11', /current DSE admission notice/],
+    ['How can I get lateral entry?', 'KB-11', /current DSE admission notice/],
+    ['How do I apply for ACAP?', 'KB-14', /submit the institute form/i],
+    ['How do I apply for First Year B.Tech?', 'KB-29', /register with the Maharashtra CET Cell/],
+    ['Do I need CET or JEE to apply?', 'KB-25', /MHT-CET or JEE Main/],
+    ['How much is a hostel room?', 'KB-3', /refundable hostel deposit/],
+    ['Does the college help with jobs?', 'KB-24', /Training and Placement Cell/],
+    ['Where is the campus located?', 'KB-17', /Industrial Estate/],
+  ]) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'ANSWERED', question);
+    assert.match(response.answer, expected, question);
+    assert.ok(response.evidence.some(record => record.id === recordId), question);
+  }
+  const paperwork = await ask('What paperwork is needed for admission?');
+  assert.equal(paperwork.outcomeStatus, 'NEEDS_CLARIFICATION');
+  assert.match(paperwork.answer, /marksheets/);
+  const exam = await ask('When is semester 3 exam?');
+  assert.equal(exam.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.ok(exam.officialLinks.some(link => /Time Table/i.test(link.label)));
+  for (const question of ['How do I pay the fees?', 'Can I pay tuition in installments?']) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE', question);
+    assert.match(response.answer, /confirm both with the MITCORER Admissions Office/i);
+  }
+}));
 
 test('developer review regressions preserve fee scope and personal outcome limits', () => fixture(async ask => {
   const fee = await ask('For 2026-27 DSE, what fee is listed for OBC girls?');

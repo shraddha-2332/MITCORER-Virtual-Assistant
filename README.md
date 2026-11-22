@@ -19,6 +19,8 @@ The local Phase B–D changes add role-protected assistant operations, source/ch
 
 In the admin workspace, **Check official site for changes** crawls monitored MITCORER pages and stages detected changes and conflicts for human review. It does not automatically approve or publish knowledge. The AI Quality Monitor reports short-term operational outcomes and source health; it does not measure retrieval accuracy. The monitor requires the current backend route at `/api/assistant/operations`, so restart an older running backend after updating the code.
 
+**Analytics** is available to staff and admins. It ranks recognized question types and reports assistant outcomes for the last 30 UTC calendar days. Completed assistant requests increment daily SQLite counters from the time this feature is enabled. These analytics counters contain category and outcome counts only. The Analytics page uses `GET /api/assistant/analytics`.
+
 ## Technology Stack
 
 | Layer | Technology | Purpose |

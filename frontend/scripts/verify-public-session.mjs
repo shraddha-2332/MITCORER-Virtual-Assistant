@@ -6,6 +6,8 @@ import { chromium } from 'playwright-core';
 import { createServer as createViteServer } from 'vite';
 import { config } from '../../backend/src/config.js';
 import { hashPassword } from '../../backend/src/auth.js';
+import { recordAssistantUsage } from '../../backend/src/assistant-analytics.js';
+import { understandQuery } from '../../backend/src/query-understanding.js';
 import { createServer, resetRuntimeStateForTests } from '../../backend/src/server.js';
 import { resetDbForTests, getDb, saveDb, closeDb } from '../../backend/src/store.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -177,6 +179,7 @@ try {
     });
   }
   saveDb();
+  recordAssistantUsage(understandQuery('Where can I find the exam timetable?'), 'INSUFFICIENT_EVIDENCE');
   const staff = await browser.newContext();
   const staffLogin = await staff.request.post(`${origin}/api/auth/login`, {
     data: { email: staffEmail, password: staffPassword },
@@ -186,6 +189,26 @@ try {
   staffPage.on('pageerror', error => errors.push(error.message));
   await staffPage.goto(origin);
   const staffNav = staffPage.getByRole('navigation', { name: 'Admin workspace' });
+  const analyticsUrl = `${origin}/api/assistant/analytics`;
+  assert.equal((await stranger.request.get(analyticsUrl)).status(), 401);
+  const applicantLogin = await owner.request.post(`${origin}/api/auth/login`, {
+    data: { email: applicantEmail, password: applicantPassword },
+  });
+  assert.equal(applicantLogin.status(), 200);
+  const { token: applicantToken } = (await applicantLogin.json()).data;
+  assert.equal((await owner.request.get(analyticsUrl, {
+    headers: { Authorization: `Bearer ${applicantToken}` },
+  })).status(), 403);
+  await staffNav.getByRole('button', { name: 'Analytics', exact: true }).click();
+  await staffPage.getByRole('heading', { name: 'Most asked question types' }).waitFor();
+  const fees = staffPage.getByRole('listitem').filter({ hasText: 'What are the college fees?' });
+  assert.match(await fees.innerText(), /[1-9]\d* asked/);
+  const topicRows = staffPage.getByRole('list', { name: 'Topic outcomes' });
+  await topicRows.getByRole('listitem').filter({ hasText: 'Examinations' })
+    .getByText('100% fallback', { exact: true }).waitFor();
+  await topicRows.getByRole('listitem').filter({ hasText: /^Fees/ })
+    .getByText(/[1-9]\d* answered/).waitFor();
+  await staffNav.getByRole('button', { name: 'Overview', exact: true }).click();
   for (const { id, title, validUntil, label } of expiryFixtures.filter(item => item.label)) {
     const alert = staffPage.locator('.adminPendingList > div').filter({ hasText: title });
     await alert.getByText(`${label} · Valid until ${validUntil} (UTC)`, { exact: true }).waitFor();
@@ -255,12 +278,27 @@ try {
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   for (const width of [320, 768, 1440]) {
     await staffPage.setViewportSize({ width, height: 900 });
-    for (const name of ['Overview', 'Knowledge Base', 'Review inbox', 'Applicant Progress']) {
+    for (const name of ['Overview', 'Knowledge Base', 'Analytics', 'Review inbox', 'Applicant Progress']) {
       if (width <= 820) await staffPage.getByRole('button', { name: 'Open navigation' }).click();
       await staffNav.getByRole('button', { name, exact: true }).click();
       await staffPage.locator('.adminPageHeader').getByRole('heading', { name, exact: true }).waitFor();
       assert.ok(await staffPage.locator('.workspaceBody').evaluate(element =>
         element.scrollWidth <= element.clientWidth + 1), `${name} overflows at ${width}px`);
+      if (name === 'Analytics') {
+        const panels = staffPage.locator('.assistantAnalyticsGrid > section');
+        await panels.last().waitFor();
+        const [questions, outcomes] = await panels.evaluateAll(elements => elements.map(element => {
+          const { x, y } = element.getBoundingClientRect();
+          return { x, y };
+        }));
+        if (width === 1440) {
+          assert.equal(outcomes.y, questions.y);
+          assert.ok(outcomes.x > questions.x);
+        } else {
+          assert.equal(outcomes.x, questions.x);
+          assert.ok(outcomes.y > questions.y);
+        }
+      }
     }
   }
 

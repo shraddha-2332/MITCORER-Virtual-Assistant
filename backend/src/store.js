@@ -105,8 +105,30 @@ function openDatabase() {
       embedding TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS assistant_usage_daily (
+      day TEXT NOT NULL,
+      question_type TEXT NOT NULL,
+      outcome TEXT NOT NULL,
+      count INTEGER NOT NULL,
+      PRIMARY KEY (day, question_type, outcome)
+    );
   `);
   return sqlite;
+}
+
+export function incrementAssistantUsage(day, questionType, outcome) {
+  openDatabase().prepare(`
+    INSERT INTO assistant_usage_daily (day, question_type, outcome, count) VALUES (?, ?, ?, 1)
+    ON CONFLICT (day, question_type, outcome) DO UPDATE SET count = count + 1
+  `).run(day, questionType, outcome);
+}
+
+export function getAssistantUsageCounts(firstDay, lastDay) {
+  return openDatabase().prepare(`
+    SELECT question_type AS questionType, outcome, SUM(count) AS count
+    FROM assistant_usage_daily WHERE day BETWEEN ? AND ?
+    GROUP BY question_type, outcome
+  `).all(firstDay, lastDay);
 }
 
 export function getStoredVectors() {

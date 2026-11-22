@@ -38,6 +38,7 @@ import { maintainedProfile, maintainedContacts } from './maintained-profile.js';
 import { reviewBoundaryResponse } from './review-boundaries.js';
 import { refinedAnswer } from './answer-refinements.js';
 import { assistantOperations, recordAssistantEvent, reviewAssistantEvent, clearAssistantEvents } from './assistant-observability.js';
+import { assistantUsageReport, recordAssistantUsage } from './assistant-analytics.js';
 
 const publicRoutes = new Set([
   'GET /api/health',
@@ -804,7 +805,7 @@ function buildDocumentStatusAnswer(question) {
 
 function buildRouteDocumentAnswer(question) {
   const text = normalizeIntentText(question);
-  const asksDocuments = /\b(?:documents?|docs?|certificates?|papers|checklist)\b/.test(text);
+  const asksDocuments = /\b(?:documents?|docs?|certificates?|paperwork|papers|checklist)\b/.test(text);
   const unrelated = /\b(?:scholarship|mahadbt|loan|migration|duplicate|status|review|upload|fees?|cutoffs?|ai and data science|choice codes?|syllabus|placement)\b/.test(text);
   if (!asksDocuments || unrelated) return null;
 
@@ -813,8 +814,7 @@ function buildRouteDocumentAnswer(question) {
   const firstYear = /\b(?:first year|1st year|fy)\b/.test(text);
   if ((dse && firstYear) || (dse && diploma)) return null;
   if (!dse && !diploma && !firstYear) {
-    if (!/\b(?:checklist|list|all routes|general|reporting|documents?|certificates?|papers?)\b/.test(text)) return null;
-    if (!/\b(?:checklist|list|all routes|general|reporting)\b|\bwhat documents?.{0,15}required.{0,15}admission\b|\b(?:admission documents? required|required admission documents?)\b/.test(text)) return null;
+    if (!/\b(?:checklist|list|all routes|general|reporting)\b|\bwhat (?:documents?|paperwork).{0,20}(?:required|needed).{0,15}admission\b|\b(?:admission documents? required|required admission documents?)\b/.test(text)) return null;
     if (!/\b(?:all routes|general|reporting)\b/.test(text)) return {
       recordId: 'KB-1', source: 'Verified admission checklist',
       answer: 'General reporting checklist: 10th and 12th marksheets, or diploma marksheets for Direct Second Year; CET or JEE scorecard where applicable; school leaving certificate; nationality or domicile proof; CAP allotment letter if applicable; and category or concession documents when claimed. Which route are you applying through: First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Tell me your category or concession claim too so I can tailor the list.',
@@ -1790,7 +1790,7 @@ function buildLegacyCollegeProfileAnswer(question) {
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
-  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact|where (?:exactly )?(?:is )?mitcorer (?:is )?located|where is the college located|college location|campus location|how to reach the campus|exact location)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address|located|location)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
+  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact|where (?:exactly )?(?:is )?mitcorer (?:is )?located|where is the (?:college|campus) located|college location|campus location|how to reach the campus|exact location)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address|located|location)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
     return {
       recordId: 'KB-17',
       source: 'MITCORER Contact Us page',
@@ -1988,7 +1988,7 @@ function buildPlacementPlatformsAnswer(question, records) {
 
 function buildPlacementAssistanceAnswer(question) {
   const normalized = normalizeIntentText(question);
-  if (!/placement assistance|placement cell|training and placement|internship|internships/.test(normalized)) return null;
+  if (!/placement assistance|placement cell|training and placement|internship|internships|\b(?:help|assistance|support) (?:with|finding) jobs?\b/.test(normalized)) return null;
   if (/\b(?:platform|platforms|where|opportunities)\b/.test(normalized)) return null;
   if (/package|highest|average|companies visiting|recruiters/.test(normalized)) return null;
   return {
@@ -2010,6 +2010,23 @@ function buildAcceptedExamsAnswer(question) {
     source: 'MITCORER Admissions FAQ',
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/faqs',
     answer: 'MITCORER states that engineering admissions consider MHT-CET or JEE Main scores under the applicable government admission rules. Eligibility and accepted routes depend on the programme and admission year; check the current route-specific notice.',
+  };
+}
+
+function buildApplicationPolicyAnswer(normalized, records) {
+  if (/^do (?:i|we) need (?:mht[- ]?cet|cet) or jee(?: main)? to apply(?: for admission)?[?!. ]*$/.test(normalized)) {
+    const record = records.find(item => item.id === 'KB-25' && usableKnowledge(item));
+    return record && { ...buildAcceptedExamsAnswer('Which entrance exams are accepted?'), evidence: [record] };
+  }
+  const asksPayment = /^(?:how (?:do i|can i|to) pay (?:the )?(?:(?:academic|college|admission) )?fees?|can (?:i|we) pay (?:the )?(?:academic )?fees? in install?ments?)[?!. ]*$/.test(normalized);
+  if (!asksPayment) return null;
+  const record = records.find(item => item.id === 'KB-60' && usableKnowledge(item));
+  return {
+    source: record?.source || 'No verified record', evidence: record ? [record] : [],
+    outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    answer: 'I cannot verify the current payment method or whether installments are allowed for your programme. Confirm both with the MITCORER Admissions Office and use the current route-specific fee notice before paying.',
+    officialLinks: record?.sourceUrl ? [{ label: 'MITCORER fee structure', url: record.sourceUrl }] : [],
+    actionView: 'fees', actionLabel: 'View fee information',
   };
 }
 
@@ -2109,6 +2126,33 @@ function buildElectronicsProgrammeComparisonAnswer(question) {
       { label: 'MITCORER Electronics & Computer department', url: 'https://mitcorer.edu.in/electronic-computer-engineering.php' },
       { label: 'PAH Solapur University UG syllabus 2026-27', url: 'https://www.sus.ac.in/bos/Faculty-Of-Science-And-Technology-UG-Syllabus-2026-27' },
     ],
+  };
+}
+
+function buildAdmissionHowToAnswer(normalized, records) {
+  const match = normalized.match(/^how (?:to|(?:do|can|should) (?:i|we)) (?:apply(?: for (?:an? )?(admission|(?:first year )?b\.?tech(?: admission)?|(?:polytechnic|diploma)(?: admission)?|(?:direct second year|dse|lateral entry)(?: admission)?|(?:acap|institute[- ]level)(?: admission)?)| to mitcorer)|get (lateral entry))(?: (?:at|to) mitcorer)?[?!. ]*$/);
+  if (!match) return null;
+  const route = match[1] || match[2] || 'admission';
+  const recordId = /^(?:acap|institute)/.test(route) ? 'KB-14'
+    : /^(?:polytechnic|diploma)/.test(route) ? 'KB-12'
+    : /^(?:direct second year|dse|lateral entry)/.test(route) ? 'KB-11'
+    : 'KB-29';
+  const record = records.find(item => item.id === recordId && usableKnowledge(item));
+  if (!record) return {
+    source: 'No verified record', evidence: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    answer: 'I could not verify the application steps from the available records. Check the current admission notices for your route.',
+  };
+  const capSteps = 'For First Year B.Tech through CAP, register with the Maharashtra CET Cell and complete document scrutiny. Check the merit list, submit your branch preferences, and follow the current round’s seat-acceptance and institute-reporting instructions.';
+  const routeSteps = {
+    'KB-12': 'For First Year Polytechnic after SSC, start with the official Post-SSC Diploma admission notice. Check eligibility, the required documents, and the current application schedule before submitting your form.',
+    'KB-11': 'For Direct Second Year B.Tech, start with the current DSE admission notice. Check eligibility, documents, and the application schedule. Use MITCORER’s published DSE programme and choice codes when the process asks for your preferences.',
+    'KB-14': 'For institute-level (ACAP) admission, open MITCORER’s current notice for First Year or Direct Second Year. Submit the institute form, check the merit and allotment notices, and follow the reporting instructions and document deadline.',
+    'KB-29': capSteps,
+  };
+  return {
+    source: record.source, evidence: [record], officialLinks: getOfficialAdmissionLinks(normalized),
+    answer: route === 'admission' ? `${capSteps}\n\nDirect Second Year, Polytechnic, and institute-level (ACAP) have separate application processes. Which route are you applying through?` : routeSteps[recordId],
+    actionView: 'cap', actionLabel: 'View admission steps',
   };
 }
 
@@ -3262,7 +3306,9 @@ async function answerAdmissionQuestionCore(body, user) {
     }
     return safetyCheck.response;
   }
-  const question = omitExcludedFeeServices(originalQuestion);
+  const question = omitExcludedFeeServices(originalQuestion).replace(
+    /^how much (?:is|does) (?:a |the )?hostel room(?: cost)?([?!. ]*)$/i, 'How much is the hostel fee$1',
+  );
   const context = extractConversationContext(question, body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : {});
   const queryScope = understandQuery(question);
   const language = selectLanguage(originalQuestion, body.language);
@@ -3353,6 +3399,13 @@ async function answerAdmissionQuestionCore(body, user) {
   if (timetableNavigation) {
     return localizeResponse(timetableNavigation, language, normalized, [], academicFeeSelection, parseLegacyFactText);
   }
+  if (/^when (?:is|are) (?:the )?(?:semester \d+ exams?|exams? (?:for|in) semester \d+)[?!. ]*$/.test(normalized)) {
+    const navigation = buildOfficialNavigationAnswer('Where can I find the PAHSU exam timetable?');
+    return localizeResponse({
+      ...navigation, outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+      answer: 'I cannot verify the exact exam date from that question alone. For B.Tech, open PAHSU → Examination → Time Table and check the current session, branch, semester, and subject. Which programme, branch, and exam session do you mean?',
+    }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
+  }
 
   const unavailableDetail = requestedUnverifiedDetail(lowerQuestion);
   if (unavailableDetail) {
@@ -3405,11 +3458,13 @@ async function answerAdmissionQuestionCore(body, user) {
     localizationStatus: language === 'en' ? 'original' : 'fallback', languageReviewStatus: language === 'en' ? 'not-required' : 'translation-unavailable', model: 'deterministic-rag-fallback',
   };
 
-  const focusedAnswer = buildFocusedScholarshipAnswer(question, getDb().knowledge)
+  const focusedAnswer = buildAdmissionHowToAnswer(normalized, getDb().knowledge)
+    || buildApplicationPolicyAnswer(normalized, getDb().knowledge)
+    || buildFocusedScholarshipAnswer(question, getDb().knowledge)
     || buildScholarshipShortlist(normalized, getDb().knowledge);
   if (focusedAnswer) {
     const evidence = focusedAnswer.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
-    return localizeResponse({ ...focusedAnswer, evidence, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' },
+    return localizeResponse({ ...focusedAnswer, evidence, model: 'deterministic-rag-fallback', outcomeStatus: focusedAnswer.outcomeStatus || 'ANSWERED' },
       language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
   }
   const focusedWorkflow = buildAllotmentNextStep(question)
@@ -3839,6 +3894,13 @@ export async function answerAdmissionQuestion(body, user) {
     const trace = { traceId, agentIterations: 0 };
     const result = normalizeAssistantSourceLinks(await assistantTraceContext.run(trace, () => answerAdmissionQuestionCore(body, user)));
     recordAssistantEvent(result, performance.now() - startedAt);
+    if (query) {
+      try {
+        recordAssistantUsage(query, result?.outcomeStatus);
+      } catch (error) {
+        console.warn(JSON.stringify({ event: 'assistant_usage_write_failed', traceId, code: error?.code || 'UNKNOWN' }));
+      }
+    }
     const traceEvidence = Array.isArray(result?.evidence)
       ? result.evidence.filter(item => item?.id && item?.citationId).slice(0, 5)
       : [];
@@ -4399,6 +4461,10 @@ async function handleApi(req) {
   if (req.method === 'GET' && url.pathname === '/api/assistant/operations') {
     requireRole(context, ['staff', 'admin']);
     return assistantOperations(getDb(), user.role === 'admin');
+  }
+  if (req.method === 'GET' && url.pathname === '/api/assistant/analytics') {
+    requireRole(context, ['staff', 'admin']);
+    return assistantUsageReport();
   }
   const triageMatch = url.pathname.match(/^\/api\/assistant\/operations\/([a-f0-9-]{36})$/);
   if (req.method === 'PATCH' && triageMatch) {
