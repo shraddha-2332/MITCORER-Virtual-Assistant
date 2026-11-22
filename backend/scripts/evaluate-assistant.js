@@ -32,7 +32,7 @@ function repairLegacyEncoding(value) {
 function createWorkflowCases() {
   const states = [
     { detail: 'I am at the last step of admission.', expectedText: 'allotment or institute-level merit' },
-    { detail: 'I received my CAP allotment.', expectedText: 'seat acceptance or freeze' },
+    { detail: 'I received my CAP allotment.', expectedText: 'seat acceptance or freeze/betterment decision where applicable', directNextStepText: 'seat-acceptance action' },
     { detail: 'I received allotment, accepted the seat, and have my documents ready.', expectedText: 'approved fee payment' },
     { detail: 'I received allotment, accepted the seat, have my documents ready, and paid the fee.', expectedText: 'institute reporting' },
     { detail: 'I received allotment, accepted the seat, have my documents ready, paid the fee, and completed reporting.', expectedText: 'all main workflow stages appear complete' },
@@ -55,16 +55,17 @@ function createWorkflowCases() {
   const cases = [];
   let index = 1;
   for (const state of states) {
-    for (const form of forms) {
+    for (const [formIndex, form] of forms.entries()) {
       for (const [prefix, language] of languagePrefixes) {
+        const directNextStep = formIndex === 1 && Boolean(state.directNextStepText);
         cases.push({
           id: `MITRA-W-${String(index).padStart(3, '0')}`,
           intent: 'workflow',
           language,
           question: `${prefix}${form(state.detail)}`,
-          expectedCategory: 'documents',
+          expectedCategory: directNextStep ? 'admissions' : 'documents',
           expectedAction: 'applicantPortal',
-          mustInclude: state.expectedText,
+          mustInclude: directNextStep ? state.directNextStepText : state.expectedText,
         });
         index += 1;
       }

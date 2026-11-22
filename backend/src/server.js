@@ -909,7 +909,6 @@ function buildAdmissionReadinessAnswer(question, user) {
   const hasProgressSignal = ['received', 'got', 'accepted', 'uploaded', 'paid', 'payment done', 'reporting complete'].some((term) => intentText.includes(term));
   const asksWhatRemains = hasStrongReadinessMarker || (['what next', 'what should i do next', 'next step'].some((term) => intentText.includes(term)) && hasProgressSignal);
   const mentionsAdmissionWorkflow = ['admission', 'allotment', 'reporting', 'cap', 'acap', 'seat'].some((term) => intentText.includes(term));
-  if (hasStrongReadinessMarker && !hasProgressSignal && /\b(?:checklist|after allotment|after cap)\b/.test(intentText)) return null;
   const asksStandaloneDocumentList = /\b(?:documents?|certificates?|papers?)\b/.test(intentText)
     && !asksWhatRemains && !hasProgressSignal
     && !/\b(?:steps?|fees?|scholarships?|programmes?|programs?)\b/.test(intentText);
@@ -918,11 +917,12 @@ function buildAdmissionReadinessAnswer(question, user) {
 
   const workspace = user && (getDb().admissionWorkspaces || []).find((item) => item.ownerEmail === user.email);
   const route = workspace?.cap?.route || workspace?.programs?.route || '';
-  const routeChecklist = {
+  const routeChecklists = {
     'btech-fy': ['10th marksheet', '12th marksheet', 'CET or JEE scorecard', 'school leaving certificate', 'nationality or domicile proof'],
     'btech-dse': ['10th marksheet', 'Diploma or B.Sc. Marksheets', 'school leaving certificate', 'nationality or domicile proof'],
     polytechnic: ['10th marksheet', 'school leaving certificate', 'nationality or domicile proof'],
-  }[route] || ['10th marksheet'];
+  };
+  const routeChecklist = routeChecklists[route] || [];
   const checkedDocuments = Array.isArray(workspace?.cap?.checkedDocuments) ? workspace.cap.checkedDocuments : [];
   const checked = new Set(checkedDocuments.filter((name) => typeof name === 'string').map((name) => name.toLocaleLowerCase()));
   const missingKnownDocuments = routeChecklist.filter((name) => !checked.has(name.toLocaleLowerCase()));
@@ -949,12 +949,15 @@ function buildAdmissionReadinessAnswer(question, user) {
     ['institute reporting within the current notice deadline', hasReported],
   ];
   const remainingSteps = workflowSteps.filter(([, complete]) => !complete).map(([label]) => label);
-  const remainingText = remainingSteps.length
+  const hasKnownProgress = hasProgressSignal || Boolean(savedStage) || checkedDocuments.length > 0;
+  const remainingText = !hasKnownProgress
+    ? `To identify what remains, confirm these admission stages in order: ${workflowSteps.map(([label]) => label).join(', ')}. I do not know which steps you have completed yet; tell me your route and last completed step so I can narrow this down.`
+    : remainingSteps.length
     ? `Based on ${workspace ? 'your saved checklist and message' : 'what you wrote'}, the remaining items to confirm are: ${remainingSteps.join(', ')}.`
     : 'All main workflow stages appear complete based on the information provided. Verify your official confirmation and keep the receipt.';
   const routeSummary = routeChecklist.length
     ? `Documents to prepare for your saved route include: ${routeChecklist.join(', ')}. Confirm the full list and category requirements in the current official notice.`
-    : 'Use your allotment letter and the current route-specific notice to confirm the document list; tell me First Year B.Tech, Direct Second Year B.Tech, or Polytechnic for a tailored list.';
+    : 'Common MITCORER reporting documents include the 10th marksheet and 12th marksheet, an entrance scorecard where applicable, a leaving or transfer certificate, nationality or domicile proof, and an allotment letter where applicable. The exact list varies by route and category; tell me First Year B.Tech, Direct Second Year B.Tech, or Polytechnic for a tailored list.';
   return {
     recordId: 'KB-1',
     source: 'Verified admission checklist',
