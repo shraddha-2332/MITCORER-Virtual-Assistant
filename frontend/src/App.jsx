@@ -546,11 +546,10 @@ function PublicAssistantWidget({ signedIn, token, onLogout, onAdminLogin, onAppl
       {showAdminLogin && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(7, 32, 51, 0.72)', display: 'grid', placeItems: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ background: '#fff', borderRadius: '12px', maxWidth: '420px', width: '100%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', color: '#202724' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <strong style={{ fontSize: '18px', color: '#146548' }}>Administrator Portal</strong>
-              <button type="button" aria-label="Close administrator sign-in" onClick={() => setShowAdminLogin(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#69756e' }}><X size={18} /></button>
+            <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0, 1fr) 28px', alignItems: 'center', marginBottom: '12px' }}>
+              <strong style={{ gridColumn: 2, textAlign: 'center', fontSize: '18px', color: '#146548' }}>Administrator Portal</strong>
+              <button type="button" aria-label="Close administrator sign-in" onClick={() => setShowAdminLogin(false)} style={{ display: 'grid', placeItems: 'center', minHeight: '28px', padding: 0, background: 'none', border: 'none', cursor: 'pointer', color: '#69756e' }}><X size={18} /></button>
             </div>
-            <p style={{ fontSize: '13px', color: '#555', margin: '0 0 16px' }}>Sign in to manage verified sources, run CDM structured extraction, and publish knowledge.</p>
             {adminLoginError && <div role="alert" style={{ background: '#fef2f2', color: '#b91c1c', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{adminLoginError}</div>}
             <form onSubmit={async (e) => {
               e.preventDefault();
