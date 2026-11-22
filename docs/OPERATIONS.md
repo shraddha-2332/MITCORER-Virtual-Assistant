@@ -16,11 +16,13 @@ The supplied site is `https://mitra-the-virtual-assistant.vercel.app/`; observed
 
 Set exact CORS origins appropriate to the deployment. Keep `TRUST_PROXY=false` when client-supplied forwarding headers are not guaranteed to be replaced by a trusted edge. With `TRUST_PROXY=true`, the backend uses forwarded addresses for rate limiting. Nginx overwrites the forwarding address and the Compose backend is not exposed directly. Render's edge/header behavior needs environment-specific verification before enabling trust there; with trust off, callers behind a shared edge can share a limiter key.
 
-The declared Render free plan and local SQLite configuration do not establish durable hosted storage. Confirm persistent disk/database provisioning in the actual provider account before relying on maintainer edits surviving replacement or redeployment. Do not change paid service tiers or migrate/delete data without a separate reviewed deployment action.
+The Render manifest mounts `/app/data` and stores SQLite at `/app/data/mitra.sqlite`; applicant and assistant uploads now use `/app/data/uploads` through `UPLOAD_DIR`, so both are intended to live on that mounted disk. Confirm the disk is actually attached in the provider account before relying on durable storage. Older files may still be in the legacy `backend/uploads` directory; reads check that directory as a fallback, but copy and verify any files that must survive before the old instance is replaced. Do not change paid service tiers or migrate/delete data without a separate reviewed deployment action.
 
 ## Credentials on an existing database
 
-Stop the single backend instance and take a verified backup. Set administrator variables in the operator environment, then run from `backend`:
+Set `ADMIN_EMAIL` and a unique `ADMIN_PASSWORD` (at least 12 characters) in the protected production environment or in the untracked backend `.env` for local development. With both values set, the backend reconciles that administrator with SQLite on startup. A changed password replaces its stored hash and revokes existing refresh sessions. Start the local backend with `npm run dev` from `backend` so it loads `.env`. Restart the backend after changing the configured password. Keep the password out of shell arguments, source files, and deployment manifests.
+
+For a deliberate offline repair instead, stop the single backend instance, take a verified backup, set the administrator variables in the operator environment, then run from `backend`:
 
 ```powershell
 npm.cmd run provision:admin
@@ -51,7 +53,7 @@ npm.cmd run backup -- --verify BACKUP_DIRECTORY
 npm.cmd run backup -- --restore BACKUP_DIRECTORY NEW_TARGET_DIRECTORY
 ```
 
-The database snapshot uses SQLite `VACUUM INTO`, including committed WAL data. Asset copies have checksums; verification checks those hashes and SQLite integrity/application shape. Quiesce upload and source-maintenance writes for database-to-file consistency. Uploaded applicant files and original official-source files live under `backend/uploads` and `backend/official-sources` regardless of the server launch directory. A PDF upload must contain a complete header, cross-reference target and EOF marker; older test fixtures that contain only `%PDF-` text are invalid and must be replaced with real files. Do not delete stored files solely by extension: compare them with database records first. A failed backup without a verified manifest is not an accepted snapshot. Backups include sensitive application data: restrict access, encrypt/offsite-copy as appropriate and define retention. Secrets in `.env` are not copied.
+The database snapshot uses SQLite `VACUUM INTO`, including committed WAL data. Asset copies have checksums; verification checks those hashes and SQLite integrity/application shape. Quiesce upload and source-maintenance writes for database-to-file consistency. Applicant and assistant upload files use `UPLOAD_DIR` (default `backend/uploads`); original official-source files use `backend/official-sources`. Back up both configured storage directories together with the database. A PDF upload must contain a complete header, cross-reference target and EOF marker; older test fixtures that contain only `%PDF-` text are invalid and must be replaced with real files. Do not delete stored files solely by extension: compare them with database records first. A failed backup without a verified manifest is not an accepted snapshot. Backups include sensitive application data: restrict access, encrypt/offsite-copy as appropriate and define retention. Secrets in `.env` are not copied.
 
 Restore only into a new directory; existing data is never overwritten by this tool. Inspect the restored copy, stop the service, review target paths, keep the current snapshot, then deliberately change the runtime storage location. The automated drill uses an isolated target; no running database was replaced. Schedule periodic backup/restore drills and monitor their completion in the actual deployment.
 
@@ -73,3 +75,9 @@ The GitHub Actions workflow runs backend checks/evaluators and frontend unit/bui
 6. If release checks fail, redeploy the previous verified application version through the provider or a reviewed forward revert. Restore data only when necessary and after inspecting an isolated copy. Do not force-push or destructively reset storage.
 
 The current local change set has not been committed or deployed. The live smoke establishes the pre-release site's public fee response only; it does not establish these new controls on the hosted application.
+
+## Applicant checklist rollout
+
+The public assistant opens the admissions checklist for guests. Applicant or parent accounts can save their route, self-reported stage and document checks to resume later. Official portals and notices provide the admission result, deadlines and final requirements.
+
+Applicant document intake and review have been retired. Existing records and files are retained in storage and backups. Assistant attachment uploads are staff-only. Official-source uploads are managed separately.

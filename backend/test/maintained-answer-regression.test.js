@@ -184,7 +184,7 @@ test('review follow-ups answer the requested attribute without inventing missing
   assert.equal(romanizedDocuments.clarificationKind, 'documents');
   assert.match(romanizedDocuments.answer, /General reporting checklist/);
   assert.equal(romanizedDocuments.responseLanguage, 'mixed');
-  assert.ok(romanizedDocuments.officialLinks.some(link => link.url === 'https://mitcorer.edu.in/mitcorer/public/admissions/documents'));
+  assert.ok(romanizedDocuments.officialLinks.some(link => link.url === 'https://mitcorer.edu.in/fy-btech-documents.php'));
   assert.ok(romanizedDocuments.officialLinks.some(link => link.url === 'https://fe2026.mahacet.org/StaticPages/HomePage'));
   const compound = await ask('List CSE fees and hostel fees.');
   assert.equal(compound.sections.find(section => section.topic === 'accommodationFees').title, 'Hostel fees');

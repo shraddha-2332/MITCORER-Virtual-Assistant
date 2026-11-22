@@ -5,7 +5,10 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
 import { config } from './config.js';
+import { hashPassword, verifyPassword } from './auth.js';
+import { generateId, nowIso } from './utils.js';
 import { createSeedData, seedKnowledge, seedOfficialSources } from './seed.js';
+import { knowledgeTranslations } from './knowledge-translations.js';
 import { resolveSourceUrl, missingReferences } from './source-links.js';
 import { supportsMaintainedClaim } from './maintained-claim-support.js';
 
@@ -22,10 +25,12 @@ const PLACEMENT_RECRUITER_LIST_MIGRATION = 'refresh-placement-recruiter-list-kb1
 const OFFICE_HOURS_VERIFICATION_MIGRATION = 'publish-admissions-desk-hours-kb46-v4';
 const LIBRARY_RULES_SOURCE_MIGRATION = 'refresh-library-rules-source-kb20-v2';
 const CONTACT_AND_TRANSIT_PAGE_MIGRATION = 'refresh-contact-and-transit-page-kb17-kb40-v2';
+const CONTACT_TRANSIT_GRAMMAR_MIGRATION = 'correct-contact-proximity-copy-kb40-v1';
 const INSTITUTION_STATUS_MIGRATION = 'seed-institution-status-kb54-v1';
 const ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION = 'seed-admission-quota-and-search-aliases-v1';
 const COURSE_CODE_DISCREPANCY_MIGRATION = 'seed-course-code-discrepancy-kb56-v1';
 const OFFICIAL_SOURCE_ROUTE_MIGRATION = 'map-seeded-records-to-current-official-routes-v1';
+const LIVE_ADMISSION_DOCUMENT_LINKS_MIGRATION = 'repair-live-admission-document-links-v1';
 const DSE_CHOICE_CODE_MIGRATION = 'normalize-dse-choice-codes-v1';
 const PUBLIC_SUGGESTION_SOURCE_REVIEW_MIGRATION = 'review-and-refresh-public-suggestion-sources-v1';
 const OFFICIAL_SITE_CRAWL_GAP_RECORDS_MIGRATION = 'import-official-site-crawl-gap-records-2026-11-18-v1';
@@ -37,7 +42,12 @@ const NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION = 'normalize-scholarship-sour
 const FORMAT_MITCORER_PROFILE_MIGRATION = 'format-maintained-college-profile-v12';
 const OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION = 'import-official-faculty-profile-captures-v13';
 const PLACEMENT_PLATFORMS_MIGRATION = 'seed-project-owner-placement-platforms-kb69-v1';
+const ANSWER_GAPS_AND_ATTRIBUTION_MIGRATION = 'fix-reported-answer-routing-and-attribution-v1';
 const SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION = 'seed-ai-reviewed-knowledge-translations-mr-hi-v1';
+const SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V2 = 'seed-missing-published-hostel-translations-mr-hi-v2';
+const SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V3 = 'seed-current-hostel-review-record-translations-mr-hi-v3';
+const SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V4 = 'refresh-seeded-current-source-translations-mr-hi-v4';
+const OWNER_CONFIRMED_BIOMETRIC_MIGRATION = 'publish-owner-confirmed-biometric-record-v14';
 // Current seeds already contain these upgrades. Record them atomically with
 // initialization so a later restart cannot reinterpret a deletion as an upgrade.
 const CURRENT_SEED_MIGRATIONS = [
@@ -45,15 +55,22 @@ const CURRENT_SEED_MIGRATIONS = [
   PLACEMENT_CURRENT_ACTIVITIES_MIGRATION, PLACEMENT_RECRUITER_LIST_MIGRATION,
   OFFICE_HOURS_VERIFICATION_MIGRATION, LIBRARY_RULES_SOURCE_MIGRATION,
   CONTACT_AND_TRANSIT_PAGE_MIGRATION, INSTITUTION_STATUS_MIGRATION,
+  CONTACT_TRANSIT_GRAMMAR_MIGRATION,
   ADMISSION_QUOTA_AND_SEARCH_ALIASES_MIGRATION, COURSE_CODE_DISCREPANCY_MIGRATION,
   OFFICIAL_SOURCE_ROUTE_MIGRATION, DSE_CHOICE_CODE_MIGRATION,
   OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION, OFFICIAL_SOURCE_CANONICAL_URL_MIGRATION_V2,
   PUBLIC_SUGGESTION_SOURCE_REVIEW_MIGRATION, OFFICIAL_SITE_CRAWL_GAP_RECORDS_MIGRATION,
   OFFICIAL_SITE_CRAWL_SOURCE_DEDUP_MIGRATION, RESTORE_SUPPORTED_PILL_CLAIMS_MIGRATION,
   RECOVER_VERIFIED_SOURCE_RECORDS_MIGRATION, REPAIR_CURRENT_SCHOLARSHIP_SOURCE_MIGRATION,
+  OWNER_CONFIRMED_BIOMETRIC_MIGRATION,
   NORMALIZE_SCHOLARSHIP_SOURCE_TITLE_MIGRATION, FORMAT_MITCORER_PROFILE_MIGRATION,
   PLACEMENT_PLATFORMS_MIGRATION,
+  ANSWER_GAPS_AND_ATTRIBUTION_MIGRATION,
   SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION,
+  SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V2,
+  SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V3,
+  SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V4,
+  LIVE_ADMISSION_DOCUMENT_LINKS_MIGRATION,
   OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION,
 ];
 const seededSpecificRouteCorrections = {
@@ -64,8 +81,8 @@ const seededSpecificRouteCorrections = {
   'KB-23': 'https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations',
   'KB-24': 'https://mitcorer.edu.in/mitcorer/public/placements',
   'KB-25': 'https://mitcorer.edu.in/mitcorer/public/admissions/faqs',
-  'KB-26': 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
-  'KB-27': 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+  'KB-26': 'https://mitcorer.edu.in/fy-btech-documents.php',
+  'KB-27': 'https://mitcorer.edu.in/fy-btech-documents.php',
   'KB-28': 'https://mitcorer.edu.in/mitcorer/public/department/professional-diploma-railway',
   'KB-35': 'https://mitcorer.edu.in/mitcorer/public/about',
   'KB-41': 'https://mitcorer.edu.in/mitcorer/public/about',
@@ -183,6 +200,31 @@ function normalizeDb(nextDb) {
   };
 }
 
+function syncConfiguredAdminFromEnvironment() {
+  if (config.nodeEnv === 'test') return false;
+  const email = String(process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('ADMIN_EMAIL must be a valid email address.');
+  if (password.length < 12) throw new Error('Configured ADMIN_PASSWORD must contain at least 12 characters.');
+
+  let user = db.users.find(item => String(item.email || '').toLowerCase() === email);
+  if (user && user.role !== 'admin') throw new Error('ADMIN_EMAIL belongs to a non-admin account; credentials were not changed.');
+  const now = nowIso();
+  if (!user) {
+    user = { id: generateId('USR'), name: process.env.ADMIN_NAME || 'Administrator', email, role: 'admin', createdAt: now };
+    db.users.push(user);
+  }
+  if (verifyPassword(password, user.passwordHash)) return false;
+
+  user.passwordHash = hashPassword(password);
+  user.updatedAt = now;
+  for (const session of db.refreshTokens || []) if (session.userId === user.id) session.revoked = true;
+  db.auditLogs.unshift({ id: generateId('AUD'), actorEmail: 'system', actorRole: 'system', action: 'admin.credentials_synced',
+    resourceType: 'user', resourceId: user.id, details: 'Administrator credentials synchronized from protected service environment; prior refresh sessions revoked.', createdAt: now });
+  return true;
+}
+
 export function loadDb() {
   if (db) return db;
 
@@ -197,6 +239,7 @@ export function loadDb() {
     const entcHodRecord = seedKnowledge.find((record) => record.id === 'KB-52');
     const migrations = new Set(db.migrations);
     let didMigrate = false;
+    if (syncConfiguredAdminFromEnvironment()) didMigrate = true;
     if (!migrations.has(ENTC_HOD_MIGRATION)) {
       if (entcHodRecord && !db.knowledge.some((record) => record.id === entcHodRecord.id)) {
         db.knowledge.push({ ...structuredClone(entcHodRecord), updatedAt: new Date().toISOString() });
@@ -371,6 +414,24 @@ export function loadDb() {
         record.updatedAt = new Date().toISOString();
       }
       db.migrations.push(OFFICIAL_SOURCE_ROUTE_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(LIVE_ADMISSION_DOCUMENT_LINKS_MIGRATION)) {
+      const liveDocumentsUrl = 'https://mitcorer.edu.in/fy-btech-documents.php';
+      const staleUrl = 'https://mitcorer.edu.in/mitcorer/public/admissions/documents';
+      const now = new Date().toISOString();
+      for (const id of ['KB-1', 'KB-26', 'KB-27']) {
+        const record = db.knowledge.find(item => item.id === id);
+        const seeded = seedKnowledge.find(item => item.id === id);
+        if (!record || !seeded || record.status !== 'Published' || record.text !== seeded.text) continue;
+        if (![undefined, '', staleUrl, liveDocumentsUrl].includes(record.sourceUrl)) continue;
+        if (record.sourceUrl !== liveDocumentsUrl) {
+          record.sourceUrl = liveDocumentsUrl;
+          record.revision = (record.revision ?? 0) + 1;
+          record.updatedAt = now;
+        }
+      }
+      db.migrations.push(LIVE_ADMISSION_DOCUMENT_LINKS_MIGRATION);
       didMigrate = true;
     }
     if (!migrations.has(DSE_CHOICE_CODE_MIGRATION)) {
@@ -749,6 +810,45 @@ export function loadDb() {
       db.migrations.push(PLACEMENT_PLATFORMS_MIGRATION);
       didMigrate = true;
     }
+    if (!migrations.has(ANSWER_GAPS_AND_ATTRIBUTION_MIGRATION)) {
+      const byId = new Map(seedKnowledge.map((record) => [record.id, record]));
+      const now = new Date().toISOString();
+      const updatedRecordIds = new Set();
+      const homepageStats = byId.get('KB-70');
+      if (homepageStats && !db.knowledge.some((record) => record.id === 'KB-70')) {
+        db.knowledge.push({ ...structuredClone(homepageStats), revision: 1, createdAt: now, updatedAt: now });
+      }
+      for (const id of ['KB-40', 'KB-46']) {
+        const current = db.knowledge.find((record) => record.id === id);
+        const seeded = byId.get(id);
+        if (!current || !seeded) continue;
+        const content = [current.source, current.text, JSON.stringify(current.provenance || {})].join(' ');
+        if (!/project owner|owner-supplied|supplied excerpt/i.test(content)) continue;
+        current.source = seeded.source;
+        current.text = seeded.text;
+        current.provenance = structuredClone(seeded.provenance);
+        current.translations ||= {};
+        for (const language of ['mr', 'hi']) {
+          const translation = current.translations[language];
+          if (translation && !translation.reviewedBy && /project owner|owner-supplied|supplied excerpt/i.test(JSON.stringify(translation))) {
+            delete current.translations[language];
+          }
+        }
+        updatedRecordIds.add(id);
+      }
+      const placement = db.knowledge.find((record) => record.id === 'KB-24');
+      if (placement) placement.tags = [...new Set([...(placement.tags || []), 'internship opportunities', 'internship platforms', 'POD', 'Superset', 'TalentBattle', 'Unstop'])];
+      db.migrations.push(ANSWER_GAPS_AND_ATTRIBUTION_MIGRATION);
+      if (updatedRecordIds.size) {
+        for (const record of db.knowledge) {
+          if (updatedRecordIds.has(record.id)) {
+            record.revision = (record.revision ?? 0) + 1;
+            record.updatedAt = now;
+          }
+        }
+      }
+      didMigrate = true;
+    }
     if (!migrations.has(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION)) {
       const seedsById = new Map(seedKnowledge.map((record) => [record.id, record]));
       const now = new Date().toISOString();
@@ -770,6 +870,89 @@ export function loadDb() {
         }
       }
       db.migrations.push(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION);
+      didMigrate = true;
+    }
+    if (!migrations.has(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V2)) {
+      const expectedTexts = new Map([
+        ['KB-68', seedKnowledge.find(item => item.id === 'KB-68')?.text],
+        ['KB-SRC-24-TEXT-1', 'MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.'],
+      ]);
+      const now = new Date().toISOString();
+      for (const [id, expectedText] of expectedTexts) {
+        const record = db.knowledge.find(item => item.id === id);
+        const translations = knowledgeTranslations[id];
+        if (!record || record.status !== 'Published' || !expectedText || record.text !== expectedText || !translations) continue;
+        const sourceHash = createHash('sha256').update(record.text).digest('hex');
+        record.translations ||= {};
+        let changed = false;
+        for (const language of ['mr', 'hi']) {
+          const current = record.translations[language];
+          const text = translations[language];
+          if (!text || current?.reviewedBy || (current?.sourceHash === sourceHash && current.text?.trim())) continue;
+          record.translations[language] = { text, sourceHash, status: 'ai-reviewed-pending-human-review' };
+          changed = true;
+        }
+        if (changed) {
+          record.revision = (record.revision ?? 0) + 1;
+          record.updatedAt = now;
+        }
+      }
+      db.migrations.push(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V2);
+      didMigrate = true;
+    }
+    if (!migrations.has(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V3)) {
+      const expectedText = 'The MITCORER public page labelled Hostel Accommodations displayed classroom-related content during the 2026-11-18 crawl and did not establish hostel application steps, room availability, rules, contacts, or joining details. Confirm current hostel availability and procedures with the college before answering operational questions. Existing facility descriptions should be supported by a separate, current hostel source.';
+      const record = db.knowledge.find(item => item.id === 'KB-68');
+      const translations = knowledgeTranslations['KB-68'];
+      if (record?.status === 'Published' && record.text === expectedText && translations) {
+        const sourceHash = createHash('sha256').update(record.text).digest('hex');
+        record.translations ||= {};
+        let changed = false;
+        for (const language of ['mr', 'hi']) {
+          const current = record.translations[language];
+          const text = translations[language];
+          if (!text || current?.reviewedBy || (current?.sourceHash === sourceHash && current.text?.trim())) continue;
+          record.translations[language] = { text, sourceHash, status: 'ai-reviewed-pending-human-review' };
+          changed = true;
+        }
+        if (changed) {
+          record.revision = (record.revision ?? 0) + 1;
+          record.updatedAt = new Date().toISOString();
+        }
+      }
+      db.migrations.push(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V3);
+      didMigrate = true;
+    }
+    if (!migrations.has(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V4)) {
+      const seedsById = new Map(seedKnowledge.map(record => [record.id, record]));
+      const now = new Date().toISOString();
+      for (const record of db.knowledge || []) {
+        const seeded = seedsById.get(record.id);
+        if (record.status !== 'Published' || !seeded?.translations || record.text !== seeded.text || record.facts) continue;
+        const sourceHash = createHash('sha256').update(record.text).digest('hex');
+        record.translations ||= {};
+        let changed = false;
+        for (const language of ['mr', 'hi']) {
+          const current = record.translations[language];
+          const translation = seeded.translations[language];
+          if (!translation?.text || current?.reviewedBy || (current?.sourceHash === sourceHash && current.text?.trim())) continue;
+          record.translations[language] = { ...structuredClone(translation), sourceHash };
+          changed = true;
+        }
+        if (changed) { record.revision = (record.revision ?? 0) + 1; record.updatedAt = now; }
+      }
+      db.migrations.push(SEED_KNOWLEDGE_TRANSLATIONS_MIGRATION_V4);
+      didMigrate = true;
+    }
+    if (!migrations.has(CONTACT_TRANSIT_GRAMMAR_MIGRATION)) {
+      const record = db.knowledge.find(item => item.id === 'KB-40');
+      const stale = 'conflict with the newer the published proximity description';
+      if (record?.text?.includes(stale)) {
+        record.text = record.text.replace(stale, "conflict with the newer page's proximity description");
+        record.revision = (record.revision ?? 0) + 1;
+        record.updatedAt = new Date().toISOString();
+      }
+      db.migrations.push(CONTACT_TRANSIT_GRAMMAR_MIGRATION);
       didMigrate = true;
     }
     if (!migrations.has(OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION)) {
@@ -794,6 +977,50 @@ export function loadDb() {
       db.migrations.push(OFFICIAL_FACULTY_PROFILE_CAPTURE_MIGRATION);
       didMigrate = true;
     }
+    if (!migrations.has(OWNER_CONFIRMED_BIOMETRIC_MIGRATION)) {
+      const now = new Date().toISOString();
+      const record = db.knowledge.find(item => item.id === 'KB-32');
+      const seedRecord = seedKnowledge.find(item => item.id === 'KB-32');
+      const source = db.officialSources.find(item => item.id === 'SRC-11');
+      const seedSource = seedOfficialSources.find(item => item.id === 'SRC-11');
+      // The administrator explicitly confirmed the reviewed text. Publish only
+      // the unchanged reviewed claim and retain the link's separate reachability caveat.
+      if (record && seedRecord && source && seedSource
+        && record.text === seedRecord.text && source.sourceUrl === seedSource.sourceUrl) {
+        record.translations ||= {};
+        let translationsChanged = false;
+        for (const language of ['mr', 'hi']) {
+          const translation = seedRecord.translations?.[language];
+          const current = record.translations[language];
+          if (translation && !current?.reviewedBy && current?.sourceHash !== translation.sourceHash) {
+            record.translations[language] = structuredClone(translation);
+            translationsChanged = true;
+          }
+        }
+        const recordChanged = record.status !== 'Published' || Boolean(record.freshnessReview || record.sourceCheck) || translationsChanged;
+        record.status = 'Published';
+        delete record.freshnessReview;
+        delete record.sourceCheck;
+        if (recordChanged) {
+          record.revision = (record.revision ?? 0) + 1;
+          record.updatedAt = now;
+        }
+        source.status = 'Published';
+        source.extractionStatus = 'Administrator reviewed and confirmed the circular text. The original university PDF link was unreachable during automated checking; confirm current applicability with PAHSU.';
+        source.updatedAt = now;
+        source.linkedKnowledgeCount = Math.max(source.linkedKnowledgeCount || 0, 1);
+        delete source.freshnessImpact;
+      }
+      const obsoletePlaceholder = db.officialSources.find(item => item.id === 'SRC-UNREACHABLE'
+        && item.sourceUrl === 'https://mitcorer.edu.in/removed.php');
+      const placeholderLinked = obsoletePlaceholder && db.knowledge.some(item =>
+        item.sourceDocumentId === obsoletePlaceholder.id || item.provenance?.documentId === obsoletePlaceholder.id);
+      if (obsoletePlaceholder && !placeholderLinked) {
+        db.officialSources = db.officialSources.filter(item => item !== obsoletePlaceholder);
+      }
+      db.migrations.push(OWNER_CONFIRMED_BIOMETRIC_MIGRATION);
+      didMigrate = true;
+    }
     if (hadDemoInquiries || hadDemoDocuments || didMigrate) {
       saveDb();
     }
@@ -801,6 +1028,7 @@ export function loadDb() {
   }
 
   db = normalizeDb(createSeedData());
+  syncConfiguredAdminFromEnvironment();
   db.migrations.push(...CURRENT_SEED_MIGRATIONS);
   saveDb();
   return db;

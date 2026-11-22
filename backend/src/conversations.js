@@ -1,7 +1,7 @@
 import { getDb, saveDb } from './store.js';
 import { badRequest, notFound } from './errors.js';
 import { generateId, nowIso, pick } from './utils.js';
-import { understandQuery } from './query-understanding.js';
+import { findDocumentReference, understandQuery } from './query-understanding.js';
 import { selectLanguage } from './language.js';
 import { config } from './config.js';
 import { publicSessionHash } from './public-session.js';
@@ -127,6 +127,7 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
   if (!chat || !Array.isArray(chat.messages) || chat.messages.length === 0) {
     return question;
   }
+  if (findDocumentReference(question)) return question;
   // A generic seat-count question is ambiguous: it may mean sanctioned
   // intake or live vacancies. Do not inherit an unrelated prior branch/topic.
   if (/\b(?:how many|number of)\b.{0,35}\bseats?\b/i.test(norm)
@@ -148,12 +149,14 @@ export function resolveConversationalQuestion(question, chat, context = {}) {
   }
   if (previousContext.lastTopic === 'fees' && /^(?:and\s+)?(?:hostel|mess)[?.! ]*$/.test(norm)) return `What are the ${norm.match(/hostel|mess/)[0]} fees?`;
   const previousNormForAdmission = previousQuestionText.normalize('NFKC').toLowerCase();
+  const routeClarification = norm.match(/^(?:for\s+)?(?:(first|1st|fy)\s+year(?:\s+(?:b\.?\s*tech\.?|engineering|degree))?|(direct\s+second|dse|lateral(?:\s+entry)?)(?:\s+year)?(?:\s+(?:b\.?\s*tech\.?|engineering|degree))?|(polytechnic|post\s*ssc|diploma)(?:\s+(?:admission|course))?)\??$/i);
   // Short route clarifications should complete the pending question (for
   // example, "What documents should I prepare?" -> "for first year").
   if (context.lastTopic === 'admission'
     && /\b(?:document|documents|certificate|checklist|eligibility|admission process)\b/.test(previousNormForAdmission)
-    && /^(?:for\s+)?(?:first\s+year|fy|direct\s+second\s+year|dse|lateral(?:\s+entry)?)\??$/i.test(norm)) {
-    const route = context.route === 'DSE' ? 'Direct Second Year' : 'First Year';
+    && routeClarification) {
+    const route = routeClarification[1] ? 'First Year'
+      : routeClarification[2] ? 'Direct Second Year' : 'Polytechnic';
     return `${previousQuestionText.replace(/[?]+$/u, '').trim()} for ${route}`;
   }
   if (/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit)\b/i.test(norm)

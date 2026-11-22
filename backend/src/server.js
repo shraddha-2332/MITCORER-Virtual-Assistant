@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { config } from './config.js';
 import { requestGeneration, requestGroqGeneration } from './generation-client.js';
 import { askWithHistory, askPublicWithHistory, getConversation, listConversations, resetPublicConversation, extractConversationContext, prunePublicConversations } from './conversations.js';
@@ -14,7 +15,7 @@ import { selectLanguage, localizeResponse, buildReviewedPassage } from './langua
 import { buildClarificationAnswer, buildCompoundAnswer, buildContextualPassage } from './question-plan.js';
 import { publicEvidence } from './evidence.js';
 import { buildFacultyDirectoryAnswer } from './faculty-directory.js';
-import { normalizeQuery, matchesIntent, understandQuery, isEmploymentQuery } from './query-understanding.js';
+import { findDocumentReference, normalizeQuery, matchesIntent, understandQuery, isEmploymentQuery } from './query-understanding.js';
 import { asksForAllPrograms } from './query-scope.js';
 import { resolveSourceUrl, sourceRecord, uniqueSourceLinks } from './source-links.js';
 import { availability, usableKnowledge, validateProvenance, validateSupersession, confirmSourceReview, splitPassage } from './provenance.js';
@@ -61,7 +62,8 @@ const publicAssistantAttempts = new Map();
 const pipelineTraceKey = crypto.randomBytes(32);
 const assistantTraceContext = new AsyncLocalStorage();
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const uploadDir = path.join(backendRoot, 'uploads');
+const legacyUploadDir = path.resolve(backendRoot, 'uploads');
+const uploadDir = config.uploadDirectory;
 const officialSourceDir = path.join(backendRoot, 'official-sources');
 const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const allowedOfficialMimeTypes = new Set([
@@ -80,6 +82,34 @@ const extensionByMimeType = {
   'text/csv': ['.csv'],
   'text/plain': ['.txt'],
 };
+const MITCORER_FIRST_YEAR_DOCUMENTS_URL = 'https://mitcorer.edu.in/fy-btech-documents.php';
+const MITCORER_DSE_DOCUMENTS_URL = 'https://mitcorer.edu.in/d-sy-btech-documents-required.php';
+
+function getMITCORERAdmissionDocumentLinks(question) {
+  const text = normalizeIntentText(question);
+  if (/\b(?:polytechnic|post ssc|diploma admission)\b/.test(text)) {
+    return [{ label: 'MITCORER Polytechnic documents', url: 'https://mitcorer.edu.in/fy-polytechnic-documents.php' }];
+  }
+  if (/\b(?:direct second year|dse|lateral entry)\b/.test(text)) {
+    return [{ label: 'MITCORER Direct Second Year B.Tech documents', url: MITCORER_DSE_DOCUMENTS_URL }];
+  }
+  if (/\b(?:first year|1st year|fy)\b/.test(text)) {
+    return [{ label: 'MITCORER First Year B.Tech documents', url: MITCORER_FIRST_YEAR_DOCUMENTS_URL }];
+  }
+  return [
+    { label: 'MITCORER First Year B.Tech documents', url: MITCORER_FIRST_YEAR_DOCUMENTS_URL },
+    { label: 'MITCORER Direct Second Year B.Tech documents', url: MITCORER_DSE_DOCUMENTS_URL },
+  ];
+}
+
+function resolveStoredUpload(storedFileName) {
+  for (const root of new Set([uploadDir, legacyUploadDir])) {
+    const filePath = path.resolve(root, storedFileName);
+    if (filePath !== root && !filePath.startsWith(`${root}${path.sep}`)) continue;
+    if (fs.existsSync(filePath)) return filePath;
+  }
+  return null;
+}
 
 export function resetRuntimeStateForTests() {
   clearAssistantEvents();
@@ -95,7 +125,7 @@ const assistantRules = [
   { match: ['cutoff', 'cut-off', 'closing percentile', 'closing rank'], source: 'Historical cutoff records', answer: 'Cutoffs must be matched by academic year, round, branch, exam, category, seat type, and candidature. Historical values support preference planning but do not guarantee current admission.', next: 'Specify the year, CAP round, branch, category, seat type, and whether the score is MHT-CET or JEE.', actionView: 'cap', actionLabel: 'Check CAP history' },
   { match: ['scholarship', 'ebc', 'ews', 'tfws', 'income', 'concession'], source: 'Scholarship readiness', answer: 'Scholarship fit depends on category, income, admission route, and required proof. Prepare documents before reporting.', next: 'Open scholarship readiness and check likely routes.', actionView: 'scholarships', actionLabel: 'Open scholarship' },
   { match: ['eligible', 'eligibility', 'percentile', 'cse', 'computer science', 'civil', 'mechanical', 'railway', 'ai', 'data science', 'entc', 'electronics'], source: 'Engineering eligibility and branch allotment guidance', answer: 'A CET or JEE percentile alone cannot confirm engineering branch admission. Basic eligibility and branch allotment are separate checks.', next: 'Share your category, candidature, qualifying-examination subjects and marks, admission route, and CAP round for a more useful assessment.', actionView: 'programs', actionLabel: 'Check programs' },
-  { match: ['document', 'certificate', 'upload', 'validity', 'marksheet'], source: 'Document workflow', answer: 'Upload documents against the checklist. Staff can mark each record as ready or needing correction before reporting.', next: 'Open document checklist and upload the matching file.', actionView: 'documents', actionLabel: 'Open documents' },
+  { match: ['document', 'certificate', 'upload', 'validity', 'marksheet'], source: 'Applicant document workflow', answer: 'Common admission documents include the 10th marksheet, school leaving certificate and nationality or domicile proof. For First Year B.Tech, also prepare the 12th marksheet and CET or JEE scorecard as applicable. Confirm the full list for your route and category in the current official notice.', next: 'Open the admission checklist and select your route.', actionView: 'applicantPortal', actionLabel: 'Open admission checklist' },
   { match: ['cap', 'allotment', 'freeze', 'betterment', 'reporting'], source: 'Admission CAP workflow', answer: 'Use the CAP workflow to identify your current round, freeze/betterment choice, and reporting readiness before travelling.', next: 'Open CAP tracker and complete the reporting readiness checklist.', actionView: 'cap', actionLabel: 'Open CAP tracker' },
   { match: ['fee', 'fees', 'payment', 'amount', 'installment'], source: 'Fee planner', answer: 'Use the fee planner to estimate academic, hostel, and mess amount by admission type and category.', next: 'Open fee planner and verify scholarship/category documents before payment.', actionView: 'fees', actionLabel: 'Open fee planner' },
   { match: ['branch', 'program', 'course', 'choice code', 'preference'], source: 'Program finder', answer: 'Compare branches and build a draft preference order before CAP option form or institute-level discussion.', next: 'Open program finder and create preference draft.', actionView: 'programs', actionLabel: 'Open programs' },
@@ -387,11 +417,22 @@ function handleAuthSignup(body) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw badRequest('Enter a valid email address.');
   if (password.length < 12) throw badRequest('Use a password or passphrase of at least 12 characters.');
   const role = body.role || 'applicant';
+  const admissionRoute = body.admissionRoute || '';
   if (!allowedRoles.includes(role)) throw badRequest('Invalid role.');
   if (['staff', 'admin'].includes(role)) throw forbidden('Staff and admin accounts must be provisioned by college admin.');
+  if (admissionRoute && !['btech-fy', 'btech-dse', 'polytechnic'].includes(admissionRoute)) throw badRequest('Choose a valid admission route.');
   if (db.users.some((item) => item.email.toLowerCase() === email)) throw badRequest('Email already exists.');
   const user = { id: generateId('USR'), name, email, role, passwordHash: hashPassword(password), createdAt: nowIso() };
   db.users.push(user);
+  if (admissionRoute) {
+    db.admissionWorkspaces = db.admissionWorkspaces || [];
+    db.admissionWorkspaces.push({
+      ownerEmail: user.email,
+      cap: { route: admissionRoute },
+      programs: { route: admissionRoute, preferences: [] },
+      fees: {}, scholarship: {}, stay: {}, updatedAt: nowIso(),
+    });
+  }
   saveDb();
   audit('auth.signup', 'user', user.id, user, 'New applicant/parent account created.');
   return { user: sanitizeUser(user), ...issueSession(user) };
@@ -560,6 +601,30 @@ function getAdmissionWorkspace(user) {
   };
 }
 
+function listApplicantWorkspaces(user) {
+  requireRole({ user }, ['staff', 'admin']);
+  const db = getDb();
+  const accounts = new Map(db.users
+    .filter((account) => ['applicant', 'parent'].includes(account.role))
+    .map((account) => [account.email.toLowerCase(), account]));
+  return {
+    items: [...accounts.values()].map((account) => {
+      const workspace = (db.admissionWorkspaces || []).find((item) => item.ownerEmail === account.email) || {};
+      return {
+        ownerName: account.name,
+        ownerEmail: account.email,
+        ownerRole: account.role,
+        createdAt: account.createdAt,
+        cap: workspace.cap || {},
+        programs: workspace.programs || { preferences: [] },
+        scholarship: workspace.scholarship || {},
+        stay: workspace.stay || {},
+        updatedAt: workspace.updatedAt || null,
+      };
+    }).sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))),
+  };
+}
+
 function updateAdmissionWorkspace(body, user) {
   if (!['applicant', 'parent'].includes(user.role)) throw forbidden();
   const section = requireString(body.section, 'section', 40);
@@ -578,128 +643,6 @@ function updateAdmissionWorkspace(body, user) {
   saveDb();
   audit('admission_workspace.updated', 'admission_workspace', user.id, user, section);
   return workspace;
-}
-
-function createDocument(body, user) {
-  const db = getDb();
-  const now = nowIso();
-  const ownerEmail = body.ownerEmail || user.email;
-  if (!canAccessApplicantRecord(user, ownerEmail)) throw forbidden();
-  const record = {
-    id: generateId('DOC'),
-    ownerName: requireString(body.ownerName || user.name, 'ownerName', 120),
-    ownerEmail: requireString(ownerEmail, 'ownerEmail', 120).toLowerCase(),
-    ownerRole: ['staff', 'admin'].includes(user.role) && allowedRoles.includes(body.ownerRole) ? body.ownerRole : user.role,
-    docName: requireString(body.docName, 'docName', 160),
-    fileName: requireString(body.fileName, 'fileName', 220),
-    status: 'Uploaded (not submitted)',
-    createdAt: now,
-    updatedAt: now,
-  };
-  const existingIndex = db.documents.findIndex((item) => item.ownerEmail === record.ownerEmail && item.docName === record.docName);
-  if (existingIndex >= 0) db.documents.splice(existingIndex, 1, record);
-  else db.documents.unshift(record);
-  saveDb();
-  audit('document.uploaded', 'document', record.id, user, record.docName);
-  return record;
-}
-
-function createDocumentFromUpload(fields, file, user) {
-  assertAllowedUpload(file, allowedMimeTypes, 'Only valid PDF, JPG, and PNG files are allowed.');
-  const db = getDb();
-  const now = nowIso();
-  const ownerEmail = fields.ownerEmail || user.email;
-  if (!canAccessApplicantRecord(user, ownerEmail)) throw forbidden();
-  const id = generateId('DOC');
-  const storedFileName = `${id}-${file.filename}`;
-  fs.mkdirSync(uploadDir, { recursive: true });
-  fs.writeFileSync(path.join(uploadDir, storedFileName), file.content);
-  const record = {
-    id,
-    ownerName: requireString(fields.ownerName || user.name, 'ownerName', 120),
-    ownerEmail: requireString(ownerEmail, 'ownerEmail', 120).toLowerCase(),
-    ownerRole: ['staff', 'admin'].includes(user.role) && allowedRoles.includes(fields.ownerRole) ? fields.ownerRole : user.role,
-    docName: requireString(fields.docName, 'docName', 160),
-    fileName: file.filename,
-    storedFileName,
-    mimeType: file.mimeType,
-    sizeBytes: file.content.length,
-    status: 'Uploaded (not submitted)',
-    createdAt: now,
-    updatedAt: now,
-  };
-  const existingIndex = db.documents.findIndex((item) => item.ownerEmail === record.ownerEmail && item.docName === record.docName);
-  if (existingIndex >= 0) db.documents.splice(existingIndex, 1, record);
-  else db.documents.unshift(record);
-  saveDb();
-  audit('document.file_uploaded', 'document', record.id, user, record.docName);
-  return record;
-}
-
-function updateDocumentStatus(id, body, user) {
-  requireRole({ user }, ['staff', 'admin']);
-  const validStatuses = ['Submitted for review', 'Ready for reporting', 'Needs correction'];
-  if (!validStatuses.includes(body.status)) throw badRequest('Invalid document status.');
-  const record = getDb().documents.find((item) => item.id === id);
-  if (!record) throw notFound('Document not found.');
-  record.status = body.status;
-  record.reviewNote = typeof body.reviewNote === 'string' ? body.reviewNote.trim().slice(0, 500) : '';
-  record.reviewedBy = user.name;
-  record.reviewedAt = nowIso();
-  record.updatedAt = nowIso();
-  saveDb();
-  audit('document.status_updated', 'document', record.id, user, body.status);
-  return record;
-}
-
-function submitDocumentsForReview(user) {
-  if (!['applicant', 'parent'].includes(user.role)) throw forbidden();
-  const db = getDb();
-  const records = db.documents.filter((item) => item.ownerEmail === user.email && ['Uploaded (not submitted)', 'Needs correction'].includes(item.status));
-  if (records.length === 0) throw badRequest('Upload a new or corrected document before submitting for review.');
-  const submittedAt = nowIso();
-  records.forEach((record) => {
-    record.status = 'Submitted for review';
-    record.submittedAt = submittedAt;
-    record.updatedAt = submittedAt;
-    record.reviewNote = '';
-    record.reviewedBy = '';
-    record.reviewedAt = '';
-  });
-  saveDb();
-  audit('documents.submitted_for_review', 'document_batch', user.id, user, `${records.length} document(s)`);
-  return { items: records, submittedCount: records.length, submittedAt };
-}
-
-function deleteDocument(id, user) {
-  const db = getDb();
-  const record = db.documents.find((item) => item.id === id);
-  if (!record) throw notFound('Document not found.');
-  if (!canAccessApplicantRecord(user, record.ownerEmail)) throw forbidden();
-  if (!['staff', 'admin'].includes(user.role) && ['Submitted for review', 'Ready for reporting'].includes(record.status)) {
-    throw forbidden('Submitted documents cannot be removed unless staff requests a correction.');
-  }
-  db.documents = db.documents.filter((item) => item.id !== id);
-  if (record.storedFileName) {
-    const filePath = path.resolve(uploadDir, record.storedFileName);
-    if (filePath.startsWith(uploadDir) && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  }
-  saveDb();
-  audit('document.deleted', 'document', id, user, record.docName);
-  return { deleted: true };
-}
-
-function getDocumentFile(id, user) {
-  const record = getDb().documents.find((item) => item.id === id);
-  if (!record) throw notFound('Document not found.');
-  if (!canAccessApplicantRecord(user, record.ownerEmail)) throw forbidden();
-  if (['staff', 'admin'].includes(user.role) && record.status === 'Uploaded (not submitted)') throw forbidden('This document has not been submitted for review.');
-  if (!record.storedFileName) throw notFound('The original file is not available for this record.');
-  const filePath = path.resolve(uploadDir, record.storedFileName);
-  if (!filePath.startsWith(uploadDir) || !fs.existsSync(filePath)) throw notFound('Document file is unavailable.');
-  assertStoredFileReadable(filePath, record.mimeType);
-  audit('document.file_opened', 'document', record.id, user, record.docName);
-  return { __file: true, filePath, mimeType: record.mimeType || 'application/octet-stream', fileName: record.fileName };
 }
 
 function createContent(body, user) {
@@ -736,14 +679,12 @@ function buildReports(user) {
     return items;
   }, {});
   const topTopic = Object.entries(topicCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'No data';
-  const readyDocs = db.documents.filter((item) => item.status === 'Ready for reporting').length;
+  const checklists = (db.admissionWorkspaces || []).filter((item) => item.cap?.route || item.cap?.stage || item.cap?.channel || item.programs?.preferences?.length);
   return {
     topTopic,
     openInquiries: db.inquiries.filter((item) => item.status !== 'Resolved').length,
     unresolved: db.inquiries.filter((item) => ['Unassigned', 'Needs reply'].includes(item.status)).length,
-    documentReviews: db.documents.length,
-    readyDocuments: readyDocs,
-    documentReadinessPercent: db.documents.length ? Math.round((readyDocs / db.documents.length) * 100) : 0,
+    savedAdmissionChecklists: checklists.length,
   };
 }
 
@@ -843,44 +784,119 @@ function buildCutoffAnswer(question, records) {
   };
 }
 
-function buildDocumentStatusAnswer(question, user) {
+function buildDocumentStatusAnswer(question) {
   const normalized = normalizeIntentText(question);
   const rawQuestion = String(question || '').normalize('NFKC').toLocaleLowerCase();
   const intentText = `${normalized} ${rawQuestion}`;
   const asksStatus = ['status', 'review', 'uploaded', 'upload', 'स्थिती', 'स्थिति', 'तपासणी', 'समीक्षा'].some((term) => intentText.includes(term));
   const asksDocuments = ['document', 'documents', 'certificate', 'marksheet', 'कागदपत्र', 'दस्तावेज', 'प्रमाणपत्र'].some((term) => intentText.includes(term));
   if (!asksStatus || !asksDocuments) return null;
-  if (!user) {
-    return {
-      source: 'Applicant document status',
-      answer: 'Uploaded-document review status is private to each applicant, so this public assistant cannot look it up. To upload documents or check review notes, open the applicant / parent document portal, sign in or create an account, and use “Your admission documents.” Do not upload private records in this public chat.',
-      next: 'Open the applicant / parent document portal below.',
-      actionView: 'applicantPortal',
-      actionLabel: 'Open applicant document portal',
-      officialLinks: [{ label: 'MITCORER Contact Us page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
-    };
-  }
-  const records = getDb().documents.filter((item) => item.ownerEmail === user.email);
-  if (records.length === 0) {
-    return {
-      source: 'My document records',
-      answer: 'There are no uploaded admission documents in your record yet. Upload each required document from the Documents section for staff review.',
-      next: 'Open Documents and upload the required files together.',
-      actionView: 'documents',
-      actionLabel: 'Open documents',
-    };
-  }
-  const summary = records.reduce((items, item) => {
-    items[item.status] = (items[item.status] || 0) + 1;
-    return items;
-  }, {});
-  const statusSummary = Object.entries(summary).map(([status, count]) => `${count} ${status}`).join(', ');
   return {
-    source: 'My document records',
-    answer: `Your document record contains ${records.length} uploaded file${records.length === 1 ? '' : 's'}: ${statusSummary}. Staff review status is shown in the Documents section.`,
-    next: 'Open Documents to see each file and any correction request.',
-    actionView: 'documents',
-    actionLabel: 'Open documents',
+    source: 'Applicant document status',
+    answer: 'MITRA no longer accepts applicant documents or shows private review status. Contact MITCORER if you already submitted documents. Do not upload private records in this public chat.',
+    next: 'Use the admission checklist to prepare the documents required by your route.',
+    actionView: 'applicantPortal',
+    actionLabel: 'Open admission checklist',
+    officialLinks: [{ label: 'MITCORER Contact Us page', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
+  };
+}
+
+function buildRouteDocumentAnswer(question) {
+  const text = normalizeIntentText(question);
+  const asksDocuments = /\b(?:documents?|docs?|certificates?|papers|checklist)\b/.test(text);
+  const unrelated = /\b(?:scholarship|mahadbt|loan|migration|duplicate|status|review|upload|fees?|cutoffs?|ai and data science|choice codes?|syllabus|placement)\b/.test(text);
+  if (!asksDocuments || unrelated) return null;
+
+  const dse = /\b(?:direct second year|dse|lateral entry)\b/.test(text);
+  const diploma = /\b(?:polytechnic|post ssc|diploma admission)\b/.test(text);
+  const firstYear = /\b(?:first year|1st year|fy)\b/.test(text);
+  if ((dse && firstYear) || (dse && diploma)) return null;
+  if (!dse && !diploma && !firstYear) {
+    if (!/\b(?:checklist|list|all routes|general|reporting|documents?|certificates?|papers?)\b/.test(text)) return null;
+    if (!/\b(?:checklist|list|all routes|general|reporting)\b|\bwhat documents?.{0,15}required.{0,15}admission\b|\b(?:admission documents? required|required admission documents?)\b/.test(text)) return null;
+    if (!/\b(?:all routes|general|reporting)\b/.test(text)) return {
+      recordId: 'KB-1', source: 'Verified admission checklist',
+      answer: 'General reporting checklist: 10th and 12th marksheets, or diploma marksheets for Direct Second Year; CET or JEE scorecard where applicable; school leaving certificate; nationality or domicile proof; CAP allotment letter if applicable; and category or concession documents when claimed. Which route are you applying through: First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Tell me your category or concession claim too so I can tailor the list.',
+      clarification: true, clarificationKind: 'documents',
+      officialLinks: [
+        ...getMITCORERAdmissionDocumentLinks(question),
+        ...(getMITCORERAdmissionDocumentLinks(question).length > 1
+          ? [{ label: 'MITCORER Polytechnic admissions and documents', url: 'https://mitcorer.edu.in/fy-polytechnic-eligibility-criteria.php' }]
+          : []),
+        { label: 'Maharashtra CET Cell admissions directory', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
+      ],
+    };
+    const record = getDb().knowledge.find((item) => item.id === 'KB-1' && usableKnowledge(item));
+    if (!record) return null;
+    return {
+      recordId: 'KB-1', source: record.source, sourceUrl: record.sourceUrl,
+      answer: 'Use this as a general admission-reporting checklist, then confirm the exact requirements for your route, category, and current notice:\n\n- CET or JEE scorecard, if applicable\n- 10th and 12th marksheets, or diploma marksheets for Direct Second Year\n- Transfer or school-leaving certificate\n- Domicile or nationality proof, as required for your candidature\n- CAP allotment letter, if admitted through CAP\n- Caste certificate, caste validity, non-creamy layer, or income certificate when relevant to your claim\n- Passport-size photographs and Aadhaar\n- Bank details if applying for a scholarship',
+      officialLinks: getMITCORERAdmissionDocumentLinks(question),
+    };
+  }
+  if (/\b(?:pharmacy|architecture|mba|mca|working professional)\b/.test(text)) return null;
+  if (!diploma && /\b(?:sc|st|obc|ews|vjnt|sbc|sebc|tfws|caste|income|non creamy)\b/.test(text)) return null;
+
+  const answer = diploma
+    ? 'For first-year Post-SSC Polytechnic admission, prepare your SSC (10th) marksheet, school leaving certificate, and accepted proof of Indian nationality. Check the official diploma brochure for the proofs required by your candidature, reservation or fee-waiver claim.'
+    : dse
+      ? 'For Direct Second Year B.Tech, prepare the marksheets for your qualifying Diploma or B.Sc. (or the qualification accepted for your route), your school or institute leaving certificate, and the nationality or domicile proof required for your candidature. Keep the allotment letter for CAP reporting if applicable.'
+      : 'For First Year B.Tech, prepare your 10th and 12th marksheets, your CET or JEE scorecard as applicable, your school leaving certificate, and the nationality or domicile proof required for your candidature. Keep the allotment letter for CAP reporting if applicable.';
+    const sourceUrl = diploma ? 'https://mitcorer.edu.in/fy-polytechnic-documents.php'
+    : dse ? MITCORER_DSE_DOCUMENTS_URL : MITCORER_FIRST_YEAR_DOCUMENTS_URL;
+    const routeLinks = diploma || dse ? [] : getOfficialAdmissionLinks(`${question} CAP`);
+    const dteDocumentsLink = diploma || dse
+      ? [{ label: 'Current Maharashtra DTE admission information brochure', url: 'https://poly26.dtemaharashtra.gov.in/poly_26/assets/pdf/Diploma%20Admission%20Information%20Brochure%202026-27.pdf' }]
+      : [];
+  return {
+    sourceUrl,
+    recordId: 'KB-1',
+    source: 'Verified admission checklist',
+    answer: `${answer} Confirm the full list for your academic year and category before reporting.`,
+    officialLinks: [
+      ...getMITCORERAdmissionDocumentLinks(question),
+      ...routeLinks,
+        ...dteDocumentsLink,
+      ...(diploma && routeLinks.some(link => link.url.includes('poly26.dtemaharashtra.gov.in'))
+        ? [{ label: 'DTE Diploma brochure 2026-27, Annexure II', url: 'https://poly26.dtemaharashtra.gov.in/poly_26/assets/pdf/Diploma%20Admission%20Information%20Brochure%202026-27.pdf#page=89' }]
+        : []),
+    ],
+  };
+}
+
+function buildAllotmentNextStep(question) {
+  const text = normalizeIntentText(question);
+  if (/\bchecklist\b/.test(text)) return null;
+  if (/\b(?:remaining|pending|not reported|haven't reported|have not reported|reporting incomplete)\b/i.test(question)) return null;
+  const acap = /\b(?:acap|a-cap|against cap|non cap|institute level)\b/.test(text);
+  const explicitCap = /\bcap\b/.test(text.replace(/\bacap\b/g, ''));
+  const hasSeat = /\b(?:got|received|allotted|allotment|assigned|offered)\b/.test(text);
+  const hasAdmissionContext = /\b(?:seat|allotment|allotted|admission)\b/.test(text);
+  const asksNext = /\b(?:what (?:should i do|do i do|to do|next|now)|next steps?|after allotment|what should i check)\b/.test(text);
+  const asksAcapNext = /\b(?:what should i do|what do i do|next steps?|what now|what next)\b/.test(text);
+  const asksCapNext = /\b(?:what should i do|what do i do|next steps?|what now|what next|after allotment)\b/.test(text);
+  if ((!acap && !explicitCap) || !(hasSeat || hasAdmissionContext) || !(acap ? asksAcapNext : asksCapNext)) return null;
+
+  if (acap) {
+    return {
+      recordId: 'KB-14',
+      source: 'Verified admission checklist',
+      answer: 'Check the MITCORER institute-level or against-CAP notice for your programme. Confirm that it lists your offer or reporting instruction. If the notice calls you for admission confirmation, report in person with the required original documents by its deadline. Verify the college confirmation and collect your receipt.',
+      officialLinks: [{ label: 'MITCORER institute-level and against-CAP notices', url: 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission' }],
+    };
+  }
+  const hasRoute = /\b(?:first year|direct second|dse|lateral|polytechnic|post ssc)\b/.test(text);
+  return {
+    recordId: 'KB-29',
+    source: 'Verified admission checklist',
+    officialLinks: hasRoute ? getOfficialAdmissionLinks(question) : [{ label: 'Maharashtra CET Cell admissions directory', url: 'https://cetcell.mahacet.org/' }],
+    answer: 'For your CAP allotment, check these items in the current CET Cell notice and your allotment letter:\n\n- Confirm the allotted institute, programme, and CAP round.\n- Complete the required seat-acceptance action and payment by the round deadline; save the confirmation.\n- Check whether the round allows freeze or betterment and follow the instructions shown in your candidate login.\n- If institute reporting is required, report to MITCORER with the original documents and category proofs listed for your route.\n- Confirm that MITCORER has recorded your admission and keep the institute fee receipt.',
+    next: hasRoute ? 'Check the reporting deadline and document instructions in the official portal before travelling.' : 'Which route is yours: First Year B.Tech, Direct Second Year B.Tech, or Polytechnic?',
+    ...(!hasRoute ? { suggestions: ['First Year B.Tech', 'Direct Second Year B.Tech', 'Polytechnic'].map(label => ({
+      label, question: `I got MITCORER in CAP for ${label}. What do I do now?`,
+    })) } : {}),
+    actionView: 'applicantPortal',
+    actionLabel: 'Open admission checklist',
   };
 }
 
@@ -888,44 +904,70 @@ function buildAdmissionReadinessAnswer(question, user) {
   const normalized = normalizeIntentText(question);
   const rawQuestion = String(question || '').normalize('NFKC').toLocaleLowerCase();
   const intentText = `${normalized} ${rawQuestion}`;
-  const hasStrongReadinessMarker = ['what else', 'what remaining', 'what is remaining', 'remaining', 'pending', 'last step', 'final step', 'admission complete', 'complete admission', 'reporting checklist', 'admission checklist', 'final admission checklist', 'before institute reporting', 'after allotment']
+  const hasStrongReadinessMarker = ['what else', 'what remaining', 'what is remaining', 'remaining', 'pending', 'last step', 'final step', 'admission complete', 'complete admission', 'reporting checklist', 'admission checklist', 'final admission checklist', 'before institute reporting', 'after allotment', 'what should i check']
     .some((term) => intentText.includes(term));
   const hasProgressSignal = ['received', 'got', 'accepted', 'uploaded', 'paid', 'payment done', 'reporting complete'].some((term) => intentText.includes(term));
   const asksWhatRemains = hasStrongReadinessMarker || (['what next', 'what should i do next', 'next step'].some((term) => intentText.includes(term)) && hasProgressSignal);
-  const mentionsAdmissionWorkflow = ['admission', 'allotment', 'reporting', 'cap', 'acap'].some((term) => intentText.includes(term));
+  const mentionsAdmissionWorkflow = ['admission', 'allotment', 'reporting', 'cap', 'acap', 'seat'].some((term) => intentText.includes(term));
+  if (hasStrongReadinessMarker && !hasProgressSignal && /\b(?:checklist|after allotment|after cap)\b/.test(intentText)) return null;
+  const asksStandaloneDocumentList = /\b(?:documents?|certificates?|papers?)\b/.test(intentText)
+    && !asksWhatRemains && !hasProgressSignal
+    && !/\b(?:steps?|fees?|scholarships?|programmes?|programs?)\b/.test(intentText);
+  if (asksStandaloneDocumentList) return null;
   if (!asksWhatRemains || !mentionsAdmissionWorkflow) return null;
 
-  const documents = getDb().documents.filter((item) => item.ownerEmail === user.email);
-  const uploaded = new Set(documents.map((item) => item.docName.toLocaleLowerCase()));
-  const coreDocuments = ['10th marksheet', '12th marksheet', 'CET or JEE scorecard', 'school leaving certificate', 'nationality or domicile proof', 'Aadhaar copy', 'bank passbook copy'];
-  const missingKnownDocuments = coreDocuments.filter((name) => !uploaded.has(name.toLocaleLowerCase()));
-  const hasAllotment = /allotment.*(?:received|got|available)|(?:received|got).*allotment|allotted/i.test(intentText);
-  const hasAcceptance = /seat.*accepted|accepted.*seat|acceptance.*complete|freeze.*complete/i.test(intentText);
-  const hasPayment = /payment.*(?:done|paid|complete)|(?:paid|payment done|fee paid)/i.test(intentText);
+  const workspace = user && (getDb().admissionWorkspaces || []).find((item) => item.ownerEmail === user.email);
+  const route = workspace?.cap?.route || workspace?.programs?.route || '';
+  const routeChecklist = {
+    'btech-fy': ['10th marksheet', '12th marksheet', 'CET or JEE scorecard', 'school leaving certificate', 'nationality or domicile proof'],
+    'btech-dse': ['10th marksheet', 'Diploma or B.Sc. Marksheets', 'school leaving certificate', 'nationality or domicile proof'],
+    polytechnic: ['10th marksheet', 'school leaving certificate', 'nationality or domicile proof'],
+  }[route] || ['10th marksheet'];
+  const checkedDocuments = Array.isArray(workspace?.cap?.checkedDocuments) ? workspace.cap.checkedDocuments : [];
+  const checked = new Set(checkedDocuments.filter((name) => typeof name === 'string').map((name) => name.toLocaleLowerCase()));
+  const missingKnownDocuments = routeChecklist.filter((name) => !checked.has(name.toLocaleLowerCase()));
+  const savedStage = workspace?.cap?.stage;
+  const progressText = rawQuestion.replace(/’/g, "'");
+  const deniesAcceptance = /\b(?:not|haven't|hadn't|didn't|never)\s+(?:yet\s+)?accept(?:ed)?\b|\bacceptance\b[^.!?]{0,30}\b(?:pending|incomplete)\b/.test(progressText);
+  const deniesPayment = /\b(?:not|haven't|hadn't|didn't|never)\s+(?:yet\s+)?pa(?:y|id)\b|\b(?:fee|payment)\b[^.!?]{0,25}\b(?:unpaid|pending|not paid)\b/.test(progressText);
+  const deniesReporting = /\b(?:not|haven't|hadn't|didn't|never)\s+(?:yet\s+)?report(?:ed)?\b|\breporting\b[^.!?]{0,20}\b(?:pending|incomplete|not complete)\b/.test(progressText);
+  const hasAcceptance = !deniesAcceptance && (
+    workspace?.cap?.channel === 'cap' && ['Seat acceptance action complete', 'Reported to institute', 'Admission confirmed'].includes(savedStage)
+    || /seat.*accepted|accepted.*seat|acceptance.*complete|freeze.*complete/i.test(intentText)
+  );
+  const hasAllotment = hasAcceptance || ['Allotment checked', 'Seat acceptance action complete', 'Reported to institute', 'Admission confirmed'].includes(savedStage)
+    || /allotment.*(?:received|got|available)|(?:received|got).*allotment|allotted/i.test(intentText);
+  const hasPayment = !deniesPayment && /payment.*(?:done|paid|complete)|\bpaid\b/i.test(intentText);
   const saysDocumentsReady = /documents?.*(?:uploaded|ready|complete)|(?:uploaded|ready).*documents?/i.test(intentText);
-  const hasReported = /reported.*(?:college|institute)|reporting.*complete|completed.*reporting|admission.*complete/i.test(intentText);
+  const hasReported = !deniesReporting && (['Reported to institute', 'Admission confirmed'].includes(savedStage)
+    || /reported.*(?:college|institute)|reporting.*complete|completed.*reporting|admission.*complete/i.test(intentText));
   const workflowSteps = [
     ['allotment or institute-level merit/vacancy confirmation', hasAllotment],
     ['seat acceptance or freeze/betterment decision where applicable', hasAcceptance],
-    ['document upload and staff readiness check', saysDocumentsReady || documents.length > 0],
+    ['prepare the required documents', saysDocumentsReady || (routeChecklist.length > 0 && missingKnownDocuments.length === 0)],
     ['approved fee payment or payment-schedule confirmation', hasPayment],
     ['institute reporting within the current notice deadline', hasReported],
   ];
   const remainingSteps = workflowSteps.filter(([, complete]) => !complete).map(([label]) => label);
-  const documentSummary = documents.length === 0
-    ? 'No documents have been uploaded in this workspace yet.'
-    : `${documents.length} document file${documents.length === 1 ? '' : 's'} ${documents.length === 1 ? 'is' : 'are'} currently uploaded.`;
-  const isOpenCategory = /\bopen\b|general category/i.test(normalized);
   const remainingText = remainingSteps.length
-    ? `Based on what you wrote, the remaining workflow items are: ${remainingSteps.join('; ')}.`
-    : 'Based on what you wrote, all main workflow stages appear complete; only the current official reporting confirmation and staff document status remain authoritative.';
+    ? `Based on ${workspace ? 'your saved checklist and message' : 'what you wrote'}, the remaining items to confirm are: ${remainingSteps.join(', ')}.`
+    : 'All main workflow stages appear complete based on the information provided. Verify your official confirmation and keep the receipt.';
+  const routeSummary = routeChecklist.length
+    ? `Documents to prepare for your saved route include: ${routeChecklist.join(', ')}. Confirm the full list and category requirements in the current official notice.`
+    : 'Use your allotment letter and the current route-specific notice to confirm the document list; tell me First Year B.Tech, Direct Second Year B.Tech, or Polytechnic for a tailored list.';
   return {
     recordId: 'KB-1',
     source: 'Verified admission checklist',
-    answer: `${isOpenCategory ? 'For Open-category reporting, ' : 'For admission reporting, '}the core documents are 10th marksheet, 12th marksheet, CET or JEE scorecard, school leaving certificate, nationality or domicile proof, Aadhaar copy, bank passbook copy, and photographs. Migration certificate, gap certificate, and income certificate are only needed where applicable. ${remainingText} ${documentSummary} ${missingKnownDocuments.length ? `The workspace does not yet show: ${missingKnownDocuments.join(', ')}.` : 'The core named documents are present in the workspace; staff review status still matters.'}`,
-    next: 'Open Documents to upload or check files, then confirm your CAP/ACAP route, allotment acceptance, reporting date, and payment status.',
-    actionView: 'documents',
-    actionLabel: 'Check reporting checklist',
+    answer: `${routeSummary} ${remainingText}`,
+    next: 'Check the official reporting deadline and confirm your admission with the institute.',
+    officialLinks: [
+      ...getMITCORERAdmissionDocumentLinks(question),
+      ...(/\b(?:first year|dse|direct second|lateral|polytechnic|post ssc|acap|against cap|institute level)\b/.test(normalized)
+        ? getOfficialAdmissionLinks(`${question} reporting`)
+        : [{ label: 'Maharashtra CET Cell admissions directory', url: 'https://cetcell.mahacet.org/' }]),
+    ],
+    actionView: 'applicantPortal',
+    actionLabel: 'Open admission checklist',
   };
 }
 
@@ -969,7 +1011,7 @@ function getOfficialAdmissionLinks(question) {
     add('Maharashtra CET Cell MITCORER institute summary (AY 2026-27)', 'https://fe2026.mahacet.org/StaticPages/frmInstituteSummary?InstituteCode=06901');
   }
 
-  if (currentYear && asksDse) add('Official DSE Engineering portal 2026-27', 'https://dse2026.mahacet.org.in/');
+  if (currentYear && asksDse) add('Official DSE Engineering portal 2026-27', 'https://dse2026.mahacet.org.in/dse_26/home');
   else if (currentYear && asksPolytechnic) add('Official Polytechnic admission portal 2026-27', 'https://poly26.dtemaharashtra.gov.in/poly_26/home');
   else if (currentYear && asksCap) add('Official B.Tech CAP portal 2026-27', 'https://fe2026.mahacet.org/StaticPages/HomePage');
   if (asksAcap) add('MITCORER ACAP and institute-level notices', 'https://mitcorer.edu.in/acap-institute-level-admission.php');
@@ -998,7 +1040,7 @@ function getOfficialScholarshipLinks(question) {
   ];
   const requestedYear = normalized.match(/\b20\d{2}-\d{2}\b/)?.[0];
   links.push(requestedYear && requestedYear !== '2026-27'
-    ? { label: `MahaDBT portal (verify AY ${requestedYear} availability)`, url: 'https://mahadbt.maharashtra.gov.in/' }
+    ? { label: `MahaDBT portal (verify AY ${requestedYear} availability)`, url: 'https://mahadbt2.maharashtra.gov.in/' }
     : { label: 'MahaDBT 2.0 portal (AY 2026-27)', url: 'https://mahadbt2.maharashtra.gov.in/' });
   links.push({ label: 'National Scholarship Portal (AICTE Pragati)', url: 'https://scholarships.gov.in/All-Scholarships' });
   return links;
@@ -1013,7 +1055,7 @@ function getRefinementOfficialLinks(question, refinement) {
   ];
   if (/\badmission\b/.test(normalized) && /\b(?:docs?|documents?|certificates?|marksheets?|checklist)\b/.test(normalized)) {
     links.push(
-      { label: 'MITCORER Required Admission Documents', url: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents' },
+      ...getMITCORERAdmissionDocumentLinks(question),
       { label: 'State CET Cell technical admission notices', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
     );
   }
@@ -1285,9 +1327,9 @@ function buildLegacyCollegeProfileAnswer(question) {
     if (/\b(?:office hours?|office timings?|working hours?|visiting hours?|college timings?|working days?|office open|office close|open on saturday)\b/.test(normalized)) return buildOfficeHoursAnswer(question);
     return {
       recordId: 'KB-17',
-      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      source: 'MITCORER official Contact Us page',
       sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
-      answer: 'For admission enquiries, call the Admission Helpline at +91 91584 14343. For the college office, call +91 91584 14444. Email info.mitcorer@mitpune.edu.in. The Admissions Enquiry Desk hours reported by the supplied Contact Us excerpt are Monday–Saturday, 9:00 AM–5:00 PM; confirm before visiting outside those hours or for a campus tour.',
+      answer: 'For admission enquiries, call the Admission Helpline at +91 91584 14343. For the college office, call +91 91584 14444. Email info.mitcorer@mitpune.edu.in. The Admissions Enquiry Desk is listed as open Monday–Saturday, 9:00 AM–5:00 PM; confirm before visiting outside those hours or for a campus tour.',
       next: '', actionView: 'inquiry', actionLabel: 'Contact admissions',
     };
   }
@@ -1348,9 +1390,9 @@ function buildLegacyCollegeProfileAnswer(question) {
   if (/\b(?:nearest railway station|nearest station|which railway station|station to college|barshi town station|kurduwadi junction|nearest bus (?:stop|stand)|barshi bus stand|how to reach (?:mitcorer|the college|barshi college)|distance from (?:station|bus stand)|reach (?:by train|by bus))\b/.test(normalized)) {
     return {
       recordId: 'KB-40',
-      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      source: 'MITCORER official Contact Us page',
       sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
-      answer: `MITCORER’s supplied Contact Us page excerpt describes these travel connections:
+      answer: `MITCORER’s Contact Us page describes these travel connections:
 
 - Regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai; check the current railway timetable for your travel date.
 - MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus; verify the current operator, stop, and service.
@@ -1738,9 +1780,9 @@ function buildLegacyCollegeProfileAnswer(question) {
   if (/\b(?:barshi to solapur|solapur to barshi|distance (?:from|to) solapur|solapur distance)\b/.test(normalized)) {
     return {
       recordId: 'KB-40',
-      source: 'MITCORER Contact Us page excerpt supplied by project owner',
+      source: 'MITCORER official Contact Us page',
       sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
-      answer: 'MITCORER’s supplied Contact Us page excerpt says regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai. It says MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus. Check current train and bus timetables and stops for your travel date. A separate legacy Contact page gives conflicting local-distance details, so Mitra cannot confirm an exact distance or travel time until the college reconciles the pages.',
+      answer: 'MITCORER’s Contact Us page says regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai. It says MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus. Check current train and bus timetables and stops for your travel date. A separate legacy Contact page gives conflicting local-distance details, so Mitra cannot confirm an exact distance or travel time until the college reconciles the pages.',
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
@@ -1867,6 +1909,19 @@ function buildPlacementAnswer(question) {
     };
   }
   if (/highest|average|package|salary/.test(normalized)) {
+    const homepageHighlights = getDb().knowledge.find((item) => item.id === 'KB-70' && usableKnowledge(item));
+    if (homepageHighlights && /\b(?:highest|package)\b/.test(normalized)) return {
+      recordId: 'KB-70',
+      source: homepageHighlights.source,
+      sourceUrl: homepageHighlights.sourceUrl,
+      answer: 'MITCORER’s homepage displays **21 LPA** as its highest package. The page does not state the academic year, so I cannot confirm this as the highest package for 2026-27. The placement-record page lists dated records through 2024-25; check with the Training and Placement Cell for a current-cycle figure.',
+      officialLinks: [
+        { label: 'MITCORER homepage placement highlights', url: 'https://mitcorer.edu.in/' },
+        { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' },
+        { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/placement-cell.php' },
+      ],
+      next: '', actionView: 'placements', actionLabel: 'View dated placement records',
+    };
     return {
       source: 'MITCORER dated placement records and Training & Placement pages',
       sourceUrl: 'https://mitcorer.edu.in/placements-record.php',
@@ -1898,11 +1953,26 @@ function buildPlacementAnswer(question) {
 
 function buildPlacementPlatformsAnswer(question, records) {
   const normalized = normalizeIntentText(question);
-  const isPlacementTopic = /\b(?:placement|recruitment|recruiter|career)\b/.test(normalized);
+  const isPlacementTopic = /\b(?:placement|recruitment|recruiter|career|internship|internships)\b/.test(normalized);
+  const asksInternship = /\binternships?\b/.test(normalized);
   const asksWhereDrivesAreShared = /\b(?:where|share|updates?|drives?|opportunities)\b/.test(normalized);
-  if (!isPlacementTopic || !(/\bplatforms?\b/.test(normalized) || asksWhereDrivesAreShared)) return null;
+  const asksPlatformSpecific = /\bplatforms?\b|à¤ªà¥à¤²à¥…à¤Ÿà¤«à¥‰à¤°à¥à¤®|à¤ªà¥à¤²à¥‡à¤Ÿà¤«à¥‰à¤°à¥à¤®/u.test(question)
+    || /\bplatforms?\b/.test(normalized);
+  const asksAboutPlatforms = /\bplatforms?\b|प्लॅटफॉर्म|प्लेटफॉर्म/u.test(question)
+    || /\bplatforms?\b/.test(normalized);
+  if (!isPlacementTopic || !(asksPlatformSpecific || asksWhereDrivesAreShared)) return null;
   const record = records.find((item) => item.id === 'KB-69' && usableKnowledge(item));
   if (!record) return null;
+  if (asksInternship) return {
+    recordId: record.id,
+    source: record.source,
+      answer: 'MITCORER students can check POD, Superset, TalentBattle, and Unstop for placement drives and internship opportunities. Confirm with the Training and Placement Cell which platforms are active, how to access them, and whether they currently list relevant openings. Availability and eligibility depend on each opportunity; platform listings do not guarantee an internship or selection.',
+    officialLinks: [
+      { label: 'MITCORER Training and Placement Cell', url: 'https://mitcorer.edu.in/mitcorer/public/placements' },
+      { label: 'MITCORER placement records', url: 'https://mitcorer.edu.in/placements-record.php' },
+    ],
+    next: '', actionView: 'placements', actionLabel: 'Check internship opportunities',
+  };
   return {
     recordId: record.id,
     source: record.source,
@@ -1915,6 +1985,7 @@ function buildPlacementPlatformsAnswer(question, records) {
 function buildPlacementAssistanceAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/placement assistance|placement cell|training and placement|internship|internships/.test(normalized)) return null;
+  if (/\b(?:platform|platforms|where|opportunities)\b/.test(normalized)) return null;
   if (/package|highest|average|companies visiting|recruiters/.test(normalized)) return null;
   return {
     recordId: 'KB-24',
@@ -1991,10 +2062,12 @@ function buildDseProgrammeAnswer(question, records) {
 
 function buildAdmissionEnquiryAnswer(question) {
   const normalized = normalizeIntentText(question);
+  if (/\b(?:how do i apply|how can i apply|apply for)\b/.test(normalized)
+    && /\b(?:first year|b\.?tech|cap|admission process)\b/.test(normalized)) return null;
   if (!/admission (?:enquiry|inquiry|help)|admission office|admissions office|how do i apply|start my application|campus tour/.test(normalized)) return null;
   return {
     recordId: 'KB-17',
-    source: 'MITCORER Contact Us page excerpt supplied by project owner',
+    source: 'MITCORER Contact Us page',
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
     answer: 'For admission enquiries, call the Admission Helpline at +91 91584 14343. For the college office, call +91 91584 14444. Email info.mitcorer@mitpune.edu.in. Check the current Contact Us page for the address and directions.',
     actionView: 'inquiry',
@@ -2002,8 +2075,93 @@ function buildAdmissionEnquiryAnswer(question) {
   };
 }
 
+function buildAdmissionRouteComparisonAnswer(question) {
+  const normalized = normalizeIntentText(question);
+  if (!/\b(?:difference|compare|versus|vs\.?)\b/.test(normalized)
+    || !/\b(?:cap|centralized admission)\b/.test(normalized)
+    || !/\b(?:institute level|institute-level|acap|against cap|non cap)\b/.test(normalized)) return null;
+  return {
+    recordId: ['KB-29', 'KB-14'],
+    source: 'Maharashtra CET Cell and MITCORER admission notices',
+    answer: '**CAP admission** is handled through the Maharashtra CET Cell: candidates register, are assessed on the merit list, submit preferences, and receive a centralized allotment.\n\n**Institute-level / ACAP admission** is handled by MITCORER for eligible candidates against seats remaining under the published process. It has its own notice, application, merit lists, vacancy updates, and deadlines.\n\nBoth routes require the current official notice to confirm eligibility and required actions. A vacancy or application does not guarantee admission.',
+    officialLinks: [
+      { label: 'Maharashtra CET Cell First Year B.Tech portal', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
+      { label: 'MITCORER ACAP and institute-level notices', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
+    ],
+  };
+}
+
+function buildElectronicsProgrammeComparisonAnswer(question) {
+  const normalized = normalizeIntentText(question);
+  const asksCompare = /\b(?:difference|compare|versus|vs\.?)\b/.test(normalized);
+  const mentionsEntc = /\b(?:e\s*&\s*tc|entc|telecommunication)\b/.test(normalized);
+  const mentionsEce = /\b(?:electronics?\s*(?:and|&)\s*computer|e\s*&\s*c)\b/.test(normalized);
+  if (!asksCompare || !mentionsEntc || !mentionsEce) return null;
+  return {
+    source: 'MITCORER department descriptions',
+    answer: '**Electronics & Telecommunication (E&TC)** focuses on electronics and communication systems, including embedded systems, VLSI, digital signal processing, and railway applications.\n\n**Electronics & Computer (E&C / ECE)** combines electronics with computer science, including smart systems, sensors, processors, communication networks, IoT, data science, and AI/ML.\n\nBoth programmes include electronics. The main difference is the emphasis: communication and electronics systems in E&TC, versus a broader electronics-plus-computing mix in E&C. Check each current syllabus to compare the actual subjects by semester.',
+    officialLinks: [
+      { label: 'MITCORER E&TC department', url: 'https://mitcorer.edu.in/electronics-and-tele-communication-engineering.php' },
+      { label: 'MITCORER Electronics & Computer department', url: 'https://mitcorer.edu.in/electronic-computer-engineering.php' },
+      { label: 'PAH Solapur University UG syllabus 2026-27', url: 'https://www.sus.ac.in/bos/Faculty-Of-Science-And-Technology-UG-Syllabus-2026-27' },
+    ],
+  };
+}
+
+function buildFirstYearCapHowToAnswer(question) {
+  const normalized = normalizeIntentText(question);
+  const asksHowTo = /\b(?:how do i|how can i|how to)\b/.test(normalized) || /\b(?:kasa|kaise)\s+(?:milel|milega|karu|karein)\b/i.test(question);
+  const asksAdmission = /\b(?:apply|application|admission)\b/.test(normalized);
+  const hasRoute = /\b(?:first year|1st year|fy|b\.?tech)\b/.test(normalized);
+  const hasCap = /\bcap\b/.test(normalized);
+  const asksBranchAdmission = /\b(?:cse|computer science|computer engineering)\b/.test(normalized)
+    && !/\b(?:direct second|dse|lateral|polytechnic|diploma)\b/.test(normalized);
+  if (!asksHowTo || !asksAdmission || !(hasRoute && hasCap || asksBranchAdmission)) return null;
+  return {
+    recordId: 'KB-29', source: 'Maharashtra CET Cell CAP admission process guidance',
+    sourceUrl: 'https://fe2026.mahacet.org/StaticPages/HomePage',
+      answer: 'For First Year B.Tech through CAP, follow these steps in the current CET Cell schedule:\n\n1. Register on the Maharashtra CET Cell First Year Engineering portal to begin the registration process.\n2. Complete application details, document scrutiny, and any required corrections before the deadline.\n3. Check the provisional and final merit lists.\n4. Submit and confirm your ordered branch preferences in the option form.\n5. Check each round’s allotment and complete the required seat-acceptance action.\n6. Report to the allotted institute with the documents and fee/payment proof specified in your allotment notice.\n\nUse the year-specific portal and notices because dates and actions change by cycle and round.',
+    officialLinks: [{ label: 'Official First Year B.Tech CAP portal', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' }],
+    actionView: 'cap', actionLabel: 'Open CAP admission portal',
+  };
+}
+
+function buildSyllabusNavigationAnswer(question) {
+  const normalized = normalizeIntentText(question);
+  if (!/\b(?:syllabus|curriculum)\b/.test(normalized)
+    || !/\b(?:where|find|get|download|link|how|final year|third year|semester)\b/.test(normalized)
+    || /\b(?:what subjects|subjects in|topics covered|explain the syllabus)\b/.test(normalized)) return null;
+  const university = 'https://www.sus.ac.in/bos/Faculty-Of-Science-And-Technology-UG-Syllabus-2026-27';
+  const departmentPath = /\b(?:entc|telecommunication)\b/.test(normalized)
+    ? 'https://mitcorer.edu.in/electronics-and-tele-communication-engineering.php'
+    : /\b(?:electronics and computer|electronics & computer|ece)\b/.test(normalized)
+      ? 'https://mitcorer.edu.in/electronic-computer-engineering.php'
+      : '';
+  return {
+    source: 'PAH Solapur University syllabus directory',
+    answer: 'To find the official B.Tech syllabus:\n\n1. Open PAH Solapur University’s **Faculty of Science and Technology – UG Syllabus** page.\n2. Select the academic-year section that matches your batch.\n3. Under B.Tech, choose your branch and year/semester, then open the syllabus PDF. For a final-year syllabus, use the final-year link under your branch.\n4. If you cannot find your pattern or semester, check the department’s Syllabus section or ask your department before using an older PDF.',
+    officialLinks: [
+      { label: 'PAH Solapur University UG syllabus 2026-27', url: university },
+      ...(departmentPath ? [{ label: 'MITCORER department syllabus page', url: departmentPath }] : []),
+    ],
+    actionView: 'programs', actionLabel: 'Open official syllabus',
+  };
+}
+
+function buildPostAllotmentChecklist(question) {
+  const normalized = normalizeIntentText(question);
+  if (!/\b(?:cap|allotment)\b/.test(normalized)
+    || !/\b(?:checklist|what should i (?:complete|check)|what do i need to (?:do|complete)|after allotment)\b/.test(normalized)) return null;
+  return {
+    recordId: 'KB-29', source: 'Maharashtra CET Cell CAP admission process guidance',
+    answer: 'After a CAP allotment, use this checklist and follow the notice for your round:\n\n1. Check the allotted institute, programme, round, and reporting deadline in your candidate login.\n2. Complete any required seat-acceptance action and payment; save the confirmation.\n3. Check whether you have a freeze or betterment choice and confirm it before the deadline.\n4. If reporting is required, take the original documents and proofs listed for your route and category.\n5. Confirm that the institute has recorded your admission and keep the fee receipt.\n\nThe exact action depends on your course and CAP round. Tell me First Year B.Tech or Direct Second Year and the round if you want a tailored checklist.',
+    officialLinks: [{ label: 'Maharashtra CET Cell CAP portal and notices', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' }],
+  };
+}
+
 function buildOfficeHoursAnswer(question) {
   const normalized = normalizeIntentText(question);
+  if (/\b(?:bus|transport)\b/.test(normalized) && !/\b(?:office|enquiry desk|administrative)\b/.test(normalized)) return null;
   const officeContext = /\b(?:office|enquiry desk|administrative|visiting|visit|campus)\b/.test(normalized)
     || (/\bcollege\b/.test(normalized) && /\b(?:hours?|times?|timings?|open|close|saturday|sunday)\b/.test(normalized));
   const scheduleIntent = /\b(?:hours?|times?|timings?|open(?![- ]category)|opens|close|closes|working days?|weekdays?|saturday|sunday|schedule|when can i visit)\b/.test(normalized);
@@ -2014,7 +2172,7 @@ function buildOfficeHoursAnswer(question) {
     answer: record.text,
     sourceUrl: record.sourceUrl,
     evidence: [record],
-    officialLinks: [{ label: 'MITCORER Contact Us page — admissions hours from supplied excerpt', url: resolveSourceUrl(record.sourceUrl) }],
+    officialLinks: [{ label: 'MITCORER Contact Us page', url: resolveSourceUrl(record.sourceUrl) }],
     outcomeStatus: 'ANSWERED',
   };
   return {
@@ -2054,9 +2212,144 @@ function buildScholarshipAnswer(question) {
   return maintainedProfile(buildLegacyScholarshipAnswer(question), question, getDb().knowledge);
 }
 
+function buildScholarshipShortlist(normalized, records) {
+  const prompt = normalized.replace(/[?,/]/g, ' ').replace(/\s+/g, ' ').trim();
+  const profile = prompt.match(/^which scholarship schemes should a student in (?:the (open ebc|ews|sebc|obc|sc|st|vjnt sbc) category|an unspecified category) check at mit ?corer( including schemes for girls?)?$/);
+  if (!profile) return null;
+  const overview = records.find(record => record.id === 'KB-18' && usableKnowledge(record));
+  if (!overview) return null;
+
+  const [, category, includeGirls] = profile;
+  const stateSchemes = {
+    'open ebc': 'Check the DTE Rajarshi Chhatrapati Shahu Maharaj education fee scheme and the Dr. Punjabrao Deshmukh hostel allowance, if relevant.',
+    ews: 'Look for DTE education fee schemes that explicitly cover EWS applicants.',
+    sebc: 'Look for DTE education fee schemes that explicitly cover SEBC applicants.',
+    obc: 'Check the Post Matric Scholarship to OBC Students and the OBC Tuition Fees and Examination Fees scheme.',
+    sc: 'Under Social Justice and Special Assistance, check the Government of India Post-Matric Scholarship and the Post-Matric Tuition Fee and Examination Fee (Freeship).',
+    st: 'Under Tribal Development, check the Post Matric Scholarship Scheme and the Tribal Students Tuition Fee and Exam Fee Freeship.',
+    'vjnt sbc': 'Check the post-matric and tuition or examination fee schemes listed under your exact VJNT or SBC category.',
+  };
+  const pragati = includeGirls && records.find(record => record.id === 'KB-33' && usableKnowledge(record));
+  const relatedLinks = [{ label: 'MahaDBT official scheme directory', url: 'https://mahadbt.maharashtra.gov.in/' }];
+  const guidance = [category
+    ? `**Start with MahaDBT.** ${stateSchemes[category]}`
+    : '**Start with MahaDBT.** Use the official scheme directory to browse by department if you are unsure which category applies.'];
+  if (includeGirls && category === 'obc') {
+    guidance.push('Also check the MahaDBT tuition and examination fee scheme for OBC girls pursuing professional courses.');
+  }
+  if (pragati) {
+    guidance.push('**AICTE Pragati.** On the National Scholarship Portal, choose the girl-student scheme for Technical Degree or Technical Diploma, as applicable.');
+    relatedLinks.push({ label: 'National Scholarship Portal — AICTE Pragati', url: 'https://scholarships.gov.in/All-Scholarships' });
+  }
+  guidance.push('Before applying, check the scheme’s course, admission route, domicile, income, documents, and deadline. Your selections narrow the list and do not confirm eligibility.');
+  return { source: 'Scholarship schemes to check', answer: guidance.join('\n\n'), evidence: [overview, pragati].filter(Boolean), relatedLinks };
+}
+
+function buildFocusedScholarshipAnswer(question, records) {
+  const normalized = normalizeIntentText(question);
+  if (!/\b(?:scholarship|financial aid|mahadbt|pragati)\b/.test(normalized)) return null;
+  const overview = records.find((record) => record.id === 'KB-18' && usableKnowledge(record));
+  const platforms = records.find((record) => record.id === 'KB-33' && usableKnowledge(record));
+  const links = [{ label: 'MITCORER scholarship schemes', url: 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship' }];
+  const explicitPragati = /\bpragati\b/.test(normalized);
+  const evidence = explicitPragati ? (platforms ? [platforms] : []) : overview ? [overview] : [];
+  const asksScholarship = /\b(?:scholarship|financial aid|mahadbt|pragati)\b/.test(normalized);
+  if (!asksScholarship && !/\b(?:placement|recruitment|recruiter|career|internship|internships)\b/.test(normalized)) return null;
+  if (!asksScholarship) return buildPlacementPlatformsAnswer(question, records);
+  const isGirl = /\b(?:girl|girls|woman|women|female|daughter)\b/i.test(`${normalized} ${question}`);
+  const category = /\bvjnt\b/.test(normalized) && /\bsbc\b/.test(normalized) ? 'VJNT/SBC'
+    : /\bobc\b/.test(normalized) ? 'OBC'
+    : /\b(?:ebc|open ebc)\b/.test(normalized) ? 'EBC'
+      : /\b(?:ews|economically weaker)\b/.test(normalized) ? 'EWS'
+        : /\bsebc\b/.test(normalized) ? 'SEBC'
+          : /\bvjnt\b/.test(normalized) ? 'VJNT'
+            : /\bsbc\b/.test(normalized) ? 'SBC'
+              : /\bsc\b|scheduled caste/.test(normalized) ? 'SC'
+                : /\bst\b|scheduled tribe/.test(normalized) ? 'ST' : '';
+  if (isGirl && platforms) {
+    if (!evidence.some(record => record.id === platforms.id)) evidence.push(platforms);
+    links.push({ label: 'National Scholarship Portal (AICTE Pragati)', url: 'https://scholarships.gov.in/All-Scholarships' });
+  }
+  if (/\b(?:document|documents|certificate|checklist)\b/.test(normalized)) {
+    const asksGeneralScholarshipDocuments = /\b(?:usually|generally|common|typically)\b/.test(normalized);
+    links.push({ label: 'MahaDBT scheme directory', url: 'https://mahadbt2.maharashtra.gov.in/' });
+    links.push({ label: 'National Scholarship Portal', url: 'https://scholarships.gov.in/All-Scholarships' });
+    return {
+      source: 'Scholarship document guidance', evidence, officialLinks: links,
+      answer: 'Scholarship documents depend on the exact scheme and your admission route. On MahaDBT or NSP, open the scheme that matches your category and use its **Documents Required** section. Schemes may ask for category or domicile proof, income proof, recent marksheets, CAP admission proof for applicable courses, and bank details. Treat that as a preparation guide; the portal’s current scheme checklist is the one to follow.',
+      clarification: !asksGeneralScholarshipDocuments,
+      ...(asksGeneralScholarshipDocuments ? {} : { clarificationKind: 'scholarshipDocuments' }),
+    };
+  }
+  if (/\b(?:where|how)\b/.test(normalized) && /\b(?:apply|application|portal|mahadbt|nsp)\b/.test(normalized)) {
+    links.push({ label: 'MahaDBT scholarship portal', url: 'https://mahadbt2.maharashtra.gov.in/' });
+    if (/pragati|girl|girls|nsp|national scholarship/.test(normalized)) links.push({ label: 'National Scholarship Portal', url: 'https://scholarships.gov.in/All-Scholarships' });
+    return {
+      source: 'Official scholarship application portals', evidence, officialLinks: links,
+      answer: 'Apply through the portal named for your scheme: Maharashtra state schemes are listed on MahaDBT; AICTE Pragati applications are on the National Scholarship Portal. Sign in, choose the academic year and scheme, review eligibility and required documents, and submit before the displayed deadline. Check the portal for application and verification status.',
+    };
+  }
+  if (category) {
+    links.push({ label: 'MahaDBT scheme directory', url: 'https://mahadbt.maharashtra.gov.in/' });
+    const recommendations = {
+      OBC: `On MahaDBT, check **Post Matric Scholarship to OBC Students** and **Tuition Fees and Examination Fees to OBC Students**. If you are an OBC girl student, also check the separate fee scheme for OBC girls pursuing professional courses.${isGirl ? ' Category and gender do not confirm eligibility.' : ''}`,
+      EBC: 'On MahaDBT, check the **Rajarshi Chhatrapati Shahu Maharaj Shikshan Shulkh Shishyavrutti** scheme and, if you need hostel support, the **Dr. Punjabrao Deshmukh** allowance scheme.',
+      EWS: 'On MahaDBT, check schemes that explicitly accept EWS applicants, including the applicable Rajarshi Chhatrapati Shahu Maharaj fee scheme.',
+      SEBC: 'On MahaDBT, check the current fee and post-matric schemes that explicitly include SEBC applicants.',
+      VJNT: 'On MahaDBT, check the **Post Matric Scholarship to VJNT Students** and the relevant tuition and examination fee scheme.',
+      SBC: 'On MahaDBT, check the **Post Matric Scholarship to SBC Students** and the relevant tuition and examination fee scheme.',
+      'VJNT/SBC': 'Check the schemes under your exact VJNT or SBC category. They have separate post-matric scholarship and tuition/examination fee schemes. Confirm which category appears on your certificate before applying.',
+      SC: 'On MahaDBT, check the **Government of India Post-Matric Scholarship** and **Post-Matric Tuition Fee and Examination Fee (Freeship)** for SC students.',
+      ST: 'On MahaDBT, check the current Tribal Development post-matric scholarship and tuition/examination fee schemes for ST students.',
+    };
+    const girlGuidance = isGirl
+      ? '\n\nAs a girl student, also check **AICTE Pragati Scholarship for Girl Students (Technical Degree)** on the National Scholarship Portal. Review its current eligibility, admission-route rules, dates, and documents. Category and gender do not confirm eligibility by themselves.'
+      : '';
+    if (isGirl) {
+      const pragati = records.find((record) => record.id === 'KB-33' && usableKnowledge(record));
+      if (pragati) evidence.push(pragati);
+      links.push({ label: 'National Scholarship Portal (AICTE Pragati)', url: 'https://scholarships.gov.in/All-Scholarships' });
+    }
+    return {
+      source: `${category} scholarship options`, evidence, officialLinks: links,
+      answer: `${recommendations[category]}${girlGuidance}\n\nBefore applying, confirm that the scheme covers your course, admission route, domicile, income, and current academic year. Category labels do not confirm eligibility or approval by themselves.`,
+    };
+  }
+  if (isGirl) {
+    links.push({ label: 'National Scholarship Portal (AICTE Pragati)', url: 'https://scholarships.gov.in/All-Scholarships' });
+    if (!category) links.push({ label: 'MahaDBT official scheme directory', url: 'https://mahadbt.maharashtra.gov.in/' });
+    return {
+      source: 'Scholarships for girl students', evidence, officialLinks: links,
+      answer: `Check **AICTE Pragati Scholarship for Girl Students (Technical Degree)** on the National Scholarship Portal. Review the current scheme’s eligibility, academic-year dates, admission-route rules, and document list. ${/non[- ]?cap|institute[- ]level|against[- ]cap|acap/i.test(normalized) ? 'Institute-level or non-CAP admission does not confirm that a particular student automatically qualifies. ' : ''}If you also belong to a Maharashtra scheme category such as OBC, EBC, SC, ST, VJNT, or SBC, check the relevant MahaDBT schemes as well. ${!category ? 'For Maharashtra state schemes, use MahaDBT’s Browse by department directory if you are unsure which category applies. ' : ''}Category and gender do not confirm eligibility by themselves.`,
+    };
+  }
+  return null;
+}
+
+function buildPlacementOverview(normalized, records) {
+  if (!/\bplacement support\b/.test(normalized) || !/\bpublished placement highlights\b/.test(normalized)) return null;
+  const support = records.find(record => record.id === 'KB-24' && usableKnowledge(record));
+  const highlights = records.find(record => record.id === 'KB-16' && usableKnowledge(record));
+  if (!support || !highlights) return null;
+  const recruiterExamples = highlights.text.match(/In the (\d{4}-\d{2})[^.]*?named companies include ([^.]+)\./i);
+  const examples = recruiterExamples?.[2].split(/,\s*/).slice(0, 4).join(', ');
+  return {
+    source: 'MITCORER placement support and published records',
+    answer: `**Placement support.** ${support.text}\n\n**Published highlights.** ${examples ? `The AY ${recruiterExamples[1]} records name companies such as ${examples}. Check the dated records for the full list and confirm current drives with the Placement Cell.` : highlights.text}`,
+    evidence: [support, highlights],
+  };
+}
+
 function buildLegacyScholarshipAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (!/scholarship|pragati|financial aid|mahadbt|nsp/.test(normalized)) return null;
+  if (/\b(?:scholarship|pragati|financial aid)\b/.test(normalized)
+    && /\b(?:amount|how much|payment amount|disbursement amount)\b/.test(normalized)
+    && !/\b(?:academic|tuition|hostel|mess|college) fee(?:s)?\b/.test(normalized)) return {
+    source: 'No verified record', evidence: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    answer: 'No verified scholarship amount is maintained here. Check the current scheme details on its official portal.',
+    officialLinks: getOfficialScholarshipLinks(question),
+  };
   const asksPragati = normalized.includes('pragati');
   const isNonCap = /non cap|non-cap|acap|institute level|institute-level|against cap/.test(normalized);
   const source = 'MITCORER published scholarship schemes';
@@ -2094,7 +2387,7 @@ function getOfficialUniversityLinks(question) {
   const links = [
     { label: 'Official engineering attendance rules', url: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf' },
   ];
-  if (/biometric/.test(normalized)) links.push({ label: 'Official biometric attendance circular 2026-27 (under source review)', url: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf' });
+  if (/biometric/.test(normalized)) links.push({ label: 'Official biometric attendance circular 2026-27', url: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf' });
   return links;
 }
 
@@ -2106,10 +2399,10 @@ function buildAttendanceAnswer(question, records = []) {
   const biometricRecord = records.find(record => record.id === 'KB-32' && usableKnowledge(record));
   if (!attendanceRecord || asksBiometric && !biometricRecord) return null;
   const answer = asksBiometric
-    ? `${biometricRecord.text}\n\nSeparately, the engineering CBCS rules expect regular 100% attendance and require at least 75% in each theory and laboratory course; falling below 75% results in an XX (Detained) grade. Absence relaxation is limited to valid grounds and requires institute approval.`
+    ? biometricRecord.text
     : 'For engineering courses, regular 100% attendance is expected. The minimum threshold is 75% in each theory and laboratory course. Falling below 75% results in an XX grade (Detained) for that course. Up to 25% absence may be considered only for valid grounds and with approval from the affiliated institute.';
   return {
-    recordId: asksBiometric ? ['KB-31', 'KB-32'] : 'KB-31',
+    recordId: asksBiometric ? 'KB-32' : 'KB-31',
     source: 'PAH Solapur University CBCS UG Engineering Rules',
     answer,
     next: 'Check your subject-wise attendance with the college and submit supporting evidence promptly if you need institute consideration for an eligible absence.',
@@ -2120,11 +2413,33 @@ function buildAttendanceAnswer(question, records = []) {
 
 function buildFacilityAnswer(question, records = []) {
   const normalized = normalizeIntentText(question);
-  if (/hostel/.test(normalized) && !/fee|cost|charge|payment/.test(normalized)) {
+  const asksHostel = /\bhostels?\b/.test(normalized);
+  const asksDiningFacilities = /\b(?:mess|canteen)\b/.test(normalized)
+    && /\b(?:facilit\w*|amenities|have|provide|available)\b/.test(normalized)
+    && !/\b(?:menu|timings?|hours|today|tomorrow)\b/.test(normalized);
+  if ((asksHostel || asksDiningFacilities) && !/fee|cost|charge|payment/.test(normalized)) {
     const isAllotmentOrProcess = /\b(?:admission|process|allotment|apply|procedure|rules|joining|reporting)\b/.test(normalized);
     const specificHostelAvailable = records.some(record => record.id === 'KB-23' && usableKnowledge(record));
+    if (asksDiningFacilities && !isAllotmentOrProcess) {
+      const hostel = asksHostel && records.find(record => record.id === 'KB-23' && usableKnowledge(record));
+      const brochure = records.find(record => record.id === 'KB-36' && usableKnowledge(record) && /\bmess and canteen\b/i.test(record.text));
+      const evidence = [hostel, brochure].filter(Boolean);
+      if (evidence.length) {
+        const hostelText = asksHostel ? hostel?.text || 'Check with MITCORER for current hostel amenities.' : '';
+        const messText = brochure
+          ? 'MITCORER lists a mess and canteen. Check with the college for the current menu, meal timings, and mess arrangements.'
+          : 'Check with MITCORER for current mess facilities.';
+        return {
+          managedRecordId: hostel?.id || brochure.id,
+          source: evidence[0].source,
+          answer: [hostelText, messText].filter(Boolean).join('\n\n'),
+          evidence,
+        };
+      }
+    }
+    if (!asksHostel) return null;
     return {
-      recordId: specificHostelAvailable ? ['KB-23', 'KB-36'] : 'KB-15',
+      recordId: specificHostelAvailable ? 'KB-23' : 'KB-15',
       source: specificHostelAvailable ? 'MITCORER Admissions FAQ and official brochure' : 'MITCORER Admissions FAQ and infrastructure overview',
       sourceUrl: specificHostelAvailable ? 'https://www.mitcorer.edu.in/hostel-amenities.php' : 'https://mitcorer.edu.in/mitcorer/public/infrastructure',
       answer: isAllotmentOrProcess
@@ -2294,6 +2609,7 @@ export function retrieveKnowledge(question, vectorScores = null, candidateLimit 
   if (rawQuestion.includes('pragati') || normalizedQuestion.includes('pragati')) {
     targetedRecordIds.add('KB-33');
     primaryRecordIds.add('KB-33');
+    primaryRecordIds.delete('KB-18');
   }
   if (rawQuestion.includes('bus') || rawQuestion.includes('transport')) targetedRecordIds.add('KB-19');
   if (rawQuestion.includes('library') || rawQuestion.includes('digital resources') || rawQuestion.includes('journal')) targetedRecordIds.add('KB-20');
@@ -2876,9 +3192,7 @@ function buildIndexedDocumentResponse(question, suppliedHits = null) {
 }
 
 function buildExactReferencePassage(question, records) {
-  const raw = String(question || '').normalize('NFKC');
-  const references = raw.match(/(?=[A-Za-z0-9-]*[A-Za-z])(?=[A-Za-z0-9-]*\d)[A-Za-z0-9-]{6,}/g) || [];
-  const reference = references.find((token) => !/^20\d{2}(?:-\d{2,4})?$/.test(token) && !/^\d{6,}$/.test(token));
+  const reference = findDocumentReference(question);
   if (!reference) return null;
   const record = records.find((item) => usableKnowledge(item)
     && `${item.title || ''} ${item.text || ''}`.toLocaleLowerCase().includes(reference.toLocaleLowerCase()));
@@ -2923,171 +3237,152 @@ async function answerAdmissionQuestionCore(body, user) {
   const queryScope = understandQuery(question);
   const language = selectLanguage(question, body.language);
   const normalized = normalizeIntentText(question);
+  const asksPersonalPragatiApproval = /\bpragati\b/.test(normalized)
+    && /\b(?:will i(?: personally)? (?:be approved|qualify|get|receive)|am i (?:eligible|approved)|approve my application)\b/i.test(question);
+  const vacancyRequestedNow = /\b(?:current|currently|now|available|remaining|this year|this academic year)\b.{0,55}\b(?:seat\s+)?(?:vacanc(?:y|ies)|vacant|unfilled)\b|\b(?:vacanc(?:y|ies)|vacant|unfilled)\b.{0,55}\b(?:current|currently|now|available|remaining|this year|this academic year)\b/i.test(normalized)
+    && (queryScope.branch.positive.length > 0 || /\b(?:engineering|b\.?tech|course|branch)\b/i.test(normalized))
+    && !/\b(?:faculty|staff|teacher|professor|job|recruitment|hiring)\b/i.test(question);
+  const asksExactTermStart = /\b(?:semester|term)\b/i.test(question)
+    && /\b(?:start date|exact date|when (?:does|will|do)|what date)\b|तारीख|तारखेला|दिनांक/iu.test(`${question} ${normalized}`)
+    && /\b(?:start|begin|commence)\w*\b|सुरू|शुरू/u.test(question)
+    && !/\b(?:fee|fees|payment|fees? due)\b/i.test(question);
+  if (asksPersonalPragatiApproval || asksExactTermStart) {
+    const links = asksPersonalPragatiApproval ? getOfficialScholarshipLinks(question) : [
+      { label: 'MITCORER notices', url: 'https://mitcorer.edu.in/' },
+      { label: 'PAHSU academic circulars', url: 'https://www.sus.ac.in/' },
+    ];
+    const wording = asksPersonalPragatiApproval ? {
+      en: 'MITRA cannot verify your personal Pragati approval. Check the current scheme rules and your application status on the National Scholarship Portal.',
+      mr: 'MITRA तुमच्या प्रगती शिष्यवृत्तीची मंजुरी तपासू शकत नाही. सध्याचे योजनेचे नियम आणि तुमच्या अर्जाची स्थिती राष्ट्रीय शिष्यवृत्ती पोर्टलवर तपासा.',
+      hi: 'MITRA आपकी प्रगति छात्रवृत्ति की मंज़ूरी की पुष्टि नहीं कर सकता। योजना के मौजूदा नियम और अपने आवेदन की स्थिति राष्ट्रीय छात्रवृत्ति पोर्टल पर देखें।',
+    } : {
+      en: 'MITRA cannot verify an exact semester start date from the records available here. Check the latest academic calendar or department notice for your programme and year.',
+      mr: 'उपलब्ध माहितीतून सेमिस्टर सुरू होण्याची नेमकी तारीख निश्चित करता येत नाही. तुमच्या अभ्यासक्रमाचे आणि वर्षाचे नवीन शैक्षणिक वेळापत्रक किंवा विभागाची सूचना तपासा.',
+      hi: 'उपलब्ध जानकारी से सेमेस्टर शुरू होने की सटीक तारीख की पुष्टि नहीं हो सकती। अपने पाठ्यक्रम और वर्ष के लिए नवीनतम शैक्षणिक कैलेंडर या विभाग की सूचना देखें।',
+    };
+    return {
+      source: 'No verified record',
+      answer: wording[language] || wording.en,
+      evidence: [],
+      officialLinks: links,
+      outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+      model: 'deterministic-rag-fallback',
+      requestedLanguage: language,
+      responseLanguage: language,
+      localizationStatus: language === 'en' ? 'original' : 'template',
+    };
+  }
+  const lowerQuestion = question.normalize('NFKC').toLocaleLowerCase();
+  const leakedPaperRequest = /\b(?:leaked|stolen|confidential)\b.{0,35}\b(?:exam|examination|question)\s*papers?\b|\b(?:exam|examination|question)\s*papers?\b.{0,35}\b(?:leaked|stolen|confidential)\b/i.test(lowerQuestion);
+  const externalInstitutionRequest = /\b(?:vit\s*pune|coep|pccoe|pict|vjti|spit|mit\s*adt|bharati\s*vidyapeeth)\b/i.test(lowerQuestion)
+    && !/\b(?:compare|comparison|versus|vs\.?|between)\b/i.test(lowerQuestion);
+  if (leakedPaperRequest || externalInstitutionRequest) {
+    const safeAnswer = leakedPaperRequest
+      ? language === 'hi' ? 'मैं लीक या चोरी किए गए गोपनीय परीक्षा प्रश्नपत्र प्राप्त करने में मदद नहीं कर सकता। मैं MITCORER या PAHSU के आधिकारिक रूप से जारी पुराने प्रश्नपत्र खोजने में मदद कर सकता हूँ.'
+        : language === 'mr' ? 'मी लीक किंवा चोरीचे गोपनीय परीक्षा प्रश्नपत्र मिळवण्यात मदत करू शकत नाही. MITCORER किंवा PAHSU चे अधिकृतरीत्या प्रकाशित जुने प्रश्नपत्र शोधण्यात मदत करू शकतो.'
+          : 'I can’t help obtain leaked or stolen exam papers. I can help find official, publicly released MITCORER or PAHSU past papers.'
+      : 'I can answer from MITCORER information, but I do not have verified information for that other institution. Check its official website or admissions office.';
+    return { source: 'No verified record', evidence: [], outcomeStatus: 'UNSUPPORTED_TOPIC', answer: safeAnswer,
+      requestedLanguage: language, responseLanguage: language, localizationStatus: language === 'en' ? 'original' : 'template',
+      languageReviewStatus: language === 'en' ? 'not-required' : 'speaker-review-pending', model: 'deterministic-rag-fallback' };
+  }
+
+  const facultyAnswer = buildFacultyDirectoryAnswer(question, getDb().officialSources || []);
+  if (facultyAnswer) {
+    const evidence = facultyAnswer.evidence.map(item => publicEvidence(item, Date.now()));
+    return localizeResponse({ ...facultyAnswer, evidence, outcomeStatus: facultyAnswer.outcomeStatus || 'ANSWERED', model: 'deterministic-rag-fallback' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
+
+  const tpoAnswer = buildTpoAnswer(question, getDb().knowledge);
+  if (tpoAnswer) {
+    const record = tpoAnswer.recordId && getDb().knowledge.find(item => item.id === tpoAnswer.recordId && usableKnowledge(item));
+    const evidence = record ? [publicEvidence(sourceRecord(record), Date.now())] : [];
+    return localizeResponse({ ...tpoAnswer, evidence, outcomeStatus: tpoAnswer.outcomeStatus || (evidence.length ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE'), model: 'deterministic-rag-fallback' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
+
+  const asksIndividualScholarshipPaymentDate = /\b(?:scholarship|mahadbt|pragati|financial aid)\b/i.test(lowerQuestion)
+    && /\b(?:when|date|how soon|what day)\b/i.test(lowerQuestion)
+    && /\b(?:payment|paid|deposit(?:ed)?|disburse|receive|credited|amount)\b/i.test(lowerQuestion);
+  if (asksIndividualScholarshipPaymentDate) return {
+    source: 'No verified record', evidence: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+    answer: 'Available records do not establish an individual scholarship payment date. Check the application status and current payment updates on the portal for your scheme.',
+    officialLinks: getOfficialScholarshipLinks(question), requestedLanguage: language, responseLanguage: 'en',
+    localizationStatus: language === 'en' ? 'original' : 'fallback', languageReviewStatus: language === 'en' ? 'not-required' : 'translation-unavailable', model: 'deterministic-rag-fallback',
+  };
+
+  const focusedAnswer = buildFocusedScholarshipAnswer(question, getDb().knowledge)
+    || buildScholarshipShortlist(normalized, getDb().knowledge);
+  if (focusedAnswer) {
+    const evidence = focusedAnswer.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
+    return localizeResponse({ ...focusedAnswer, evidence, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
+  const focusedWorkflow = buildAllotmentNextStep(question)
+    || buildAdmissionReadinessAnswer(question, user)
+    || buildFirstYearCapHowToAnswer(question)
+    || buildAdmissionRouteComparisonAnswer(question)
+    || buildElectronicsProgrammeComparisonAnswer(question)
+    || buildSyllabusNavigationAnswer(question)
+    || buildPostAllotmentChecklist(question);
+  if (focusedWorkflow) {
+    const records = getDb().knowledge;
+    const ids = Array.isArray(focusedWorkflow.recordId) ? focusedWorkflow.recordId : focusedWorkflow.recordId ? [focusedWorkflow.recordId] : [];
+    const evidence = records.filter((record) => ids.includes(record.id) && usableKnowledge(record))
+      .map((record) => publicEvidence({ ...record, score: 200 }, Date.now()));
+    return localizeResponse({ ...focusedWorkflow, evidence, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
+  if (/\bplacement highlights?\b/.test(normalized) && !/\b(?:companies|recruiters|names?|support|assistance)\b/.test(normalized)) {
+    const homepageHighlights = getDb().knowledge.find(item => item.id === 'KB-70' && usableKnowledge(item));
+    if (homepageHighlights) {
+      const evidence = [publicEvidence(sourceRecord(homepageHighlights), Date.now())];
+      return localizeResponse({ source: homepageHighlights.source, sourceUrl: homepageHighlights.sourceUrl,
+        answer: 'MITCORER’s homepage displays a **21 LPA highest package** and a **4.4 LPA average package**. The page does not identify the academic year, so these are undated published highlights, not confirmed results for a particular year or a guarantee for an individual student. Check the dated placement records or contact the Training and Placement Cell for current details.',
+        officialLinks: [{ label: 'MITCORER homepage placement highlights', url: 'https://mitcorer.edu.in/' }, { label: 'MITCORER placement records by academic year', url: 'https://mitcorer.edu.in/placements-record.php' }],
+        evidence, outcomeStatus: 'ANSWERED', model: 'deterministic-rag-fallback' }, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+    }
+  }
+  const placementOverview = buildPlacementOverview(normalized, getDb().knowledge);
+  if (placementOverview) {
+    const evidence = placementOverview.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
+    return localizeResponse({ ...placementOverview, evidence, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
   const placementPlatforms = buildPlacementPlatformsAnswer(question, getDb().knowledge);
   if (placementPlatforms) {
     const record = getDb().knowledge.find((item) => item.id === placementPlatforms.recordId && usableKnowledge(item));
     const evidence = record ? [publicEvidence({ ...record, score: 200 }, Date.now())] : [];
-    const response = { ...placementPlatforms, evidence, model: 'deterministic-rag-fallback', outcomeStatus: evidence.length ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE' };
-    audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
-    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+    return localizeResponse({ ...placementPlatforms, evidence, model: 'deterministic-rag-fallback', outcomeStatus: evidence.length ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE' },
+      language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
   }
-  const privateContact = /\b(?:personal|private)\s+(?:mobile|phone|whatsapp|contact|number)/i.test(question);
-  const reviewBoundary = reviewBoundaryResponse(question, language);
-  if (reviewBoundary) return reviewBoundary;
-  if (/\bbiometric\b/i.test(question)) {
-    const biometricRecord = getDb().knowledge.find(record => record.id === 'KB-32' && usableKnowledge(record));
-    if (!biometricRecord) return localizeResponse({
-      source: 'University biometric attendance circular under review', evidence: [],
-      officialLinks: getOfficialUniversityLinks(question), model: 'deterministic-rag-fallback',
-      outcomeStatus: 'INSUFFICIENT_EVIDENCE',
-      answer: 'I can’t confirm whether biometric attendance is mandatory for AY 2026–27 because the university circular could not be verified. Please confirm with the university or college before relying on this requirement.',
-    }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
-  }
-  const facultyDirectory = buildFacultyDirectoryAnswer(question, getDb().officialSources || []);
-  if (facultyDirectory) {
-    const evidence = facultyDirectory.evidence.map(record => publicEvidence(record, Date.now()));
-    const response = { ...facultyDirectory, evidence, model: 'deterministic-rag-fallback' };
-    audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
-    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
-  }
-  const refinement = user ? null : refinedAnswer(question, normalized, getDb().knowledge);
-  if (refinement) {
-    const evidence = refinement.evidence.map(record => publicEvidence(record, Date.now()));
-    const officialLinks = getRefinementOfficialLinks(question, refinement);
-    return localizeResponse({ ...refinement, evidence, officialLinks, model: 'deterministic-rag-fallback' }, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
-  }
-  const liveAttendance = /\b(?:today|tomorrow|current|live)\b.{0,35}\battendance\b|\bmy attendance\s+(?:percentage|records?|status)\b/i.test(question);
-  if (privateContact || liveAttendance) return localizeResponse({
-    source: 'No verified record', evidence: [], officialLinks: [], outcomeStatus: 'INSUFFICIENT_EVIDENCE', model: 'deterministic-rag-fallback',
-    answer: privateContact ? 'I cannot provide private contact information. Please use the published college contact channels.' : 'I cannot access live or personal attendance records. Please check with the college through its authorized channels.',
-  }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
-  const tpoAnswer = buildTpoAnswer(question, getDb().knowledge);
-  if (tpoAnswer) {
-    const record = tpoAnswer.recordId ? getDb().knowledge.find((item) => item.id === tpoAnswer.recordId) : null;
-    const evidence = record && usableKnowledge(record) ? [publicEvidence({ ...record, score: 200 }, Date.now())] : [];
-    const response = {
-      ...tpoAnswer,
-      evidence,
-      model: 'deterministic-rag-fallback',
-      ...(evidence.length ? { outcomeStatus: 'ANSWERED' } : { outcomeStatus: 'INSUFFICIENT_EVIDENCE' }),
-    };
-    audit('assistant.asked', 'assistant', generateId('ASK'), user, response.source);
-    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
-  }
-  const standaloneOfficeHours = /[,;&]|\b(?:address|contact|route|travel|distance|bus)\b/i.test(normalized) ? null : buildOfficeHoursAnswer(question);
-  if (standaloneOfficeHours) {
-    const officeEvidence = standaloneOfficeHours.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
-    return localizeResponse({ ...standaloneOfficeHours, evidence: officeEvidence, model: 'deterministic-rag-fallback' }, language, normalized, officeEvidence, academicFeeSelection, parseLegacyFactText);
-  }
-  // Compound progress questions can mention a fee payment while asking what
-  // remains in the admission workflow. Route those to the workflow checklist
-  // before topic-based fee handling can mistake them for fee questions.
-  if (user) {
-    const readinessAnswer = buildAdmissionReadinessAnswer(question, user);
-    if (readinessAnswer) {
-      const record = getDb().knowledge.find((item) => item.id === readinessAnswer.recordId);
-      if (record && usableKnowledge(record)) {
-        const readinessEvidence = [publicEvidence({ ...record, score: 200 }, Date.now())];
-        return localizeResponse({
-          ...readinessAnswer,
-          evidence: readinessEvidence,
-          model: 'deterministic-rag-fallback',
-          outcomeStatus: 'ANSWERED',
-        }, language, normalized, readinessEvidence, academicFeeSelection, parseLegacyFactText);
-      }
+  const earlyReadiness = buildAllotmentNextStep(question)
+    || buildAdmissionReadinessAnswer(question, user)
+    || buildPostAllotmentChecklist(question)
+    || buildRouteDocumentAnswer(question);
+  if (earlyReadiness) {
+    if (earlyReadiness.clarification) {
+      const record = earlyReadiness.recordId && getDb().knowledge.find(item => item.id === earlyReadiness.recordId && usableKnowledge(item));
+      const evidence = record ? [publicEvidence(sourceRecord({ ...record, score: 200 }), Date.now())] : [];
+      return localizeResponse({ ...earlyReadiness, evidence, outcomeStatus: 'NEEDS_CLARIFICATION', model: 'deterministic-rag-fallback' },
+        language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+    }
+    const record = getDb().knowledge.find(item => item.id === earlyReadiness.recordId && usableKnowledge(item));
+    if (record) {
+      const evidence = [publicEvidence(sourceRecord({ ...record, score: 200 }), Date.now())];
+      return localizeResponse({ ...earlyReadiness, evidence, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' },
+        language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
     }
   }
-  const feeQuery = understandQuery(normalized);
-  const feeTopics = feeQuery.topics.filter(topic => ['academicFees', 'accommodationFees'].includes(topic));
-  const selectedFee = academicFeeSelection(normalized);
-  const feeScopeResolved = feeTopics[0] === 'accommodationFees'
-    || !feeQuery.category.excluded.length && feeQuery.route.positive.length > 0 && (!feeQuery.category.positive.length || selectedFee.key)
-    || !feeQuery.category.excluded.length && selectedFee.key;
-  const asksMultipleFeeScopes = /\b(?:academic|tuition|college|first year|direct second|engineering|cse|civil|mechanical)\b/.test(normalized) && /\b(?:hostel|mess|dining)\b/.test(normalized)
-    || /\bfee\b.+\band\b.+\b(?:hostel|mess)\b/.test(normalized)
-    || /\b(?:intake|scholarship|placement)\b/.test(normalized);
-  if (language === 'en' && feeQuery.topics.length === 1 && feeTopics.length === 1 && feeScopeResolved && !feeQuery.invalidYears.length && !asksMultipleFeeScopes && !feeQuery.admissionPathway && !/scholarship|concession eligibility|financial aid/.test(normalized)) {
-    const structuredFeeAnswer = buildMaintainedAnswer(question, normalized, getDb().knowledge);
-    if (structuredFeeAnswer?.managedRecordId === 'KB-2' || structuredFeeAnswer?.managedRecordId === 'KB-3') {
-      const feeEvidence = structuredFeeAnswer.evidence.map(record => publicEvidence(record, Date.now()));
-      const officialLinks = uniqueSourceLinks([
-        ...getOfficialFeeLinks(question),
-        ...(structuredFeeAnswer.sourceUrl ? [{ label: 'MITCORER fee record', url: resolveSourceUrl(structuredFeeAnswer.sourceUrl) }] : []),
-      ]);
-      return localizeResponse({ ...structuredFeeAnswer, evidence: feeEvidence, officialLinks, model: 'deterministic-rag-fallback', outcomeStatus: 'ANSWERED' }, language, normalized, feeEvidence, academicFeeSelection, parseLegacyFactText);
-    }
-  }
-  const asksToFabricateCutoff = /\b(?:ignore|disregard|forget)\b.{0,50}\b(?:records?|rules?|college|instructions?)\b/i.test(question)
-    && /\b(?:make\s+up|invent|fabricat|guarantee|guaranteed)\b/i.test(question)
-    && /\bcutoffs?|cut[- ]?offs?|closing\s+(?:rank|merit|percentile)\b/i.test(question);
-  if (asksToFabricateCutoff) {
-    const response = {
-      source: 'Admission cutoff guidance',
-      answer: 'I can’t invent or guarantee an admission cutoff. Published cutoffs are historical, year-, round-, category-, seat-type-, and score-specific records; they do not guarantee a future allotment. If you want a historical cutoff, specify the academic year, CAP round, branch, category, seat type, and exam.',
-      evidence: [], officialLinks: [{ label: 'Maharashtra CET Cell notices', url: 'https://cetcell.mahacet.org/notices/' }],
-      model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
-    };
-    return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
-  }
-  const asksScholarshipDisbursementDate = /\bscholarship\b/.test(normalized)
-    && /\b(?:deposit\w*|disburse\w*|payment|credited|credit)\b/.test(normalized)
-    && /\b(?:when|what date|exact date|this year|this month|today|date|deadline)\b/.test(normalized);
-  const asksPersonalScholarshipDecision = /\bscholarship\b/.test(normalized)
-    && (/\b(?:will i personally|am i approved|will i be approved|my application|individual approval|approve[ds]?)\b/.test(normalized)
-      || /(?:मला|मुझे|व्यक्तिगत(?:\s*रूप\s*से)?).{0,70}(?:मंजूर|स्वीकृत|approve|approved|पात्र|योग्य)|(?:अर्ज|आवेदन).{0,65}(?:मंजूर|स्वीकृत|approve|approved)/u.test(question));
-  const asksForPersonalGuarantee = /\bguarantee\b/.test(normalized)
-    && /\b(?:admission|seat|scholarship|placement|job|package|company|hire|salary)\b/.test(normalized);
-  if (asksScholarshipDisbursementDate || asksPersonalScholarshipDecision || asksForPersonalGuarantee) {
-    const scholarshipQuery = asksScholarshipDisbursementDate || /scholarship/.test(normalized);
-    const placementQuery = /\b(?:placement|job|package|company|hire|salary)\b/.test(normalized);
-    const response = {
-      source: 'Individual outcome not established by published records',
-      answer: asksScholarshipDisbursementDate
-        ? 'The published records do not establish an individual scholarship payment date. Check the relevant scheme portal or its official helpdesk for your application status; MITRA cannot predict a deposit date.'
-        : asksPersonalScholarshipDecision
-          ? 'MITRA cannot determine or guarantee an individual scholarship approval. Eligibility and awards are decided under the current rules for the exact scheme; check its official portal or helpdesk for an application decision.'
-          : 'MITRA cannot guarantee an individual admission, scholarship, placement, job, company, or salary outcome. Published eligibility rules, cutoffs, or aggregate placement figures do not determine an individual decision.',
-      evidence: [],
-      officialLinks: scholarshipQuery
-        ? [{ label: 'MITCORER scholarship information', url: 'https://mitcorer.edu.in/scholarship.php' }]
-        : placementQuery
-          ? [{ label: 'MITCORER placement information', url: 'https://mitcorer.edu.in/placements.php' }]
-          : getOfficialAdmissionLinks(question),
-      model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
-    };
-    if (language === 'mr' || language === 'hi') {
-      response.answer = asksScholarshipDisbursementDate
-        ? language === 'mr'
-          ? 'प्रकाशित नोंदींमध्ये वैयक्तिक शिष्यवृत्ती जमा होण्याची तारीख दिलेली नाही. अर्जाची स्थिती संबंधित योजनेच्या अधिकृत पोर्टलवर किंवा मदत केंद्रात तपासा; Mitra जमा तारीख सांगू शकत नाही.'
-          : 'प्रकाशित रिकॉर्ड में किसी व्यक्ति की छात्रवृत्ति भुगतान तिथि नहीं दी गई है। आवेदन की स्थिति संबंधित योजना के आधिकारिक पोर्टल या सहायता केंद्र पर जाँचें; Mitra जमा तिथि नहीं बता सकता।'
-        : asksPersonalScholarshipDecision
-          ? language === 'mr'
-            ? 'Mitra वैयक्तिक शिष्यवृत्ती मंजुरी ठरवू किंवा हमी देऊ शकत नाही. पात्रता संबंधित योजनेच्या सध्याच्या नियमांवर अवलंबून असते; निर्णयासाठी अधिकृत पोर्टल किंवा मदत केंद्र तपासा.'
-            : 'Mitra किसी व्यक्ति की छात्रवृत्ति मंजूरी तय या गारंटी नहीं कर सकता। पात्रता संबंधित योजना के वर्तमान नियमों पर निर्भर करती है; निर्णय के लिए आधिकारिक पोर्टल या सहायता केंद्र देखें।'
-          : language === 'mr'
-            ? 'Mitra वैयक्तिक प्रवेश, शिष्यवृत्ती, प्लेसमेंट, नोकरी, कंपनी किंवा पगाराची हमी देऊ शकत नाही. प्रकाशित नियम किंवा एकत्रित आकडे एखाद्या व्यक्तीचा निर्णय ठरवत नाहीत.'
-            : 'Mitra व्यक्तिगत प्रवेश, छात्रवृत्ति, प्लेसमेंट, नौकरी, कंपनी या वेतन की गारंटी नहीं दे सकता। प्रकाशित नियम या समेकित आँकड़े किसी व्यक्ति का निर्णय तय नहीं करते।';
-      return { ...response, requestedLanguage: language, responseLanguage: language, localizationStatus: 'template', languageReviewStatus: 'speaker-review-pending' };
-    }
-    return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
-  }
-  if (/\b(?:cutoffs?|cut[- ]?offs?|closing percentile|closing rank|closing merit|cap cutoff)\b/i.test(normalized)) {
-    const earlyCutoffResponse = buildCutoffAnswer(question, getDb().knowledge);
-    if (earlyCutoffResponse) return localizeResponse({
-      ...earlyCutoffResponse,
-      evidence: (earlyCutoffResponse.evidence || []).map(record => publicEvidence(record, Date.now())),
-      model: 'deterministic-rag-fallback',
-    }, language, normalized, earlyCutoffResponse.evidence || [], academicFeeSelection, parseLegacyFactText);
-  }
-  const seatVacancyQuestion = /\b(?:current|currently|now|available|remaining)\b.{0,55}\b(?:seat\s+)?(?:vacanc(?:y|ies)|vacant|unfilled)\b|\b(?:vacanc(?:y|ies)|vacant|unfilled)\b.{0,55}\b(?:current|currently|now|available|remaining)\b/i.test(normalized)
-    && (queryScope.branch.positive.length > 0 || /\b(?:engineering|b\.?tech|course|branch)\b/i.test(normalized))
-    && !/\b(?:faculty|staff|teacher|professor|job|recruitment|hiring)\b/i.test(question);
-  if (seatVacancyQuestion) {
+  if (vacancyRequestedNow) {
     const response = {
       source: 'Current seat vacancy information',
-      answer: 'I can’t confirm a current branch-wise vacancy from the official records indexed here. MITCORER publishes admission notices and vacancy documents on its ACAP page; check the latest notice or contact the admissions office before relying on seat availability. A vacancy notice does not guarantee allotment.',
-      evidence: [], officialLinks: getOfficialAdmissionLinks(question),
-      model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
+      answer: 'For AY 2026-27, the Maharashtra CET Cell portal marks the First Year Engineering admission process closed. MITCORER’s ACAP page links the **First Year Engineering Vacancies after CAP-IV 2026-27** notice; check the Computer Science row there for that round’s published vacancy. That historical round list does not establish that a seat is still open now. Contact admissions for any current update.',
+      evidence: [], officialLinks: [
+        { label: 'MITCORER ACAP vacancy notices 2026-27', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
+        { label: 'Maharashtra CET Cell First Year Engineering portal', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
+      ], model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
     };
     return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
   }
@@ -3213,7 +3508,7 @@ async function answerAdmissionQuestionCore(body, user) {
   };
   const fallbackRule = assistantRules.find(item => item.match.some(word => matchesIntent(normalized, word)));
   const ruleRecords = { 'Institute-level admission notices': 'KB-14', 'Historical cutoff records': /2025/.test(normalized) ? 'KB-8' : 'KB-7',
-    'Engineering eligibility and branch allotment guidance': 'KB-5', 'Document workflow': 'KB-1', 'Admission CAP workflow': 'KB-29',
+    'Engineering eligibility and branch allotment guidance': 'KB-5', 'Applicant document workflow': 'KB-1', 'Admission CAP workflow': 'KB-29',
     'Fee planner': 'KB-2', 'Scholarship readiness': 'KB-18', 'Program finder': /polytechnic/.test(normalized) ? 'KB-12' : /direct second|dse|lateral/.test(normalized) ? 'KB-11' : 'KB-10',
     'Career outcome guidance': 'KB-4', 'Hostel and mess planning': 'KB-23' };
   const vectorScores = (language === 'en' && config.geminiApiKey && config.geminiApiKey !== 'test-unused-key' && process.env.NODE_ENV !== 'test')
@@ -3257,7 +3552,7 @@ async function answerAdmissionQuestionCore(body, user) {
   }
 
   const facilityAnswer = buildFacilityAnswer(question, records);
-  const answer = (user && guard(buildAdmissionReadinessAnswer(question, user))) || buildDocumentStatusAnswer(question, user) || buildCompoundAnswer(question, normalized, records) || buildOfficialNavigationAnswer(question) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildOfficeHoursAnswer(question) || buildReviewedPassage(normalized, language, records) || guard(facilityAnswer, undefined, facilityAnswer?.recordId !== 'KB-15') || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question, records)) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
+  const answer = buildDocumentStatusAnswer(question) || buildCompoundAnswer(question, normalized, records) || buildOfficialNavigationAnswer(question) || guard(buildUnavailableProgrammeAnswer(question)) || guard(buildIntakeVsAvailabilityAnswer(question)) || buildClarificationAnswer(question) || buildClarificationAnswer(normalized) || buildOfficeHoursAnswer(question) || buildReviewedPassage(normalized, language, records) || guard(facilityAnswer, undefined, facilityAnswer?.recordId !== 'KB-15') || guard(buildAdmissionEnquiryAnswer(question)) || guard(buildPlacementAssistanceAnswer(question)) || guard(buildEntranceAdmissionAnswer(question)) || guard(buildAcceptedExamsAnswer(question)) || guard(buildPolytechnicAdmissionAnswer(question, records)) || guard(buildDseProgrammeAnswer(question, records)) || guard(buildCampusFacilitiesAnswer(question), 'KB-36') || buildExactReferencePassage(question, records) || guard(buildContextualPassage(normalized, records)) || guard(buildCollegeProfileAnswer(question)) || guard(buildPlacementAnswer(question), 'KB-16') || guard(buildDeadlineAnswer(question), 'KB-30') || guard(buildAttendanceAnswer(question, records)) || buildCutoffAnswer(question, records) || buildMaintainedAnswer(question, normalized, records) || guard(buildEligibilityAnswer(question), 'KB-5') || guard(buildScholarshipAnswer(question), /non cap|acap|institute level|against cap/.test(normalized) ? 'KB-14' : 'KB-18') || (fallbackRule ? guard(fallbackRule, ruleRecords[fallbackRule.source] || 'KB-15', false) : null) || {
     source: 'No verified record',
     answer: 'I could not find an official answer for that question. Please ask about a specific programme, fee, scholarship, admission step, or campus facility.',
     next: '',
@@ -3297,7 +3592,7 @@ async function answerAdmissionQuestionCore(body, user) {
     'Hostel and mess planning',
     'Institute-level admission notices',
   ]);
-  const deterministicText = answer.composed || answer.clarification || answer.source === evidence[0]?.source || answer.source === 'My document records'
+  const deterministicText = answer.composed || answer.clarification || answer.source === evidence[0]?.source
     ? answer.answer
     : answer.source === 'No verified record'
       ? (evidence[0]?.text || answer.answer)
@@ -3334,7 +3629,7 @@ async function answerAdmissionQuestionCore(body, user) {
   ]);
   const isUnverified = groundedAnswer.source === 'No verified record'
     || (!evidence.length && ['UNSUPPORTED_TOPIC', 'OUTDATED_EVIDENCE', 'INSUFFICIENT_EVIDENCE', 'CONFLICTING_EVIDENCE'].includes(effectiveOutcome))
-    || (!evidence.length && !groundedAnswer.anchored && groundedAnswer.source !== 'Verified admission checklist' && groundedAnswer.source !== 'My document records')
+    || (!evidence.length && !groundedAnswer.anchored && groundedAnswer.source !== 'Verified admission checklist')
     || groundedAnswer.answer.includes('could not find an official answer')
     || groundedAnswer.answer.includes('could not find a published official record');
   if (isUnverified) {
@@ -3493,9 +3788,13 @@ function updateKnowledge(id, body, user) {
     // re-review after an English source edit instead of silently reusing them.
     updated.translations = {};
   }
-  const provenanceSourceFields = ['documentId', 'documentVersion', 'section', 'academicYear', 'pageStart', 'pageEnd', 'capturedAt', 'validFrom', 'validUntil'];
-  const provenanceChanged = body.provenance && provenanceSourceFields.some((field) => Object.hasOwn(body.provenance, field));
-  const sourceFieldsChanged = ['text', 'facts', 'source', 'sourceUrl'].some((field) => Object.hasOwn(body, field)) || provenanceChanged;
+  const sourceProvenanceFields = ['documentId', 'documentVersion', 'section', 'academicYear', 'pageStart', 'pageEnd', 'capturedAt', 'validFrom', 'validUntil', 'verifiedFrom', 'suppliedBy'];
+  const sourceProvenanceChanged = sourceProvenanceFields.some((field) => current.provenance?.[field] !== updated.provenance?.[field]);
+  const sourceFieldsChanged = ((Object.hasOwn(body, 'text') || Object.hasOwn(body, 'facts')) && current.text !== updated.text)
+    || (Object.hasOwn(body, 'facts') && !isDeepStrictEqual(current.facts || null, updated.facts || null))
+    || (Object.hasOwn(body, 'source') && current.source !== updated.source)
+    || (Object.hasOwn(body, 'sourceUrl') && (current.sourceUrl || '') !== (updated.sourceUrl || ''))
+    || (Object.hasOwn(body, 'provenance') && sourceProvenanceChanged);
   if (current.status === 'Published' && updated.status === 'Published' && sourceFieldsChanged && body.verifySource !== true) {
     throw badRequest('Verify the edited answer and its source before keeping this knowledge record published.');
   }
@@ -3782,7 +4081,7 @@ function getOfficialSourceExtractedText(id, user) {
   const source = (getDb().officialSources || []).find((item) => item.id === id);
   if (!source) throw notFound('Official source not found.');
   audit('official_source.extraction_opened', 'official_source', source.id, user, source.title);
-  return pick(source, ['id', 'title', 'extractedText', 'extractionStatus', 'status', 'previousVersion', 'conflicts', 'driftAnalysis', 'freshnessImpact', 'syncMeta']);
+  return { ...pick(source, ['id', 'title', 'extractedText', 'extractionStatus', 'status', 'previousVersion', 'conflicts', 'driftAnalysis', 'freshnessImpact', 'syncMeta']), revision: source.revision ?? 0 };
 }
 
 export function parseStructuredFactsFallback(text, metadata = {}) {
@@ -3946,8 +4245,8 @@ function getAssistantAttachmentFile(id, user) {
   const record = (getDb().assistantAttachments || []).find((item) => item.id === id);
   if (!record) throw notFound('Assistant attachment not found.');
   if (!canAccessApplicantRecord(user, record.ownerEmail)) throw forbidden();
-  const filePath = path.resolve(uploadDir, record.storedFileName);
-  if (!filePath.startsWith(uploadDir) || !fs.existsSync(filePath)) throw notFound('Attachment file is unavailable.');
+  const filePath = resolveStoredUpload(record.storedFileName);
+  if (!filePath) throw notFound('Attachment file is unavailable.');
   assertStoredFileReadable(filePath, record.mimeType);
   audit('assistant_attachment.file_opened', 'assistant_attachment', record.id, user, record.fileName);
   return { __file: true, filePath, mimeType: record.mimeType, fileName: record.fileName };
@@ -3957,15 +4256,12 @@ async function handleApi(req) {
   const url = new URL(req.url, 'http://localhost');
   const user = getUserFromRequest(req);
   const context = { user };
-  if (req.method === 'POST' && url.pathname === '/api/documents/upload') {
-    const { fields, files } = parseMultipart(req, await readRawBody(req));
-    return createDocumentFromUpload(fields, files.file, user);
-  }
   if (req.method === 'POST' && url.pathname === '/api/official-sources/upload') {
     const { fields, files } = parseMultipart(req, await readRawBody(req));
     return createOfficialSourceFromUpload(fields, files.file, user);
   }
   if (req.method === 'POST' && url.pathname === '/api/assistant/attachments/upload') {
+    requireRole(context, ['staff', 'admin']);
     const { fields, files } = parseMultipart(req, await readRawBody(req));
     return createAssistantAttachment(fields, files.file, user);
   }
@@ -4095,19 +4391,7 @@ async function handleApi(req) {
 
   if (req.method === 'GET' && url.pathname === '/api/admission-workspace') return getAdmissionWorkspace(user);
   if (req.method === 'PATCH' && url.pathname === '/api/admission-workspace') return updateAdmissionWorkspace(body, user);
-
-  if (req.method === 'GET' && url.pathname === '/api/documents') {
-    const records = filterRecordsForUser(getDb().documents, user);
-    return { items: ['staff', 'admin'].includes(user.role) ? records.filter((item) => item.status !== 'Uploaded (not submitted)') : records };
-  }
-  if (req.method === 'POST' && url.pathname === '/api/documents/submit') return submitDocumentsForReview(user);
-  if (req.method === 'POST' && url.pathname === '/api/documents') return createDocument(body, user);
-  const documentStatusMatch = url.pathname.match(/^\/api\/documents\/([^/]+)\/status$/);
-  if (req.method === 'PATCH' && documentStatusMatch) return updateDocumentStatus(documentStatusMatch[1], body, user);
-  const documentFileMatch = url.pathname.match(/^\/api\/documents\/([^/]+)\/file$/);
-  if (req.method === 'GET' && documentFileMatch) return getDocumentFile(documentFileMatch[1], user);
-  const documentMatch = url.pathname.match(/^\/api\/documents\/([^/]+)$/);
-  if (req.method === 'DELETE' && documentMatch) return deleteDocument(documentMatch[1], user);
+  if (req.method === 'GET' && url.pathname === '/api/admin/applicant-workspaces') return listApplicantWorkspaces(user);
 
   if (req.method === 'GET' && url.pathname === '/api/content') {
     requireAuth(context);

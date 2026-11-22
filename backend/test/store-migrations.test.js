@@ -8,6 +8,7 @@ import { config } from '../src/config.js';
 import { createSeedData } from '../src/seed.js';
 import { closeDb, loadDb } from '../src/store.js';
 import { answerAdmissionQuestion } from '../src/server.js';
+import { verifyPassword } from '../src/auth.js';
 
 test('office-hours migration replaces the stale absence claim with the supplied admissions-desk schedule', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-office-hours-migration-'));
@@ -163,6 +164,91 @@ test('reviewed current programme and scholarship sources restore public suggesti
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('administrator-confirmed biometric text stays published and stale unreachable placeholder is removed', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-biometric-confirmation-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = [
+      'seed-entc-hod-kb52', 'seed-institution-status-kb54-v1', 'seed-admission-quota-and-search-aliases-v1',
+      'seed-course-code-discrepancy-kb56-v1', 'seed-placement-committee-kb53', 'refresh-placement-committee-kb53-v2',
+      'refresh-placement-current-activities-kb16-kb35-v1', 'map-seeded-records-to-current-official-routes-v1',
+      'normalize-dse-choice-codes-v1', 'canonicalize-official-sources-v1', 'canonicalize-official-sources-v2',
+      'review-and-refresh-public-suggestion-sources-v1', 'import-official-site-crawl-gap-records-2026-11-18-v1',
+      'deduplicate-hostel-crawl-source-2026-11-18-v1', 'restore-supported-pill-claims-v7',
+      'recover-verified-source-records-v9', 'repair-current-scholarship-source-v10', 'normalize-scholarship-source-title-v11',
+      'format-maintained-college-profile-v12', 'seed-project-owner-placement-platforms-kb69-v1',
+      'seed-ai-reviewed-knowledge-translations-mr-hi-v1', 'import-official-faculty-profile-captures-v13',
+    ];
+    const record = persisted.knowledge.find(item => item.id === 'KB-32');
+    record.status = 'Archived';
+    record.freshnessReview = { reason: 'source-unavailable', changedSourceUrl: record.sourceUrl };
+    const source = persisted.officialSources.find(item => item.id === 'SRC-11');
+    source.status = 'Archived';
+    persisted.officialSources.push({ id: 'SRC-UNREACHABLE', title: 'Unavailable source', sourceUrl: 'https://mitcorer.edu.in/removed.php', status: 'Review' });
+
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    const restoredRecord = migrated.knowledge.find(item => item.id === 'KB-32');
+    const restoredSource = migrated.officialSources.find(item => item.id === 'SRC-11');
+    assert.equal(restoredRecord.status, 'Published');
+    assert.equal(restoredRecord.freshnessReview, undefined);
+    assert.ok(restoredRecord.translations.mr.text);
+    assert.ok(restoredRecord.translations.hi.text);
+    assert.equal(restoredSource.status, 'Published');
+    assert.match(restoredSource.extractionStatus, /administrator reviewed and confirmed/i);
+    assert.equal(migrated.officialSources.some(item => item.id === 'SRC-UNREACHABLE'), false);
+    assert.ok(migrated.migrations.includes('publish-owner-confirmed-biometric-record-v14'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+for (const nodeEnv of ['development', 'production']) {
+  test(`configured ${nodeEnv} admin password updates the persisted hash and revokes old sessions`, () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-admin-credentials-migration-'));
+    const previousDatabaseFile = config.databaseFile;
+    const previousNodeEnv = config.nodeEnv;
+    const previousEmail = process.env.ADMIN_EMAIL;
+    const previousPassword = process.env.ADMIN_PASSWORD;
+    const databaseFile = path.join(directory, 'migration.sqlite');
+    closeDb();
+    config.databaseFile = databaseFile;
+    try {
+      const persisted = createSeedData();
+      persisted.refreshTokens.push({ id: 'RT-ADMIN-TEST', userId: 'USR-ADM', revoked: false });
+      const sqlite = new DatabaseSync(databaseFile);
+      sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+      sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+      sqlite.close();
+
+      config.nodeEnv = nodeEnv;
+      process.env.ADMIN_EMAIL = 'admin@mitcorer.edu.in';
+      process.env.ADMIN_PASSWORD = 'TestPass@2026!Secure';
+      const migrated = loadDb();
+      const admin = migrated.users.find(item => item.email === 'admin@mitcorer.edu.in');
+      assert.equal(verifyPassword(process.env.ADMIN_PASSWORD, admin.passwordHash), true);
+      assert.equal(migrated.refreshTokens.find(item => item.id === 'RT-ADMIN-TEST').revoked, true);
+    } finally {
+      closeDb();
+      config.databaseFile = previousDatabaseFile;
+      config.nodeEnv = previousNodeEnv;
+      if (previousEmail === undefined) delete process.env.ADMIN_EMAIL; else process.env.ADMIN_EMAIL = previousEmail;
+      if (previousPassword === undefined) delete process.env.ADMIN_PASSWORD; else process.env.ADMIN_PASSWORD = previousPassword;
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
 
 test('placement committee migration repairs stale persisted TPO record without changing its status', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-placement-migration-'));
@@ -336,6 +422,44 @@ test('official-route migration changes only known stale URLs and preserves edits
   }
 });
 
+test('live admission document link migration repairs only unchanged published document records', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-live-document-links-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = ['map-seeded-records-to-current-official-routes-v1'];
+    const staleUrl = 'https://mitcorer.edu.in/mitcorer/public/admissions/documents';
+    for (const id of ['KB-1', 'KB-26', 'KB-27']) {
+      const record = persisted.knowledge.find(item => item.id === id);
+      record.sourceUrl = staleUrl;
+      record.revision = 3;
+    }
+    const custom = persisted.knowledge.find(item => item.id === 'KB-28');
+    custom.sourceUrl = 'https://example.test/custom-maintainer-link';
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    for (const id of ['KB-1', 'KB-26', 'KB-27']) {
+      const record = migrated.knowledge.find(item => item.id === id);
+      assert.equal(record.sourceUrl, 'https://mitcorer.edu.in/fy-btech-documents.php');
+      assert.equal(record.revision, 4);
+      assert.equal(record.status, 'Published');
+    }
+    assert.equal(migrated.knowledge.find(item => item.id === 'KB-28').sourceUrl, 'https://example.test/custom-maintainer-link');
+    assert.ok(migrated.migrations.includes('repair-live-admission-document-links-v1'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('current scholarship source migration restores the live official URL and retires the stale intake claim', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-scholarship-source-migration-'));
   const previousDatabaseFile = config.databaseFile;
@@ -366,6 +490,43 @@ test('current scholarship source migration restores the live official URL and re
     assert.match(knowledge.text, /does not establish B\.Tech programme counts/);
     assert.doesNotMatch(knowledge.text, /360 Sanctioned Seats/);
     assert.ok(migrated.migrations.includes('repair-current-scholarship-source-v10'));
+  } finally {
+    closeDb();
+    config.databaseFile = previousDatabaseFile;
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('reported answer migration removes internal attribution, restores platform guidance, and adds dated placement highlights', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-answer-gaps-migration-'));
+  const previousDatabaseFile = config.databaseFile;
+  const databaseFile = path.join(directory, 'migration.sqlite');
+  closeDb();
+  config.databaseFile = databaseFile;
+  try {
+    const persisted = createSeedData();
+    persisted.migrations = ['seed-project-owner-placement-platforms-kb69-v1'];
+    const contact = persisted.knowledge.find(item => item.id === 'KB-46');
+    contact.text = 'Hours reported in excerpt supplied by project owner.';
+    contact.provenance.note = 'Project owner supplied this excerpt.';
+    const transit = persisted.knowledge.find(item => item.id === 'KB-40');
+    transit.source = 'Owner-supplied contact excerpt';
+    const placement = persisted.knowledge.find(item => item.id === 'KB-24');
+    placement.tags = placement.tags.filter(tag => !/internship platforms/i.test(tag));
+    persisted.knowledge = persisted.knowledge.filter(item => item.id !== 'KB-70');
+    const sqlite = new DatabaseSync(databaseFile);
+    sqlite.exec('CREATE TABLE collections (name TEXT PRIMARY KEY, data TEXT NOT NULL, updated_at TEXT NOT NULL)');
+    sqlite.prepare('INSERT INTO collections (name, data, updated_at) VALUES (?, ?, ?)').run('app', JSON.stringify(persisted), new Date().toISOString());
+    sqlite.close();
+
+    const migrated = loadDb();
+    const currentContact = migrated.knowledge.find(item => item.id === 'KB-46');
+    assert.doesNotMatch(JSON.stringify(currentContact), /project owner|supplied excerpt|owner-supplied/i);
+    assert.match(currentContact.text, /Monday[â€“–-]Saturday, 9:00 AM/);
+    assert.equal(migrated.knowledge.find(item => item.id === 'KB-40').source, createSeedData().knowledge.find(item => item.id === 'KB-40').source);
+    assert.ok(migrated.knowledge.find(item => item.id === 'KB-24').tags.includes('internship platforms'));
+    assert.ok(migrated.knowledge.some(item => item.id === 'KB-70'));
+    assert.ok(migrated.migrations.includes('fix-reported-answer-routing-and-attribution-v1'));
   } finally {
     closeDb();
     config.databaseFile = previousDatabaseFile;

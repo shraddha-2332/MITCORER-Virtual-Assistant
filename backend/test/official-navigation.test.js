@@ -29,7 +29,7 @@ test('admission document guidance separates the route-specific checklist from cu
   assert.match(result.answer, /First Year or Direct Second Year, CAP or institute-level/);
   assert.match(result.answer, /compare it with the current-year State CET Cell/);
   assert.deepEqual(result.officialLinks.map(link => link.url), [
-    'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+    'https://mitcorer.edu.in/fy-btech-documents.php',
     'https://fe2026.mahacet.org/StaticPages/HomePage',
   ]);
 });

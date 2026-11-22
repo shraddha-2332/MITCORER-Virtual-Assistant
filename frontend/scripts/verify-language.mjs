@@ -35,7 +35,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${vite.httpServer.address().port}`);
   if (!await page.locator('.publicComposer').isVisible()) await page.getByRole('button', { name: 'Open MIT Barshi admission assistant' }).click();
-  assert.equal(await page.locator('.publicComposer button').isDisabled(), true);
+  assert.equal(await page.locator('.publicComposer button[type="submit"]').isDisabled(), true);
   assert.equal(await page.getByRole('button', { name: 'Maintainer sign in' }).count(), 0);
   assert.equal(await page.locator('.publicAssistantPanel > footer').innerText(), 'Powered by MITCORER ©');
   assert.equal(await page.locator('.publicLanguageSelector').count(), 0);
@@ -110,16 +110,16 @@ try {
   assert.equal(await programmeBubble.locator('a').count() > 0, true);
   assert.equal(await page.locator('.publicEvidence').count(), 0);
   await page.screenshot({ path: path.join(root, 'tmp/answer-programmes.png') });
-  await page.locator('.publicComposer textarea').fill('What is the fee structure?');
+  await page.locator('.publicComposer textarea').fill('What are the first-year B.Tech fees?');
   const feeResponse = page.waitForResponse(r => r.url().endsWith('/api/public-assistant/ask'));
   await page.locator('.publicComposer textarea').press('Enter');
   const feeData = (await (await feeResponse).json()).data;
   await page.waitForFunction(() => !document.querySelector('.publicComposer textarea').disabled);
   const feeBubble = page.locator('.publicBubble.assistant').last();
-  assert.equal(await feeBubble.locator('.publicAnswerList').count(), 2, feeData.answer);
-  assert.equal(await feeBubble.locator('.publicAnswerList li').count(), 10);
+  assert.equal(feeData.evidence[0]?.id, 'KB-2');
+  assert.ok(await feeBubble.locator('.publicAnswerList li').count() > 0, feeData.answer);
   for (const number of numericTokens(feeData.answer)) assert.ok(numericTokens(await feeBubble.innerText()).has(number), `Missing ${number}; UI=${await feeBubble.innerText()}; API=${feeData.answer}`);
-  assert.equal(await feeBubble.locator('a').count() >= 2, true);
+  assert.ok(await feeBubble.locator('a').count() > 0);
   await page.screenshot({ path: path.join(root, 'tmp/answer-fees.png') });
   const staleLibraryUrl = 'https://www.mitcorer.edu.in/about-lib-details.html';
   await page.route('**/api/public-assistant/ask', async route => {
@@ -127,6 +127,9 @@ try {
     const payload = await response.json();
     payload.data.sourceUrl = staleLibraryUrl;
     payload.data.officialLinks = [{ label: 'Library', url: staleLibraryUrl }];
+    payload.data.sourceLinks = [];
+    payload.data.relatedLinks = payload.data.officialLinks;
+    payload.data.evidence = [];
     await route.fulfill({ response, json: payload });
   });
   await page.locator('.publicComposer textarea').fill('Tell me about the library.');

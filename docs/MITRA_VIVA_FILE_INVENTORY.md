@@ -46,7 +46,7 @@ The table includes the six files above so you can open them directly.
 | [backend/src/seed.js](../backend/src/seed.js) | Supplies starting records for a new database. |
 | [backend/src/semantic.js](../backend/src/semantic.js) | Matches related terms and can compare numeric text representations called embeddings. |
 | [backend/src/semantic-cache.js](../backend/src/semantic-cache.js) | Reuses public answers when their supporting records are still current. |
-| [backend/src/server.js](../backend/src/server.js) | Receives API requests and runs chat, sign-in, document review and admin workflows. |
+| [backend/src/server.js](../backend/src/server.js) | Receives API requests and runs public chat, optional checklist sign-in and saved progress, and staff workflows. |
 | [backend/src/source-links.js](../backend/src/source-links.js) | Checks and cleans up source links and removes duplicates. |
 | [backend/src/speculative-verifier.js](../backend/src/speculative-verifier.js) | Checks an AI draft for figures or claims that go beyond the records. |
 | [backend/src/store.js](../backend/src/store.js) | Saves app data and embeddings in SQLite and applies updates to older databases. |

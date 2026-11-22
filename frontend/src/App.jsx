@@ -2,7 +2,7 @@ import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, Cpu, FileText, LayoutDashboard,
   LockKeyhole, LogOut, Menu, Phone,
-  Mic, Send, ShieldCheck, UploadCloud, X,
+  Send, ShieldCheck, UploadCloud, X,
   PanelLeftClose, PanelLeftOpen, Languages, RefreshCw,
   ThumbsDown, ThumbsUp,
 } from 'lucide-react';
@@ -82,8 +82,8 @@ function App() {
         setToken(payload.token);
         setView('overview');
         setViewHistory([]);
-        await refreshWorkspaceData(payload.token);
-        setUser(payload.user);
+        if (['staff', 'admin'].includes(payload.user.role)) await refreshWorkspaceData(payload.token);
+        if (active) setUser(payload.user);
       } catch {
         // No active session cookie is the normal state for a visitor.
       }
@@ -94,6 +94,7 @@ function App() {
 
   const logout = async () => {
     await api.logout().catch(() => {});
+    setNavOpen(false);
     setUser(null);
     setToken('');
     setKnowledge([]);
@@ -170,10 +171,10 @@ function App() {
     }
   };
 
-  const publishOfficialSource = async (id, verifiedText, resolveConflicts = false) => {
+  const publishOfficialSource = async (id, verifiedText, resolveConflicts, expectedRevision) => {
     setAppError('');
     try {
-      const saved = await api.publishOfficialSource(token, id, verifiedText, resolveConflicts);
+      const saved = await api.publishOfficialSource(token, id, verifiedText, resolveConflicts, expectedRevision);
       setOfficialSources((items) => items.map((item) => (item.id === id ? saved : item)));
       const knowledgeResult = await api.getKnowledge(token);
       setKnowledge(knowledgeResult.items || []);
@@ -186,24 +187,26 @@ function App() {
 
   const handleAdminLogin = async (email, password) => {
     setAppError('');
-    try {
-      const payload = await api.login({ email, password });
-      setToken(payload.token);
-      setView('overview');
-      setViewHistory([]);
-      await refreshWorkspaceData(payload.token);
-      setUser(payload.user);
-      return true;
-    } catch (error) {
-      setAppError(error.message);
-      return false;
+    const payload = await api.login({ email, password });
+    if (!['admin', 'staff'].includes(payload.user.role)) {
+      await api.logout().catch(() => {});
+      throw new Error('This account does not have access to the administrator portal.');
     }
+    setToken(payload.token);
+    setView('overview');
+    setViewHistory([]);
+    await refreshWorkspaceData(payload.token);
+    setUser(payload.user);
   };
 
-  const handleApplicantPortalAuth = async ({ mode, name, email, password, role }) => {
+  const handleApplicantPortalAuth = async ({ mode, name, email, password, role, admissionRoute }) => {
     const payload = mode === 'signup'
-      ? await api.signup({ name, email, password, role })
+      ? await api.signup({ name, email, password, role, admissionRoute })
       : await api.login({ email, password });
+    if (!['applicant', 'parent'].includes(payload.user.role)) {
+      await api.logout().catch(() => {});
+      throw new Error('Use an applicant or parent account to save a checklist.');
+    }
     setToken(payload.token);
     setUser(payload.user);
     return true;
@@ -219,11 +222,8 @@ function App() {
     }
   };
 
-  if (!user) {
-    return <PublicAssistantWidget onAdminLogin={handleAdminLogin} onApplicantPortalAuth={handleApplicantPortalAuth} />;
-  }
-  if (['applicant', 'parent'].includes(user.role)) {
-    return <ApplicantDocumentsPortal user={user} token={token} onLogout={logout} />;
+  if (!user || ['applicant', 'parent'].includes(user.role)) {
+    return <PublicAssistantWidget signedIn={Boolean(user)} token={token} onLogout={logout} onAdminLogin={handleAdminLogin} onApplicantPortalAuth={handleApplicantPortalAuth} />;
   }
 
   return (
@@ -237,14 +237,14 @@ function App() {
           {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
           {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
           {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
-          {view === 'documents' && <DocumentReviewQueue token={token} />}
+          {view === 'applicant-workspaces' && <ApplicantWorkspaceReview token={token} />}
         </section>
       </main>
     </div>
   );
 }
 
-function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
+function PublicAssistantWidget({ signedIn, token, onLogout, onAdminLogin, onApplicantPortalAuth }) {
   const [showAdminLogin, setShowAdminLogin] = useState(() => {
     try {
       return typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('admin') || window.location.hash === '#admin');
@@ -255,6 +255,7 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState('');
   const [showApplicantPortal, setShowApplicantPortal] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [language, setLanguage] = useState('auto');
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -280,9 +281,19 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
     try { return sessionStorage.getItem('mitra_teaser_dismissed') === '1'; } catch { return false; }
   });
   const [messages, setMessages] = useState([
-    { type: 'assistant', text: "Hello and Welcome to MITCORER! I'm your virtual assistant. How can I help you today?" },
+    { type: 'assistant', text: 'Hi, I’m MITRA. How can I help with admissions?' },
   ]);
   const quickReplies = [
+    { label: 'CAP admission', prompt: 'Where are you in the CAP process?', choices: [
+      { label: 'How CAP works', question: 'What is the CAP admission process for MITCORER?' },
+      { label: 'I have an allotment', prompt: 'Which programme route were you allotted through CAP?', choices: [
+        { label: 'First Year B.Tech', question: 'I got MITCORER in CAP for First Year B.Tech. What do I do now?' },
+        { label: 'Direct Second Year B.Tech', question: 'I got MITCORER in CAP for Direct Second Year B.Tech. What do I do now?' },
+        { label: 'Polytechnic', question: 'I got MITCORER in CAP for Polytechnic. What do I do now?' },
+        { label: 'More', action: 'main' },
+      ] },
+      { label: 'More', action: 'main' },
+    ] },
     { label: 'Programmes', choices: [
       { label: 'B.Tech Engineering', question: 'Which B.Tech programmes are available at MITCORER?' },
       { label: 'Polytechnic Diploma', question: 'Which Polytechnic diploma programmes are available at MITCORER?' },
@@ -298,8 +309,6 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
       { label: 'More', action: 'main' },
     ] },
     { label: 'Required Documents', question: 'What are the required admission documents?' },
-    { label: 'Scholarships', question: 'What scholarships are available at MITCORER and where can I apply?' },
-    { label: 'Placements', question: 'What placement support and published placement highlights does MITCORER offer?' },
     { label: 'Facilities', choices: [
       { label: 'Hostel & mess', question: 'What hostel and mess facilities does MITCORER provide?' },
       { label: 'Bus facility', question: 'What MITCORER bus facility information is published?' },
@@ -307,12 +316,29 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
       { label: 'Labs & workshops', question: 'What laboratories and workshops does MITCORER have?' },
       { label: 'Railway model room', question: 'Tell me about the MITCORER railway model room.' },
       { label: 'Campus facilities', question: 'What campus facilities are available at MITCORER?' },
-      { label: 'More', action: 'main' },
+      { label: 'Back to main topics', action: 'main' },
     ] },
-    { label: 'About MITCORER', question: 'Tell me about MITCORER.' },
-    { label: 'Why MITCORER?', question: 'Why should I choose MITCORER?' },
-    { label: 'Admission enquiry', href: 'https://www.mitcorer.edu.in/Admissions-Open-2026-27.html' },
     { label: 'Contact us', question: 'What are the MITCORER admission contact details?' },
+    { label: 'More topics', prompt: 'What else would you like to ask about?', choices: [
+      { label: 'Scholarships', prompt: 'Which category should I use to narrow the scholarship list?', choices: [
+        ...['Open / EBC', 'EWS', 'SEBC', 'OBC', 'SC', 'ST', 'VJNT / SBC', 'Other or unsure'].map(label => {
+          const profile = label === 'Other or unsure' ? 'an unspecified category' : `the ${label} category`;
+          const question = `Which scholarship schemes should a student in ${profile} check at MITCORER`;
+          return { label, prompt: 'Would you like to include schemes for girls?', choices: [
+            { label: 'Include schemes for girls', question: `${question}, including schemes for girls?` },
+            { label: 'Show category schemes', question: `${question}?` },
+            { label: 'Back to main topics', action: 'main' },
+          ] };
+        }),
+        { label: 'View all schemes', question: 'What scholarships are available at MITCORER and where can I apply?' },
+        { label: 'Back to main topics', action: 'main' },
+      ] },
+      { label: 'Placements', question: 'What placement support and published placement highlights does MITCORER offer?' },
+      { label: 'About MITCORER', question: 'Tell me about MITCORER.' },
+      { label: 'Why MITCORER?', question: 'Why should I choose MITCORER?' },
+      { label: 'Admission checklist', action: 'checklist' },
+      { label: 'Back to main topics', action: 'main' },
+    ] },
   ];
   const endRef = useRef(null);
 
@@ -334,7 +360,7 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
     setConversationId(null);
     setInput('');
     setMessages([
-      { type: 'assistant', text: "Hello and Welcome to MITCORER! I'm your virtual assistant. How can I help you today?" },
+      { type: 'assistant', text: 'Hi, I’m MITRA. How can I help with admissions?' },
     ]);
   };
 
@@ -370,13 +396,14 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
           evidence: answer.evidence,
           sections: answer.sections,
           actionView: answer.actionView,
-          actionLabel: answer.actionLabel,
           requestedLanguage: answer.requestedLanguage,
           responseLanguage: answer.responseLanguage,
           showQuickReplies: !answer.answerPart2,
           choices: retainedChoices || undefined,
           suggestions: answer.suggestions,
           escalation: answer.escalation,
+          clarification: answer.clarification,
+          outcomeStatus: answer.outcomeStatus,
           originalQuestion: question,
           model: answer.model,
         },
@@ -402,6 +429,10 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
   };
 
   const selectTopic = (topic) => {
+    if (topic.action === 'checklist') {
+      setShowChecklist(true);
+      return;
+    }
     if (topic.action === 'main') {
       setActivePills(null);
       setMessages((items) => [...items, { type: 'assistant', text: 'What else would you like to know about MITCORER?', choices: null }]);
@@ -411,7 +442,7 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
       setActivePills(topic.choices);
       setMessages((items) => [...items,
         { type: 'user', text: topic.label },
-        { type: 'assistant', text: `Please select a ${topic.label.toLowerCase()} option.`, choices: topic.choices },
+        { type: 'assistant', text: topic.prompt || `Please select a ${topic.label.toLowerCase()} option.`, choices: topic.choices },
       ]);
       return;
     }
@@ -467,19 +498,22 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
           </div>
         </header>
         <div className="publicChatMessages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation">
-          <section className="publicCampusWelcome" style={{ backgroundImage: `linear-gradient(90deg, rgba(7,32,51,.78), rgba(7,32,51,.25)), url(${mitcorerCampus})` }}><div><span>MITCORER, Barshi</span><strong>Start your engineering journey.</strong><div className="campusWelcomeActions"><a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Start admission enquiry <ArrowRight size={13} /></a><button type="button" onClick={() => setShowApplicantPortal(true)}>Upload / check documents <ArrowRight size={13} /></button></div></div></section>
+          <div className="publicCampusWelcome" style={{ backgroundImage: `linear-gradient(0deg, rgba(7,32,51,.82), rgba(7,32,51,.18)), url(${mitcorerCampus})` }}>
+            <a href="https://www.mitcorer.edu.in/Admissions-Open-2026-27.html" target="_blank" rel="noreferrer">Start admission enquiry <ArrowRight size={13} aria-hidden="true" /></a>
+          </div>
           {messages.map((message, index) => <Fragment key={`${message.type}-${index}`}><article className={`publicBubble ${message.type}`} lang={['en', 'mr', 'hi'].includes(message.responseLanguage) ? message.responseLanguage : undefined}>
             {message.type === 'assistant' && <div className="publicBubbleAvatar"><img src={mitcorerLogo} alt="" /></div>}
             <div>
               <PublicAnswerBody message={message} />
               {message.retryQuestion && <button type="button" className="publicRetry" disabled={busy} onClick={() => ask(message.retryQuestion)}>{language === 'mr' ? 'पुन्हा प्रयत्न करा' : language === 'hi' ? 'फिर कोशिश करें' : 'Try again'}</button>}
               {message.type === 'assistant' && message.actionView === 'applicantPortal' && (
-                <button type="button" className="applicantPortalEntry answerPortalEntry" onClick={() => setShowApplicantPortal(true)}>
-                  {message.actionLabel || 'Open applicant document portal'} <ArrowRight size={13} />
+                <button type="button" className="applicantPortalEntry answerPortalEntry" onClick={() => setShowChecklist(true)}>
+                  Open admission checklist <ArrowRight size={13} />
                 </button>
               )}
               {publicAnswerLinks(message, { firstYear: feeFirstYearImage, directSecondYear: feeDirectSecondYearImage, hostel: hostelMessFeeImage }).map(link => <a key={link.url} href={link.url} target="_blank" rel="noreferrer">{link.label} <ArrowRight size={13} /></a>)}
-              {message.type === 'assistant' && (message.escalation?.available || message.source === 'No verified record') && (
+              {message.type === 'assistant' && !message.clarification && message.outcomeStatus !== 'NEEDS_CLARIFICATION'
+                && (message.escalation?.available || message.source === 'No verified record') && (
                 <PublicEscalationCard message={message} language={language} />
               )}
               {message.type === 'assistant' && Boolean(message.originalQuestion) && (
@@ -492,7 +526,6 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
         </div>
         <form className="publicComposer" onSubmit={(event) => { event.preventDefault(); ask(); }}>
           <textarea ref={textareaRef} value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); ask(); } }} rows={1} placeholder={language === 'mr' ? 'तुमचा प्रश्न येथे लिहा…' : language === 'hi' ? 'अपना प्रश्न यहाँ लिखें…' : 'Type your message here…'} aria-label={language === 'mr' ? 'प्रवेशाबद्दल तुमचा प्रश्न' : language === 'hi' ? 'प्रवेश के बारे में आपका प्रश्न' : 'Ask MIT Barshi admissions'} disabled={busy} />
-          <button type="button" className="publicVoiceButton" aria-label="Voice input planned for a future release" title="Voice input planned for a future release" disabled><Mic size={18} /></button>
           <button type="submit" aria-label={language === 'mr' ? 'प्रश्न पाठवा' : language === 'hi' ? 'प्रश्न भेजें' : 'Send message'} disabled={busy || !input.trim()}><Send size={19} /></button>
         </form>
         <footer>
@@ -513,28 +546,29 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
           <div style={{ background: '#fff', borderRadius: '12px', maxWidth: '420px', width: '100%', padding: '28px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', color: '#202724' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <strong style={{ fontSize: '18px', color: '#146548' }}>Administrator Portal</strong>
-              <button type="button" onClick={() => setShowAdminLogin(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#69756e' }}><X size={18} /></button>
+              <button type="button" aria-label="Close administrator sign-in" onClick={() => setShowAdminLogin(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#69756e' }}><X size={18} /></button>
             </div>
             <p style={{ fontSize: '13px', color: '#555', margin: '0 0 16px' }}>Sign in to manage verified sources, run CDM structured extraction, and publish knowledge.</p>
-            {adminLoginError && <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{adminLoginError}</div>}
+            {adminLoginError && <div role="alert" style={{ background: '#fef2f2', color: '#b91c1c', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>{adminLoginError}</div>}
             <form onSubmit={async (e) => {
               e.preventDefault();
               if (adminLoggingIn || !onAdminLogin) return;
               setAdminLoggingIn(true);
               setAdminLoginError('');
               try {
-                const ok = await onAdminLogin(adminEmail, adminPassword);
-                if (!ok) setAdminLoginError('Invalid credentials. Check email and password.');
+                await onAdminLogin(adminEmail, adminPassword);
               } catch (err) {
-                setAdminLoginError(err.message || 'Login failed.');
+                setAdminLoginError(err.status === 401 ? 'Invalid credentials. Check email and password.'
+                  : err instanceof TypeError ? 'Could not reach MITRA. Try again when the server is available.'
+                  : err.message || 'Login failed. Please try again.');
               } finally {
                 setAdminLoggingIn(false);
               }
             }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Admin Email</label>
-              <input type="email" required value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cfd8d2', marginBottom: '12px', boxSizing: 'border-box' }} />
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Password</label>
-              <input type="password" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cfd8d2', marginBottom: '16px', boxSizing: 'border-box' }} />
+              <label htmlFor="admin-login-email" style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Admin Email</label>
+              <input id="admin-login-email" type="email" autoComplete="username" required value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cfd8d2', marginBottom: '12px', boxSizing: 'border-box' }} />
+              <label htmlFor="admin-login-password" style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Password</label>
+              <input id="admin-login-password" type="password" autoComplete="current-password" required value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cfd8d2', marginBottom: '16px', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowAdminLogin(false)} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cfd8d2', background: '#f6f8f7', cursor: 'pointer' }}>Cancel</button>
                 <button type="submit" disabled={adminLoggingIn} style={{ padding: '8px 20px', borderRadius: '6px', border: 'none', background: '#146548', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{adminLoggingIn ? 'Signing in…' : 'Sign in'}</button>
@@ -543,6 +577,8 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
           </div>
         </div>
       )}
+      <AdmissionChecklist open={showChecklist && !showApplicantPortal} onClose={() => setShowChecklist(false)}
+        token={signedIn ? token : ''} onSaveGuest={() => setShowApplicantPortal(true)} onLogout={onLogout} />
       {showApplicantPortal && <ApplicantPortalAccess
         onClose={() => setShowApplicantPortal(false)}
         onAuthenticate={onApplicantPortalAuth}
@@ -555,17 +591,22 @@ function PublicAssistantWidget({ onAdminLogin, onApplicantPortalAuth }) {
 function ApplicantPortalAccess({ onClose, onAuthenticate }) {
   const [mode, setMode] = useState('login');
   const [role, setRole] = useState('applicant');
+  const [admissionStream, setAdmissionStream] = useState('');
+  const [engineeringEntry, setEngineeringEntry] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const admissionRoute = admissionStream === 'engineering'
+    ? engineeringEntry === 'first-year' ? 'btech-fy' : engineeringEntry === 'direct-second-year' ? 'btech-dse' : ''
+    : admissionStream === 'polytechnic' ? 'polytechnic' : '';
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);
     setError('');
     try {
-      const ok = await onAuthenticate({ mode, name, email, password, role });
+      const ok = await onAuthenticate({ mode, name, email, password, role, admissionRoute });
       if (ok) onClose();
       else setError('Check your details and try again.');
     } catch (submitError) {
@@ -574,101 +615,172 @@ function ApplicantPortalAccess({ onClose, onAuthenticate }) {
   };
   return <div className="portalModalBackdrop" role="presentation">
     <section className="portalModal" role="dialog" aria-modal="true" aria-labelledby="applicant-portal-title">
-      <button type="button" className="portalModalClose" onClick={onClose} aria-label="Close applicant portal"><X size={18} /></button>
-      <span className="eyebrow">Private applicant workspace</span>
-      <h2 id="applicant-portal-title">{mode === 'login' ? 'Sign in to your documents' : 'Create an applicant account'}</h2>
-      <p>Upload admission documents and submit them for staff review. Your records are visible only to your account and authorized staff.</p>
+      <button type="button" className="portalModalClose" onClick={onClose} disabled={busy} aria-label="Close checklist sign-in"><X size={18} /></button>
+      <span className="eyebrow">Save your admission checklist</span>
+      <h2 id="applicant-portal-title">{mode === 'login' ? 'Sign in to save your checklist' : 'Create an applicant account'}</h2>
+      <p>Use an applicant or parent account to save your checklist and return later. Authorized admissions staff can view saved progress.</p>
       {error && <div className="errorBanner" role="alert">{error}</div>}
       <form onSubmit={submit} className="portalAccessForm">
         {mode === 'signup' && <>
           <label>Full name<input required maxLength={120} value={name} onChange={event => setName(event.target.value)} /></label>
-          <label>Account type<select value={role} onChange={event => setRole(event.target.value)}><option value="applicant">Applicant</option><option value="parent">Parent / guardian</option></select></label>
+          <label>Who is this account for?<select value={role} onChange={event => setRole(event.target.value)}><option value="applicant">Applicant</option><option value="parent">Parent / guardian</option></select></label>
+          <label>{role === 'parent' ? 'Student’s admission stream' : 'Your admission stream'}<select required value={admissionStream} onChange={event => { setAdmissionStream(event.target.value); setEngineeringEntry(''); }}><option value="">Choose engineering or diploma</option><option value="engineering">Engineering (B.Tech)</option><option value="polytechnic">Polytechnic (Diploma)</option></select></label>
+          {admissionStream === 'engineering' && <label>Engineering entry route<select required value={engineeringEntry} onChange={event => setEngineeringEntry(event.target.value)}><option value="">Choose entry route</option><option value="first-year">First Year B.Tech</option><option value="direct-second-year">Direct Second Year B.Tech</option></select></label>}
         </>}
         <label>Email<input type="email" required autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
         <label>Password<input type="password" required minLength={mode === 'signup' ? 12 : undefined} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} value={password} onChange={event => setPassword(event.target.value)} /></label>
         {mode === 'signup' && <small>Use at least 12 characters. Keep your account credentials private.</small>}
-        <button type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
+        <button type="submit" disabled={busy || (mode === 'signup' && !admissionRoute)}>{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}</button>
       </form>
-      <button type="button" className="portalModeToggle" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>
+      <button type="button" className="portalModeToggle" disabled={busy} onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}>
         {mode === 'login' ? 'New applicant? Create an account' : 'Already have an account? Sign in'}
       </button>
     </section>
   </div>;
 }
 
-function ApplicantDocumentsPortal({ user, token, onLogout }) {
-  const [items, setItems] = useState([]);
-  const [docName, setDocName] = useState('12th Marksheet');
-  const [file, setFile] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+const admissionRoutes = {
+  'btech-fy': { label: 'B.Tech — First Year', url: 'https://mitcorer.edu.in/fy-btech.php', portalUrl: 'https://fe2026.mahacet.org/StaticPages/HomePage', documentsUrl: 'https://mitcorer.edu.in/fy-btech-documents.php' },
+  'btech-dse': { label: 'B.Tech — Direct Second Year', url: 'https://mitcorer.edu.in/d-sy-btech.php', portalUrl: 'https://dsd26.dtemaharashtra.gov.in/', documentsUrl: 'https://mitcorer.edu.in/d-sy-btech-documents-required.php' },
+  polytechnic: { label: 'Polytechnic Diploma — First Year', url: 'https://mitcorer.edu.in/fy-polytechnic.php', portalUrl: 'https://poly26.dtemaharashtra.gov.in/poly_26/home', documentsUrl: 'https://mitcorer.edu.in/fy-polytechnic-documents.php' },
+};
+const capStages = ['Not started', 'Registration submitted', 'Scrutiny and application confirmation complete', 'Provisional merit list checked', 'Final merit list checked', 'Option form confirmed', 'Allotment checked', 'Seat acceptance action complete', 'Reported to institute', 'Admission confirmed'];
+const acapStages = ['Not started', 'Application submitted', 'Provisional institute merit list checked', 'Grievance submitted (if needed)', 'Final institute merit list checked', 'Vacancy or offer checked', 'Reported to institute', 'Admission confirmed'];
+const capNextSteps = {
+  'Not started': 'Open the correct route portal and read its current information brochure and schedule before registering.',
+  'Registration submitted': 'Complete the route portal’s document scrutiny. Watch for objections or corrections and confirm the application within the schedule.',
+  'Scrutiny and application confirmation complete': 'Check your provisional merit details. Use the published correction or grievance window if anything is wrong.',
+  'Provisional merit list checked': 'Check the final merit list and the available seat matrix for your route and category.',
+  'Final merit list checked': 'Submit and confirm your ordered choices in the official candidate login.',
+  'Option form confirmed': 'Check the allotment result in your official candidate login when the authority publishes it.',
+  'Allotment checked': 'Follow that round’s instructions for self-verification, seat acceptance, any required fee, and freeze or betterment choice.',
+  'Seat acceptance action complete': 'Report to the allotted institute within the notice deadline with the originals and proofs specified for your route and category.',
+  'Reported to institute': 'Confirm that the institute recorded your admission and keep the receipt and official confirmation.',
+  'Admission confirmed': 'Keep your admission confirmation, receipts, and official messages for reference.',
+};
+const acapNextSteps = {
+  'Not started': 'Check MITCORER’s current institute-level notice for vacancies, application dates, merit-list steps, and reporting instructions. Dates from a past cycle do not carry forward.',
+  'Application submitted': 'Check the provisional institute merit list and follow the notice if you need to raise a grievance.',
+  'Provisional institute merit list checked': 'If a detail is incorrect, submit a grievance in the way and by the time specified in the institute notice; otherwise check the final list.',
+  'Grievance submitted (if needed)': 'Check the final institute merit list and any current vacancy or offer notice.',
+  'Final institute merit list checked': 'Check the institute’s current vacancy or offer instructions and confirm the reporting date directly from the notice.',
+  'Vacancy or offer checked': 'Report to MITCORER with the original documents and complete admission formalities within the published schedule.',
+  'Reported to institute': 'Confirm that the college has recorded your admission and keep the receipt and official confirmation.',
+  'Admission confirmed': 'Keep your admission confirmation, receipts, and official messages for reference.',
+};
+const checklistDocuments = {
+  'btech-fy': ['10th marksheet', '12th marksheet', 'CET or JEE scorecard'],
+  'btech-dse': ['10th marksheet', 'Diploma or B.Sc. marksheets'],
+  polytechnic: ['10th marksheet'],
+};
+const commonChecklistDocuments = ['School leaving certificate', 'Nationality or domicile proof'];
+
+function AdmissionChecklist({ open, onClose, token, onSaveGuest, onLogout }) {
+  const dialogRef = useRef(null);
+  const [draft, setDraft] = useState(null);
+  const [saved, setSaved] = useState({});
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const uploadFormRef = useRef(null);
-  const reload = async () => {
-    const result = await api.getDocuments(token);
-    setItems(result.items || []);
-  };
+  const [attempt, setAttempt] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadedFor, setLoadedFor] = useState('');
+  const requestKey = `${token || ''}:${attempt}`;
+  const loading = Boolean(token && open && !loadFailed && loadedFor !== requestKey);
+
   useEffect(() => {
+    if (open && !dialogRef.current.open) dialogRef.current.showModal();
+    if (!open && dialogRef.current.open) dialogRef.current.close();
+  }, [open]);
+
+  useEffect(() => {
+    if (!token || !open) return;
     let active = true;
-    api.getDocuments(token).then(result => { if (active) setItems(result.items || []); })
-      .catch(loadError => { if (active) setError(loadError.message || 'Could not load documents.'); })
-      .finally(() => { if (active) setLoading(false); });
+    api.getAdmissionWorkspace(token).then(workspace => {
+      if (active) {
+        setSaved({ ...workspace.cap, route: workspace.cap?.route || workspace.programs?.route || '' });
+        setLoadedFor(requestKey);
+      }
+    }).catch(loadError => {
+      if (active) {
+        setLoadFailed(true);
+        setLoadedFor(requestKey);
+        setError(loadError.message || 'Could not load your saved checklist.');
+      }
+    });
     return () => { active = false; };
-  }, [token]);
-  const uploadFile = async event => {
-    event.preventDefault();
-    if (!file || busy) return;
-    setBusy(true); setError(''); setNotice('');
+  }, [token, open, requestKey]);
+
+  const progress = draft || (token ? saved : {});
+  const route = Object.hasOwn(admissionRoutes, progress.route) ? admissionRoutes[progress.route] : null;
+  const channel = ['cap', 'acap'].includes(progress.channel) ? progress.channel : 'unsure';
+  const stages = channel === 'acap' ? acapStages : capStages;
+  const previousStage = progress.stage || progress.status;
+  const stage = stages.includes(previousStage) ? previousStage : stages[0];
+  const documents = route ? [...checklistDocuments[progress.route], ...commonChecklistDocuments] : [];
+  const checked = Array.isArray(progress.checkedDocuments) ? progress.checkedDocuments : [];
+  const update = changes => {
+    setNotice('');
+    setDraft({ ...progress, ...changes });
+  };
+  const save = async () => {
+    if (!token) {
+      onSaveGuest();
+      return;
+    }
+    setSaving(true);
+    setError('');
     try {
-      await api.uploadDocument(token, { docName }, file);
-      setFile(null);
-      uploadFormRef.current?.reset();
-      await reload();
-      setNotice('Document uploaded. Submit it for review when you are ready.');
-    } catch (uploadError) { setError(uploadError.message || 'Upload failed.'); }
-    finally { setBusy(false); }
+      const workspace = await api.updateAdmissionWorkspace(token, 'cap', {
+        ...saved, route: progress.route, channel, stage, checkedDocuments: checked,
+      });
+      setSaved(workspace.cap);
+      setLoadedFor(requestKey);
+      setDraft(null);
+      setNotice('Checklist saved.');
+    } catch (saveError) {
+      setNotice('');
+      setError(saveError.message || 'Could not save your checklist.');
+    } finally {
+      setSaving(false);
+    }
   };
-  const submitForReview = async () => {
-    setBusy(true); setError(''); setNotice('');
-    try {
-      const result = await api.submitDocuments(token);
-      setItems(result.items || []);
-      await reload();
-      setNotice(`${result.submittedCount} document(s) submitted to the MITCORER review queue.`);
-    } catch (submitError) { setError(submitError.message || 'Could not submit documents.'); }
-    finally { setBusy(false); }
-  };
-  const remove = async id => {
-    setBusy(true); setError(''); setNotice('');
-    try { await api.deleteDocument(token, id); await reload(); setNotice('Document removed.'); }
-    catch (removeError) { setError(removeError.message || 'Could not remove document.'); }
-    finally { setBusy(false); }
-  };
-  const openFile = async id => {
-    try { await api.openDocument(token, id); }
-    catch (openError) { setError(openError.message || 'Could not open document.'); }
-  };
-  const canSubmit = items.some(item => ['Uploaded (not submitted)', 'Needs correction'].includes(item.status));
-  return <main className="applicantPortalPage">
-    <header className="applicantPortalHeader"><div className="brandLockup"><span className="collegeLogo"><img src={mitcorerLogo} alt="MITCORER logo" /></span><div><strong>MITCORER</strong><small>Applicant document portal</small></div></div><div><span>{user.name} · {user.role === 'parent' ? 'Parent / guardian' : 'Applicant'}</span><button type="button" onClick={onLogout}>Sign out</button></div></header>
-    <section className="applicantPortalContent">
-      <span className="eyebrow">Private workspace</span><h1>Your admission documents</h1>
-      <p>Upload a PDF, JPG, or PNG against the document checklist, then submit the batch for staff review. Do not upload documents in the public chat.</p>
-      {error && <div className="errorBanner" role="alert">{error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
-      <form ref={uploadFormRef} className="portalUploadForm" onSubmit={uploadFile}>
-        <label>Document type<select value={docName} onChange={event => setDocName(event.target.value)}><option>10th Marksheet</option><option>12th Marksheet</option><option>CET or JEE Scorecard</option><option>School Leaving Certificate</option><option>Nationality or Domicile Proof</option><option>Aadhaar Copy</option><option>Bank Passbook Copy</option><option>Income Certificate</option><option>Other Supporting Document</option></select></label>
-        <label>Choose file<input required type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={event => setFile(event.target.files?.[0] || null)} /></label>
-        <button type="submit" disabled={busy || !file}><UploadCloud size={16} />{busy ? 'Working…' : 'Upload document'}</button>
-      </form>
-      <div className="applicantDocumentListHead"><h2>Uploaded documents</h2><button type="button" disabled={busy || !canSubmit} onClick={submitForReview}>Submit for staff review</button></div>
-      {loading ? <p>Loading documents…</p> : items.length ? <div className="applicantDocumentList">{items.map(item => <article key={item.id}>
-        <div><strong>{item.docName}</strong><span>{item.fileName} · {item.status}</span>{item.reviewNote && <p>Staff note: {item.reviewNote}</p>}</div>
-        <div><button type="button" onClick={() => openFile(item.id)}>Open</button>{['Uploaded (not submitted)', 'Needs correction'].includes(item.status) && <button type="button" disabled={busy} onClick={() => remove(item.id)}>Remove</button>}</div>
-      </article>)}</div> : <div className="knowledgeEmpty">No documents uploaded yet. Choose a document type and file above.</div>}
-      <p className="portalPrivacyNote"><LockKeyhole size={15} /> Documents are account-scoped. Staff review updates appear here; this portal does not promise email or SMS notifications.</p>
-    </section>
-  </main>;
+
+  return <dialog ref={dialogRef} className="admissionChecklistDialog" aria-labelledby="admission-checklist-title"
+    onCancel={event => { event.preventDefault(); onClose(); }}>
+    <button type="button" className="portalModalClose" onClick={onClose} aria-label="Close checklist"><X size={18} /></button>
+    <h2 id="admission-checklist-title">Admission checklist</h2>
+    <p>Track your own preparation. Confirm requirements, deadlines and admission status through the official links.</p>
+    {loading && <p role="status">Loading saved checklist...</p>}
+    {error && <p role="alert">{error} <button type="button" onClick={() => { setLoadFailed(false); setError(''); setAttempt(value => value + 1); }}>Reload saved checklist</button></p>}
+    {notice && <p role="status">{notice}</p>}
+    <fieldset disabled={loading || saving}>
+      <label>Programme route<select value={route ? progress.route : ''} onChange={event => update({ route: event.target.value, stage: stages[0], checkedDocuments: [] })}>
+        <option value="">Choose your route</option>
+        {Object.entries(admissionRoutes).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
+      </select></label>
+      {route && <>
+        <label>Admission process<select value={channel} onChange={event => update({ channel: event.target.value, stage: 'Not started' })}>
+          <option value="unsure">I'm not sure</option><option value="cap">Centralized CAP</option><option value="acap">Institute-level / against CAP</option>
+        </select></label>
+        {channel !== 'unsure' && <label>Latest step completed<select value={stage} onChange={event => update({ stage: event.target.value })}>
+          {stages.map(item => <option key={item}>{item}</option>)}
+        </select></label>}
+        <h3>Next official action</h3>
+        <p>{channel === 'unsure' ? 'Check your official notice or ask the college whether your seat is through CAP or an institute-level round.' : (channel === 'acap' ? acapNextSteps : capNextSteps)[stage]}</p>
+        {channel !== 'acap' && <a href={route.portalUrl} target="_blank" rel="noreferrer">Open official CAP portal</a>}
+        {channel !== 'cap' && <a href={progress.route === 'polytechnic' ? route.url : 'https://mitcorer.edu.in/acap-institute-level-admission.php'} target="_blank" rel="noreferrer">Open MITCORER admission notices</a>}
+        <h3>Documents to prepare</h3>
+        {documents.map(name => <label className="checklistItem" key={name}><input type="checkbox" checked={checked.includes(name)} onChange={event => update({ checkedDocuments: event.target.checked ? [...checked, name] : checked.filter(item => item !== name) })} />{name}</label>)}
+        <a href={route.documentsUrl} target="_blank" rel="noreferrer">Check the full document list and category-specific requirements</a>
+      </>}
+      <div className="checklistActions">
+        <button type="button" disabled={!route || Boolean(token && (!draft || loadFailed))} onClick={save}>{saving ? 'Saving...' : 'Save my checklist'}</button>
+        {token && draft && <button type="button" onClick={() => { setDraft(null); setNotice(''); }}>Use saved checklist</button>}
+        {token && <button type="button" onClick={async () => { await onLogout(); setDraft(null); setSaved({}); setNotice(''); setError(''); }}>Sign out</button>}
+      </div>
+    </fieldset>
+  </dialog>;
 }
 
 function PublicEscalationCard({ message, language }) {
@@ -891,26 +1003,33 @@ function linkOfficialContact(text) {
 }
 
 function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenInquiries, onOpenFeedback }) {
-  const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0 });
+  const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0, applicants: null, inquiryError: '', feedbackError: '', applicantError: '' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    Promise.all([api.getInquiries(token), api.getFeedback(token)])
-      .then(([inquiryResult, feedbackResult]) => {
+    Promise.allSettled([api.getInquiries(token), api.getFeedback(token), api.getApplicantWorkspaces(token)])
+      .then(([inquiryState, feedbackState, applicantState]) => {
         if (!active) return;
+        const inquiryResult = inquiryState.status === 'fulfilled' ? inquiryState.value : { items: [] };
+        const feedbackResult = feedbackState.status === 'fulfilled' ? feedbackState.value : { items: [] };
+        const applicantResult = applicantState.status === 'fulfilled' ? applicantState.value : { items: [] };
         const inqItems = inquiryResult.items || [];
         const fdbItems = feedbackResult.items || [];
         const unhelpful = fdbItems.filter(f => !f.helpful && f.status !== 'Resolved' && f.status !== 'Dismissed').length;
         const pendingInq = inqItems.filter(i => i.status !== 'Resolved').length;
         setReviewCounts({
-          inquiries: inqItems.length,
-          feedback: fdbItems.length,
-          unhelpfulFeedback: unhelpful,
-          pendingInquiries: pendingInq,
+          inquiries: inquiryState.status === 'fulfilled' ? inqItems.length : null,
+          feedback: feedbackState.status === 'fulfilled' ? fdbItems.length : null,
+          unhelpfulFeedback: feedbackState.status === 'fulfilled' ? unhelpful : null,
+          pendingInquiries: inquiryState.status === 'fulfilled' ? pendingInq : null,
+          applicants: applicantState.status === 'fulfilled' ? (applicantResult.items || []).filter(hasSavedAdmissionChecklist).length : null,
+          inquiryError: inquiryState.status === 'rejected' ? inquiryState.reason.message || 'Could not load visitor requests.' : '',
+          feedbackError: feedbackState.status === 'rejected' ? feedbackState.reason.message || 'Could not load answer feedback.' : '',
+          applicantError: applicantState.status === 'rejected' ? applicantState.reason.message || 'Could not load saved admission checklists.' : '',
         });
       })
-      .catch(() => { if (active) setReviewCounts({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0 }); })
+      .catch(() => { if (active) setReviewCounts({ inquiries: null, feedback: null, unhelpfulFeedback: null, pendingInquiries: null, applicants: null, inquiryError: 'Could not load the operations summary.', feedbackError: 'Could not load the operations summary.', applicantError: 'Could not load the operations summary.' }); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token]);
@@ -928,59 +1047,42 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     <section className="adminWelcome">
       <div><span className="eyebrow">MITCORER · Staff workspace</span><h2>Welcome, {user.name.split(' ')[0]}</h2><p>Manage verified assistant knowledge and review what visitors send to the college.</p></div>
     </section>
-    <section className="adminMetricGrid" aria-label="Workspace summary">
+    <section className="adminMetricGrid" aria-label="Operations summary">
       <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
       <article><span>Sources to review</span><strong>{needsReview}</strong><small>{unreachableSources} unreachable; {Math.max(0, needsReview - unreachableSources)} staged or changed</small></article>
-      <article><span>Visitor requests</span><strong>{loading ? '…' : reviewCounts.inquiries ?? '—'}</strong><small>{reviewCounts.pendingInquiries ? `${reviewCounts.pendingInquiries} need reply` : 'saved in inbox'}</small></article>
-      <article><span>Answer ratings</span><strong>{loading ? '…' : reviewCounts.feedback ?? '—'}</strong><small>{reviewCounts.unhelpfulFeedback ? `${reviewCounts.unhelpfulFeedback} need investigation` : 'visitor helpful / unhelpful'}</small></article>
+      <article><span>Open visitor requests</span><strong>{loading ? '…' : reviewCounts.pendingInquiries ?? '—'}</strong><small>{reviewCounts.inquiries ?? '—'} total in the inbox</small></article>
     </section>
     <section className="adminDashboardGrid">
       <article className="adminActionPanel">
-        <div className="sectionHead"><span className="eyebrow">Admin workspace</span><h2>Workspace shortcuts</h2><p>Open the core assistant management and review tools.</p></div>
-        <div className="adminShortcutList">
-          <button type="button" onClick={onOpenKnowledge}><FileText size={19} /><span><strong>Knowledge Management</strong><small>Edit, review and retire answer records</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={onOpenSources}><RefreshCw size={19} /><span><strong>Source Verification</strong><small>Review official sources and source changes</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><LayoutDashboard size={19} /><span><strong>Query Analytics</strong><small>View process-level answer outcomes and trends</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => user.role === 'admin' ? scrollToSection('assistant-unanswered-review') : onOpenFeedback()}><ThumbsDown size={19} /><span><strong>Unanswered Questions</strong><small>{user.role === 'admin' ? 'Triage unresolved outcome events' : 'Review visitor-submitted feedback'}</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => scrollToSection('assistant-quality-monitor')}><Cpu size={19} /><span><strong>AI Quality Monitor</strong><small>Inspect operational outcomes and source health</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={19} /><span><strong>Review visitor messages</strong><small>Assign, track and contact requesters</small></span><ArrowRight size={16} /></button>
-          <button type="button" onClick={() => setView('documents')}><FileText size={19} /><span><strong>Review applicant documents</strong><small>Open submitted files and record review status</small></span><ArrowRight size={16} /></button>
+        <div className="sectionHead"><span className="eyebrow">Needs attention</span><h2>Work waiting for action</h2><p>Prioritized queues and issues based on current workspace data.</p></div>
+        <div className="adminPendingList">
+          {reviewCounts.inquiryError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Visitor requests unavailable</strong><small>{reviewCounts.inquiryError}</small></span></div>}
+          {reviewCounts.feedbackError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Answer feedback unavailable</strong><small>{reviewCounts.feedbackError}</small></span></div>}
+          {reviewCounts.applicantError && <div role="alert"><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>Saved admission checklists unavailable</strong><small>{/API route not found/i.test(reviewCounts.applicantError) ? 'Backend deployment is missing the saved admission checklists route. Update the backend service, then retry.' : reviewCounts.applicantError}</small></span></div>}
+          {reviewCounts.pendingInquiries > 0 && <div><span className="statusDot" /><span><strong>{reviewCounts.pendingInquiries} visitor request{reviewCounts.pendingInquiries === 1 ? '' : 's'} open</strong><small>Check the inbox for requests that still need a reply.</small></span></div>}
+          {reviewCounts.unhelpfulFeedback > 0 && <div><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>{reviewCounts.unhelpfulFeedback} answer rating issue{reviewCounts.unhelpfulFeedback === 1 ? '' : 's'}</strong><small>Investigate visitor feedback marked unhelpful.</small></span></div>}
+          {reviewKnowledge.slice(0, 2).map(item => <div key={item.id}><span className="statusDot" style={{ background: '#d97706' }} /><span><strong>{item.title}</strong><small>Knowledge record needs source review.</small></span></div>)}
+          {pendingSources.slice(0, 2).map(item => <div key={item.id}><span className="statusDot" /><span><strong>{item.title}</strong><small>{item.syncMeta?.lastError || item.extractionStatus || item.status || 'Source change needs review'}</small></span></div>)}
+          {!reviewCounts.inquiryError && !reviewCounts.feedbackError && !reviewCounts.applicantError && reviewCounts.inquiries !== null && reviewCounts.feedback !== null && !reviewCounts.pendingInquiries && !reviewCounts.unhelpfulFeedback && !reviewKnowledge.length && !pendingSources.length && <div className="adminAllClear"><CheckCircle2 size={20} /><span><strong>No queued work is currently flagged</strong><small>New submissions and source changes will appear here when they need action.</small></span></div>}
+        </div>
+        <div className="adminAttentionActions">
+          {reviewCounts.pendingInquiries > 0 && <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}>Open visitor inbox ({reviewCounts.pendingInquiries}) <ArrowRight size={15} /></button>}
+          {reviewCounts.unhelpfulFeedback > 0 && <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}>Inspect answer feedback <ArrowRight size={15} /></button>}
+          {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review sources ({needsReview}) <ArrowRight size={15} /></button>}
+          {reviewKnowledge.length > 0 && <button type="button" onClick={onOpenKnowledge}>Review knowledge ({reviewKnowledge.length}) <ArrowRight size={15} /></button>}
+          {reviewCounts.applicants > 0 && <button type="button" onClick={() => setView('applicant-workspaces')}>Saved admission checklists ({reviewCounts.applicants}) <ArrowRight size={15} /></button>}
         </div>
       </article>
       <article className="adminActionPanel">
-        <div className="sectionHead"><span className="eyebrow">Quality & Governance</span><h2>Needs attention</h2><p>Review staged website changes, withheld knowledge, and visitor issue reports.</p></div>
-        {reviewKnowledge.length > 0 || pendingSources.length > 0 || reviewCounts.unhelpfulFeedback > 0 ? (
-          <div className="adminPendingList">
-            {reviewKnowledge.slice(0, 3).map(item => (
-              <div key={item.id}>
-                <span className="statusDot" style={{ background: '#d97706' }} />
-                <span><strong>{item.title}</strong><small>Knowledge withheld ({item.freshnessReview?.reason || 'Pending verification'})</small></span>
-              </div>
-            ))}
-            {pendingSources.slice(0, 3).map(item => (
-              <div key={item.id}>
-                <span className="statusDot" />
-                <span><strong>{item.title}</strong><small>{item.syncMeta?.lastError || item.extractionStatus || item.status || 'Staged for review'}</small></span>
-              </div>
-            ))}
-            {reviewCounts.unhelpfulFeedback > 0 && (
-              <div>
-                <span className="statusDot" style={{ background: '#dc2626' }} />
-                <span><strong>{reviewCounts.unhelpfulFeedback} visitor feedback issue{reviewCounts.unhelpfulFeedback > 1 ? 's' : ''} reported</strong><small>Answers flagged unhelpful by visitors</small></span>
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px' }}>
-              {pendingSources.length > 0 && <button type="button" onClick={onOpenSources}>Review sources ({needsReview}) <ArrowRight size={15} /></button>}
-              {reviewKnowledge.length > 0 && <button type="button" onClick={onOpenKnowledge || (() => setView('knowledge'))}>Review withheld knowledge ({reviewKnowledge.length}) <ArrowRight size={15} /></button>}
-              {reviewCounts.unhelpfulFeedback > 0 && <button type="button" onClick={onOpenFeedback || (() => setView('inquiries'))}>Inspect feedback issues ({reviewCounts.unhelpfulFeedback}) <ArrowRight size={15} /></button>}
-            </div>
-          </div>
-        ) : (
-          <div className="adminAllClear">
-            <CheckCircle2 size={20} />
-            <span><strong>No items currently flagged</strong><small>No staged source changes, withheld knowledge, or unaddressed issue reports appear in this workspace.</small></span>
-          </div>
-        )}
+        <div className="sectionHead"><span className="eyebrow">Operations</span><h2>Open a workspace</h2><p>Management tools and quality signals stay available here.</p></div>
+        <div className="adminOpsGrid">
+          <button type="button" onClick={onOpenKnowledge}><FileText size={18} /><span><strong>Knowledge Base</strong><small>Edit, verify and retire answer records</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={onOpenSources}><RefreshCw size={18} /><span><strong>Source Verification</strong><small>Review official sources and changes</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={18} /><span><strong>Review inbox</strong><small>Visitor requests and answer feedback</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Saved admission checklists</strong><small>{reviewCounts.applicants === null ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><Cpu size={18} /><span><strong>AI quality and analytics</strong><small>Inspect answer outcomes and unresolved patterns</small></span><ArrowRight size={15} /></button>
+          {user.role === 'admin' && <button type="button" onClick={() => scrollToSection('assistant-unanswered-review')}><ThumbsDown size={18} /><span><strong>Unanswered questions</strong><small>Triage unresolved assistant outcomes</small></span><ArrowRight size={15} /></button>}
+        </div>
       </article>
     </section>
     <AssistantOperations token={token} />
@@ -1009,8 +1111,8 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
         {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')} title={collapsed ? 'Review inbox' : undefined} aria-label={collapsed ? 'Review inbox' : undefined}>
           <Phone size={17} /><span>Review inbox</span>
         </button>}
-        {['staff', 'admin'].includes(user.role) && <button className={view === 'documents' ? 'active' : ''} type="button" onClick={() => openView('documents')} title={collapsed ? 'Document review' : undefined} aria-label={collapsed ? 'Document review' : undefined}>
-          <FileText size={17} /><span>Document review</span>
+        {['staff', 'admin'].includes(user.role) && <button className={view === 'applicant-workspaces' ? 'active' : ''} type="button" onClick={() => openView('applicant-workspaces')} title={collapsed ? 'Saved admission checklists' : undefined} aria-label={collapsed ? 'Saved admission checklists' : undefined}>
+          <LayoutDashboard size={17} /><span>Saved admission checklists</span>
         </button>}
       </nav>
       <div className="accountFooter" title={user.email}>
@@ -1022,49 +1124,60 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
   );
 }
 
-function DocumentReviewQueue({ token }) {
+function hasSavedAdmissionChecklist({ cap }) {
+  return Boolean(cap?.stage || cap?.status);
+}
+
+function ApplicantWorkspaceReview({ token }) {
   const [items, setItems] = useState([]);
-  const [notes, setNotes] = useState({});
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const reload = async () => {
-    const result = await api.getDocuments(token);
-    setItems(result.items || []);
+    const result = await api.getApplicantWorkspaces(token);
+    setItems((result.items || []).filter(hasSavedAdmissionChecklist));
   };
   useEffect(() => {
     let active = true;
-    api.getDocuments(token).then(result => { if (active) setItems(result.items || []); })
-      .catch(loadError => { if (active) setError(loadError.message || 'Could not load submitted documents.'); })
+    api.getApplicantWorkspaces(token).then(result => { if (active) setItems((result.items || []).filter(hasSavedAdmissionChecklist)); })
+      .catch(loadError => { if (active) setError(loadError.message || 'Could not load saved admission checklists.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token]);
-  const openFile = async item => {
-    setError('');
-    try { await api.openDocument(token, item.id); }
-    catch (openError) { setError(openError.message || 'Could not open this submitted file.'); }
+  const normalizedSearch = search.trim().toLowerCase();
+  const visibleItems = items.filter(item => !normalizedSearch || `${item.ownerName} ${item.ownerEmail}`.toLowerCase().includes(normalizedSearch));
+  const refresh = () => {
+    setLoading(true); setError(''); setNotice('');
+    reload().then(() => setNotice('Checklists refreshed.'))
+      .catch(loadError => setError(loadError.message || 'Could not refresh saved admission checklists.'))
+      .finally(() => setLoading(false));
   };
-  const review = async (item, status) => {
-    setBusyId(item.id); setError(''); setNotice('');
-    try {
-      await api.updateDocumentStatus(token, item.id, status, notes[item.id] || '');
-      await reload();
-      setNotice(`${item.docName} marked “${status}”. The applicant will see this status in their document portal.`);
-      setNotes(current => ({ ...current, [item.id]: '' }));
-    } catch (reviewError) { setError(reviewError.message || 'Could not save the document review.'); }
-    finally { setBusyId(''); }
-  };
-  return <div className="pageStack documentReviewPage">
-    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Document review queue</h1><p>Review submitted files, then mark them ready for reporting or request a correction.</p></div><button type="button" disabled={loading} onClick={() => { setLoading(true); setError(''); reload().catch(loadError => setError(loadError.message || 'Could not refresh the queue.')).finally(() => setLoading(false)); }}>{loading ? 'Refreshing…' : 'Refresh queue'}</button></section>
-    {error && <div className="errorBanner" role="alert">{error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
-    {loading ? <div className="panelBlock">Loading submitted documents…</div> : items.length === 0 ? <div className="knowledgeEmpty">No documents are waiting in the review queue.</div> : <div className="documentReviewList">{items.map(item => <article key={item.id} className="documentReviewCard">
-      <header><div><strong>{item.docName}</strong><span>{item.ownerName} · {item.ownerEmail}</span></div><span className="statusPill">{item.status}</span></header>
-      <p>{item.fileName} · Submitted {item.submittedAt ? new Date(item.submittedAt).toLocaleString() : new Date(item.updatedAt || item.createdAt).toLocaleString()}</p>
-      <label>Review note (shown to the applicant)<textarea maxLength={500} rows={2} value={notes[item.id] ?? item.reviewNote ?? ''} onChange={event => setNotes(current => ({ ...current, [item.id]: event.target.value }))} placeholder="Explain what to correct, if needed." /></label>
-      <footer><button type="button" onClick={() => openFile(item)}>Open submitted file</button><span /><button type="button" disabled={busyId === item.id} onClick={() => review(item, 'Needs correction')}>{busyId === item.id ? 'Saving…' : 'Request correction'}</button><button type="button" className="knowledgePrimaryAction" disabled={busyId === item.id} onClick={() => review(item, 'Ready for reporting')}>{busyId === item.id ? 'Saving…' : 'Mark ready for reporting'}</button></footer>
-    </article>)}</div>}
-    <p className="portalPrivacyNote"><LockKeyhole size={15} /> This queue is available to authorized staff. Applicant files are served through the authenticated document API.</p>
+  return <div className="pageStack applicantAdminPage">
+    <section className="pageHeading"><div><span className="eyebrow">Applicant workflow</span><h1>Saved admission checklists</h1><p>See the route, latest step and documents applicants or parents marked as prepared. Progress is self-reported.</p></div><button type="button" disabled={loading} onClick={refresh}>{loading ? 'Refreshing…' : 'Refresh checklists'}</button></section>
+    <div className="knowledgeFilters applicantAdminFilters"><label>Find an applicant<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Name or account email" /></label><span>{visibleItems.length} of {items.length} checklists</span></div>
+    {error && <div className="errorBanner" role="alert">{/API route not found/i.test(error) ? <><strong>Saved admission checklists route is missing from this backend version.</strong> Update the backend service to the current code, then refresh this page. The request cannot be fixed by changing applicant account data.</> : error}</div>}{notice && <div className="decisionResult positive" role="status">{notice}</div>}
+    {loading ? <div className="panelBlock">Loading applicant workspaces…</div> : visibleItems.length === 0 ? <div className="knowledgeEmpty">{items.length ? 'No applicants match this search.' : 'No admission checklists have been saved yet.'}</div> : <div className="applicantAdminList">{visibleItems.map(item => {
+      const route = item.cap?.route || item.programs?.route;
+      const channel = item.cap?.channel;
+      const documentLabels = Object.hasOwn(checklistDocuments, route) ? [...checklistDocuments[route], ...commonChecklistDocuments] : [];
+      const checked = Array.isArray(item.cap?.checkedDocuments) ? item.cap.checkedDocuments : [];
+      const prepared = documentLabels.filter(name => checked.includes(name));
+      return <article className="applicantAdminCard" key={item.ownerEmail}>
+        <header><div><h2>{item.ownerName || 'Applicant'}</h2><span>{item.ownerEmail} ? {item.ownerRole === 'parent' ? 'Parent / guardian account' : 'Applicant account'}</span></div></header>
+        <div className="applicantAdminDetails">
+          <section><h3>Admission progress</h3><dl>
+            <div><dt>Route</dt><dd>{admissionRoutes[route]?.label || 'Not selected'}</dd></div>
+            <div><dt>Process</dt><dd>{channel === 'acap' ? 'Institute-level / ACAP' : channel === 'cap' ? 'Centralized CAP' : 'To confirm'}</dd></div>
+            <div><dt>Latest completed step</dt><dd>{item.cap?.stage || item.cap?.status || 'Not selected'}</dd></div>
+          </dl></section>
+          <section><h3>Documents marked prepared</h3>
+            {prepared.length > 0 ? <ul>{prepared.map(name => <li key={name}>{name}</li>)}</ul> : <p>No documents marked prepared.</p>}
+          </section>
+        </div>
+        <footer>Last updated: {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : 'No admission-plan changes yet'}</footer>
+      </article>;
+    })}</div>}
   </div>;
 }
 
@@ -1261,11 +1374,18 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   const [cdmNotice, setCdmNotice] = useState('');
   const managedUsage = { 'KB-2': 'Public academic fee answers use this record.', 'KB-3': 'Public hostel and mess fee answers use this record.', 'KB-10': 'Public B.Tech intake answers use this record.', 'KB-6': 'Historical seat matrix answers use this record.' };
   const [editing, setEditing] = useState(null);
+  const editorRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!editing || !editorRef.current) return;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    editorRef.current.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  }, [editing]);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Admissions', source: 'Admin verified source', text: '', status: 'Published' });
   const [sourceForm, setSourceForm] = useState({ title: '', documentType: 'Eligibility', academicYear: '2026-27', sourceAuthority: 'MITCORER / Maharashtra CET Cell', verifiedText: '' });
   const [sourceFile, setSourceFile] = useState(null);
   const [review, setReview] = useState(null);
+  const [publishingSource, setPublishingSource] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [recordSearch, setRecordSearch] = useState('');
   const [recordCategory, setRecordCategory] = useState('All categories');
@@ -1281,7 +1401,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
     .sort((a, b) => `${a.category}:${a.title}`.localeCompare(`${b.category}:${b.title}`));
   const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const statuses = [...new Set(items.map((item) => item.status).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  const sourcesNeedingReview = sources.filter(item => /review|staged|conflict|pending|extract/i.test(`${item.status || ''} ${item.extractionStatus || ''}`)).length;
+  const sourcesNeedingReview = sources.filter(item => ['review', 'staged', 'conflict', 'pending', 'draft'].includes(String(item.status || '').toLowerCase())).length;
   const update = (key, value) => setForm((item) => ({ ...item, [key]: value }));
   const updateSource = (key, value) => setSourceForm((item) => ({ ...item, [key]: value }));
   const submit = async (event) => {
@@ -1310,6 +1430,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
       id: source.id,
       title: source.title,
       text: result.extractedText || '',
+      revision: result.revision ?? source.revision ?? 0,
       status: result.extractionStatus,
       previousVersion: result.previousVersion || null,
       conflicts: result.conflicts || [],
@@ -1320,9 +1441,14 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   };
   const publishReview = async (event) => {
     event.preventDefault();
-    if (!review?.text.trim()) return;
-    const saved = await onPublishSource(review.id, review.text, review.resolveConflicts);
-    if (saved) setReview(null);
+    if (publishingSource || !review?.text.trim()) return;
+    setPublishingSource(true);
+    try {
+      const saved = await onPublishSource(review.id, review.text, review.resolveConflicts, review.revision);
+      if (saved) setReview(current => current?.id === review.id ? null : current);
+    } finally {
+      setPublishingSource(false);
+    }
   };
   const archiveRecord = async (item) => {
     if (recordActionBusy) return;
@@ -1453,7 +1579,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
                 placeholder="No text was extracted. Paste the reviewed official text before publishing."
               />
             </label>
-            <button type="submit" disabled={!review.text.trim() || review.syncMeta?.healthStatus === 'unreachable' || ((review.conflicts.length > 0 || review.freshnessImpact?.withheldKnowledgeIds?.length > 0) && !review.resolveConflicts)}><CheckCircle2 size={17} /> Publish verified knowledge</button>
+            <button type="submit" disabled={publishingSource || !review.text.trim() || review.syncMeta?.healthStatus === 'unreachable' || ((review.conflicts.length > 0 || review.freshnessImpact?.withheldKnowledgeIds?.length > 0) && !review.resolveConflicts)}><CheckCircle2 size={17} /> {publishingSource ? 'Publishing…' : 'Publish verified knowledge'}</button>
             <button className="miniEditBtn" type="button" onClick={() => { setReview(null); setCdmNotice(''); }}>Cancel</button>
           </form>
         </section>
@@ -1470,7 +1596,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
           <label className="wide">Verified text<textarea rows={5} value={form.text} onChange={(event) => update('text', event.target.value)} placeholder="Enter concise, reviewed facts and include scope such as year, branch and admission route." /></label>
           <button type="submit" disabled={creating || !form.title.trim() || !form.text.trim()}>{creating ? 'Saving…' : 'Save record'} <ArrowRight size={16} /></button>
         </form></section>}
-        {editing && <KnowledgeRecordEditor key={editing.id} record={editing} onSave={onUpdate} onCancel={() => setEditing(null)} />}
+        {editing && <div className="knowledgeEditorAnchor" ref={editorRef}><KnowledgeRecordEditor key={editing.id} record={editing} onSave={onUpdate} onCancel={() => setEditing(null)} /></div>}
         <div className="knowledgeRecordList">{filteredRecords.map(item => {
           const sourceLinked = Boolean(item.sourceDocumentId || item.provenance?.documentId || sources.some(source => (source.knowledgeIds || source.linkedKnowledgeIds || []).includes(item.id)));
           const hasSuccessor = items.some(candidate => candidate.id !== item.id && candidate.provenance?.supersededBy === item.id);

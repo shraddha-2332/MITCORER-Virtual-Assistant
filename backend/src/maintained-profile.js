@@ -39,6 +39,29 @@ export function maintainedProfile(result, question, records) {
     const workflow = text.match(/^CAP admission proceeds through ([^.]+)\.\s*([\s\S]*)$/);
     if (workflow) answer = 'CAP admission steps:\n\n' + workflow[1].split(/,\s*(?:and\s+)?/).map((step, index) => `${index + 1}. ${step}`).join('\n') + `\n\n${workflow[2]}`;
   }
+  if (record.id === 'KB-49') {
+    const sections = [
+      { topic: /\b(?:workshops?|machine shop|fitting shop|welding shop|carpentry shop|smithy|sheet metal)\b/i, heading: 'Central Workshop' },
+      { topic: /\b(?:comput(?:er|ing) cent(?:er|re)|computer labs?)\b/i, heading: 'Central Computing Center' },
+      { topic: /\b(?:seminar halls?|audiovisual hall)\b/i, heading: 'Seminar Halls' },
+    ];
+    const requested = sections.filter(({ topic }) => topic.test(question));
+    if (requested.length) {
+      const lines = text.split('\n').map(line => line.replace(/^\s*[-*]\s+/, '').trim());
+      answer = requested.map(({ heading }) => lines.find(line => line.startsWith(`${heading}:`)))
+        .filter(Boolean).join('\n\n');
+    }
+  }
+  if (record.id === 'KB-48' && /\b(?:sport\w*|gym\w*|cricket|badminton|volleyball)\b/i.test(question)
+    && !/\b(?:cultur\w*|celebrat\w*|fest\w*|gathering|extracurricular)\b/i.test(question)) {
+    answer = text.split('\n').filter(line => /^\s*[-*]\s+Sports (?:Facilities|Meets|Tournaments):/i.test(line)).join('\n') || text;
+  }
+  if (record.id === 'KB-20' && /\b(?:hours?|timings?|when.*open|when.*close)\b/i.test(question)
+    && !/\b(?:rules?|resources?|journals?|borrowing|loan periods?|digital)\b/i.test(question)) {
+    const hours = text.match(/[^.!?]*does not specify library opening hours[^.!?]*[.!?]/i)?.[0].trim();
+    const email = text.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i)?.[0];
+    if (hours) answer = [hours, email && `Library contact: ${email}.`].filter(Boolean).join(' ');
+  }
   if (record.id === 'KB-35' && /\b(?:how many|number of|count)\b/i.test(question) && !/\d/.test(text)) {
     answer = 'The maintained record does not establish a current faculty or alumni count. Please confirm the requested count with the college.';
   }

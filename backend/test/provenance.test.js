@@ -9,6 +9,13 @@ test('provenance rejects fabricated review fields, invalid dates, pages and non-
   assert.deepEqual(validateProvenance({ academicYear: '2026-27', pageStart: 4, pageEnd: 7, validUntil: '2028-02-29' }),
     { academicYear: '2026-27', pageStart: 4, pageEnd: 7, validUntil: '2028-02-29' });
 });
+test('provenance accepts existing source attribution metadata while rejecting unknown fields', () => {
+  assert.deepEqual(validateProvenance({ capturedAt: '2026-11-19', section: 'Contact Us', verifiedFrom: 'MITCORER official Contact Us page' }),
+    { capturedAt: '2026-11-19', section: 'Contact Us', verifiedFrom: 'MITCORER official Contact Us page' });
+  assert.deepEqual(validateProvenance({ suppliedBy: 'project owner excerpt' }), { suppliedBy: 'project owner excerpt' });
+  assert.throws(() => validateProvenance({ verifiedFrom: `x${'a'.repeat(180)}` }), /Invalid verifiedFrom/);
+  assert.throws(() => validateProvenance({ arbitrary: 'not supported' }), /Invalid source provenance fields/);
+});
 test('validity uses inclusive UTC days and never expires an academic year implicitly', () => {
   const record = { status: 'Published', provenance: { academicYear: '2024-25', validFrom: '2026-10-10', validUntil: '2026-10-10' } };
   assert.equal(availability(record, Date.parse('2026-10-09T23:59:59.999Z')), 'not-effective');

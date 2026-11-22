@@ -23,15 +23,14 @@ function files(root, prefix = '') {
     return entry.isDirectory() ? files(root, relative) : [relative];
   });
 }
-export function createBackup({ databaseFile, assetRoot, outputDirectory }) {
+export function createBackup({ databaseFile, assetRoot, uploadDirectory = path.join(assetRoot, 'uploads'), outputDirectory }) {
   if (!fs.existsSync(databaseFile)) throw new Error('Database does not exist');
   if (fs.existsSync(outputDirectory)) throw new Error('Backup destination already exists');
   fs.mkdirSync(path.join(outputDirectory, 'data'), { recursive: true });
   const source = new DatabaseSync(databaseFile, { readOnly: true });
   try { source.prepare('VACUUM INTO ?').run(path.join(outputDirectory, 'data/mitra.sqlite')); }
   finally { source.close(); }
-  for (const name of ['uploads', 'official-sources']) {
-    const from = safePath(assetRoot, name);
+  for (const [name, from] of [['uploads', path.resolve(uploadDirectory)], ['official-sources', safePath(assetRoot, 'official-sources')]]) {
     if (fs.existsSync(from)) { files(from); fs.cpSync(from, path.join(outputDirectory, name), { recursive: true }); }
   }
   const entries = files(outputDirectory).sort().map(name => ({ path: name, bytes: fs.statSync(safePath(outputDirectory, name)).size, sha256: digest(safePath(outputDirectory, name)) }));

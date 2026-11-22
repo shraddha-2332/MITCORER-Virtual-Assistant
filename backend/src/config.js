@@ -20,6 +20,7 @@ export const config = {
   tokenSecret: configuredTokenSecret || 'mitra-development-only-secret',
   dataFile: path.resolve(rootDir, process.env.DATA_FILE || './data/db.json'),
   databaseFile: path.resolve(rootDir, process.env.DATABASE_FILE || './data/mitra.sqlite'),
+  uploadDirectory: path.resolve(rootDir, process.env.UPLOAD_DIR || './uploads'),
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',

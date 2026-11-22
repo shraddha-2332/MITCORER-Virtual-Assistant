@@ -48,14 +48,14 @@ The source-bound experiment summaries are under `docs/research-review/`. Full ge
 
 ## Institutional review and source evidence
 
-## Recent user-facing follow-up and document workflow fixes
+## Recent user-facing follow-up and checklist changes
 
 - Public chat follow-up clarification now carries the original document question with the chosen First Year or Direct Second Year route, so a short reply such as “for first year” does not become an unrelated standalone query.
-- Applicant and parent accounts now have a public entry point to sign in/create an account, upload documents, submit a batch for staff review, and view their own statuses and correction notes. Uploaded files remain behind the existing authenticated, owner-scoped document API. Anonymous chat cannot inspect private document status.
+- Applicants and parents can open the checklist as guests and sign in to save progress.
 - “Send question to staff queue” states where the request is stored: the MITCORER Staff Triage queue in the admin Review Inbox. It remains unassigned until staff assigns it; this workflow does not automatically notify a named person or send email/SMS.
-- General placement support uses KB-24. Platform questions use KB-69, which records the project-owner-provided list (POD, Superset, TalentBattle, Unstop) and marks public-source verification as pending. Dated recruiter information remains linked to KB-16.
+- General placement support uses KB-24. Platform questions use KB-69 for POD, Superset, TalentBattle, and Unstop, with current platform access and openings to be confirmed with the Training and Placement Cell. Marathi and Hindi answer text is present and covered by localization regression tests. Dated recruiter information remains linked to KB-16.
 - Compound address/contact/office-hours/travel questions are answered as separate evidence-backed sections. KB-46 records the Contact page check dated 2026-11-18: the page lists contact details and local Barshi directions but no current office hours, working days, visiting schedule, or Solapur-city route. The answer cites this dated observation and asks users to call before visiting. The separate Bus Facility page does not publish a route list, timetable, or fare.
-- Staff can review submitted applicant documents from the admin Document Review page. Applicant uploads appear there only after they submit them; drafts remain private to the account owner.
+- Staff can view saved checklists. Applicant uploads and staff document review have been retired.
 - Institution classification output is structured as a short list. A passage revision/citation ID identifies the referenced evidence revision; it is not an evaluation manifest, human label, independent review, or proof that the answer is correct.
 
 The project team reports that department professors reviewed responses internally and that institutional facts were transcribed from approved/signed circulars. No itemized faculty scoring rubric or independent numerical review file was provided. The three archived fee-table crops were visually inspected and match the canonical annual amounts. The inspected crops do not show signature/certification blocks, so this task does not independently authenticate the full signed originals. See `research-review/archived-fee-source-manifest.json` for their paths and hashes.
@@ -88,3 +88,10 @@ No commit or push has been made in this task. Before proceeding, the user must a
 - Retrieval experiment: On 30 assistant-authored development questions, evidence-group Recall@3 was 100.00% for the current keyword/rules method, 81.67% for plain BM25 and 95.00% for normalized-query BM25. These are facet-group retrieval measures, not answer-accuracy scores. Production retrieval remains keyword/rules based. The retrieval review workflow retains misses, frozen corpus and pending independent judgments.
 - Answer presentation: The answer audit catalogue covers 71 public question families in English, Marathi and Hindi. Browser checks and answer-source audit scripts test cards, topic links and citation order; they do not certify institutional facts or language quality.
 - Evaluation tools: Backend provides evaluate:public, evaluate:retrieval, evaluate:verifiers, evaluate:guardrails, and evaluate:document-agent. The optional external judge requires MITRA_ENABLE_EXTERNAL_EVAL=true, sanitized reviewed cases and provider credentials; its recorded pilot produced no usable quality score. A previous RAGAS attempt also produced no score, and its optional runner has been removed. The 90-case diagnostic set is synthetic and unreviewed. See the answer-review packet for pending human review requirements.
+
+## 22 November 2026 follow-up
+
+- Scholarship questions asking what documents are usually needed now receive a general preparation guide; scheme-specific or route-specific document questions still request the missing details.
+- CAP allotment next-step questions use the dedicated CAP workflow record, while applicant self-reported completion questions continue to use the applicant checklist.
+- The exact new-conversation document flow was browser-checked: the generic question asks for a route, the reply or first year displays First Year B.Tech guidance, and the official document link opens in a new tab. The live First Year documents URL replaces the stale redesigned-path URL in seeded records and existing databases.
+- Local validation: backend tests 312/312 and frontend tests 23/23 passed; the frontend production build succeeded. These checks do not constitute deployment verification, independent answer review, or formal Marathi/Hindi speaker ratings.

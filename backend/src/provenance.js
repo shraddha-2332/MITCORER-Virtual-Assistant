@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
 import { badRequest } from './errors.js';
 
-const fields = ['documentId', 'documentVersion', 'academicYear', 'section', 'capturedAt', 'pageStart', 'pageEnd', 'validFrom', 'validUntil', 'supersededBy'];
+// Keep the provenance whitelist aligned with metadata already stored on seeded
+// and maintained records. These attribution fields are descriptive, not review
+// attestations; verification remains in the separate `verification` object.
+const fields = ['documentId', 'documentVersion', 'academicYear', 'section', 'capturedAt', 'pageStart', 'pageEnd', 'validFrom', 'validUntil', 'supersededBy', 'verifiedFrom', 'suppliedBy'];
 export function validDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
     && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;

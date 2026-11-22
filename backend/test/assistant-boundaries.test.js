@@ -169,25 +169,80 @@ test('recruiter list question returns named, dated companies instead of placemen
   });
 });
 
-test('placement-platform questions return the project-owner-provided platform list', async () => {
+test('placement-platform questions return the maintained platform list without internal attribution', async () => {
   await testHarness(async (ask) => {
     const answer = await ask('Which platforms are provided for placements?');
     assert.equal(answer.outcomeStatus, 'ANSWERED');
     assert.deepEqual(answer.evidence.map(record => record.id), ['KB-69']);
     assert.match(answer.answer, /POD, Superset, TalentBattle, and Unstop/);
-    assert.match(answer.answer, /project owner reports/i);
+    assert.doesNotMatch(answer.answer, /project owner/i);
     assert.doesNotMatch(answer.answer, /JUSPAY|Cognizant/);
     const marathi = await ask('Which platforms are provided for placements?', 'mr');
     assert.equal(marathi.responseLanguage, 'mr');
+    assert.equal(marathi.localizationStatus, 'ai-reviewed');
     assert.equal(marathi.languageReviewStatus, 'human-review-pending');
+    assert.match(marathi.answer, /[\u0900-\u097F]{8,}/);
     assert.match(marathi.answer, /TalentBattle/);
     const hindi = await ask('Which platforms are provided for placements?', 'hi');
     assert.equal(hindi.responseLanguage, 'hi');
+    assert.equal(hindi.localizationStatus, 'ai-reviewed');
     assert.equal(hindi.languageReviewStatus, 'human-review-pending');
+    assert.match(hindi.answer, /[\u0900-\u097F]{8,}/);
     assert.match(hindi.answer, /TalentBattle/);
+
+    const marathiQuery = await ask('Which platforms are provided for placements?', 'mr');
+    assert.equal(marathiQuery.requestedLanguage, 'mr');
+    assert.equal(marathiQuery.responseLanguage, 'mr');
+    assert.deepEqual(marathiQuery.evidence.map(record => record.id), ['KB-69']);
+    assert.equal(marathiQuery.localizationStatus, 'ai-reviewed');
+    assert.match(marathiQuery.answer, /TalentBattle/);
+    assert.match(marathiQuery.answer, /[\u0900-\u097F]{8,}/);
+
+    const hindiQuery = await ask('Which platforms are provided for placements?', 'hi');
+    assert.equal(hindiQuery.requestedLanguage, 'hi');
+    assert.equal(hindiQuery.responseLanguage, 'hi');
+    assert.deepEqual(hindiQuery.evidence.map(record => record.id), ['KB-69']);
+    assert.equal(hindiQuery.localizationStatus, 'ai-reviewed');
+    assert.match(hindiQuery.answer, /TalentBattle/);
+    assert.match(hindiQuery.answer, /[\u0900-\u097F]{8,}/);
 
     const drives = await ask('Where are current MITCORER placement activities and drives shared?');
     assert.deepEqual(drives.evidence.map(record => record.id), ['KB-69']);
     assert.match(drives.answer, /POD, Superset, TalentBattle, and Unstop/);
+  });
+});
+
+test('reported admission, programme, syllabus, scholarship, transit, and placement questions stay on the right workflow', async () => {
+  await testHarness(async (ask) => {
+    const cases = [
+      ['How do I apply for First Year B.Tech through CAP?', /Register on the Maharashtra CET Cell First Year Engineering portal[\s\S]*merit lists/i, /91584 14343/],
+      ['I got a CAP seat. What should I do next?', /For your CAP allotment[\s\S]*seat-acceptance action/i, /institute-level or against-CAP notice/i],
+      ['What is the difference between CAP and institute-level admission?', /\*\*CAP admission\*\*[\s\S]*\*\*Institute-level \/ ACAP admission\*\*/i, /against-CAP admission.*same process/i],
+      ['Is there any vacancy for Computer Science this year?', /process closed[\s\S]*does not establish that a seat is still open/i, /guaranteed seat/i],
+      ['What is the difference between Electronics and Telecommunication Engineering and Electronics and Computer Engineering?', /Electronics & Telecommunication[\s\S]*Electronics & Computer/i, /10\+2|non-zero PCM/i],
+      ['Where can I find the final year syllabus?', /Open PAH Solapur University[\s\S]*final-year link/i, /Page 17|OCR excerpts/i],
+      ['I am an OBC student. Which scholarship should I check?', /Post Matric Scholarship to OBC Students[\s\S]*Tuition Fees and Examination Fees to OBC Students/i, /AICTE Pragati Scholarship for Girl Students/i],
+      ['I am a girl student. Are there scholarships I may be eligible to check?', /AICTE Pragati Scholarship for Girl Students/i, /guaranteed/i],
+      ['What documents are usually needed for a scholarship?', /Documents Required[\s\S]*income proof/i, /Submit for Staff Review/i],
+      ['Where do I apply for MahaDBT schemes?', /MahaDBT[\s\S]*National Scholarship Portal/i, /Submit for Staff Review/i],
+      ['Give me a checklist of what I should complete after CAP allotment.', /After a CAP allotment[\s\S]*reporting is required/i, /I could not find an official answer/i],
+      ['I accepted my seat, but have not reported to the college. What should I check?', /remaining items to confirm[\s\S]*institute reporting/i, /could not find an official answer/i],
+      ['What are the college bus routes and timings?', /bus|transport|published/i, /Monday|9:00 AM|supplied by project owner/i],
+      ['What is the highest package this year?', /21 LPA[\s\S]*does not identify the academic year/i, /does not establish a highest or average package/i],
+      ['How can students find internship opportunities?', /POD, Superset, TalentBattle, and Unstop[\s\S]*internship/i, /could not find an official answer/i],
+      ['Give me the required documents as a checklist.', /General reporting checklist[\s\S]*10th and 12th marksheets/i, /I could not find an official answer/i],
+    ];
+    for (const [question, mustMatch, mustNotMatch] of cases) {
+      const answer = await ask(question);
+      const expectedOutcome = question.includes('vacancy') ? 'INSUFFICIENT_EVIDENCE'
+        : question.includes('required documents as a checklist') ? 'NEEDS_CLARIFICATION' : 'ANSWERED';
+      assert.equal(answer.outcomeStatus, expectedOutcome, `${question}: ${answer.outcomeStatus}`);
+      assert.match(answer.answer, mustMatch, question);
+      assert.doesNotMatch(answer.answer, mustNotMatch, question);
+    }
+    const reservedFee = await ask('What fee applies to an eligible reserved category student?');
+    assert.equal(reservedFee.outcomeStatus, 'NEEDS_CLARIFICATION');
+    assert.match(reservedFee.answer, /First Year or Direct Second Year/i);
+    assert.doesNotMatch(JSON.stringify(reservedFee), /Submit for Staff Review|Contact MITCORER Staff/i);
   });
 });

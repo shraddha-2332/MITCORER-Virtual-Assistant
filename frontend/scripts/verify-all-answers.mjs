@@ -13,7 +13,9 @@ import { createServer, resetRuntimeStateForTests } from '../../backend/src/serve
 import { numericTokens } from '../../backend/src/language.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const audit = JSON.parse(fs.readFileSync(path.join(root, '../docs/answer-audit/report.json'), 'utf8'));
+const catalogue = fs.readFileSync(path.join(root, '../docs/answer-audit/CATALOGUE.md'), 'utf8');
+const questions = [...catalogue.matchAll(/^\| (.+?) \| \d+ \/ \d+ \/ \d+ \|/gm)].map(([, question]) => question);
+assert.ok(questions.length > 0, 'The answer catalogue has no runnable questions');
 const corpus = { seeded: createSeedData() };
 if (fs.existsSync(config.databaseFile)) {
   const connection = new DatabaseSync(config.databaseFile, { readOnly: true });
@@ -31,7 +33,7 @@ const api = createServer();
 let vite, browser;
 const results = [];
 const screenshots = new Set(['Which B.Tech programmes are available at MITCORER?', 'Which Polytechnic courses are available?', 'Which Direct Second Year programmes are available?', 'What is the fee structure?', 'What are hostel and mess fees?', 'What documents are required for admission?', 'Tell me about MITCORER.', 'Why choose MITCORER?', 'What are the placement highlights?', 'What scholarships are available?', 'What campus facilities are available?', 'What are fees and hostel fees?', 'List B.Tech programmes and fees.', 'How do I contact the college?']);
-const directory = path.join(root, 'tmp/answer-audit');
+const directory = process.env.MITRA_BROWSER_REPORT_DIR || path.join(root, 'tmp/answer-audit');
 fs.mkdirSync(directory, { recursive: true });
 try {
   resetDbForTests(corpus.seeded);
@@ -48,7 +50,7 @@ try {
     if (!await page.locator('.publicComposer').isVisible()) await page.getByRole('button', { name: 'Open MIT Barshi admission assistant' }).click();
     for (const language of ['en', 'mr', 'hi']) {
       await page.getByRole('combobox', { name: 'Response language', exact: true }).selectOption(language);
-      for (const [index, question] of audit.questions.entries()) {
+      for (const [index, question] of questions.entries()) {
         resetRuntimeStateForTests();
         // Catalogue questions are independent cases, not a 200+ turn dialogue.
         if (await page.locator('.publicBubble.user').count()) {
@@ -85,10 +87,10 @@ try {
         results.push({ corpus: name, language, question, links, rows: await bubble.locator('.publicAnswerList li').count() });
       }
     }
-    console.log(`PASS: ${name}: ${audit.questions.length * 3} answer journeys`);
+    console.log(`PASS: ${name}: ${questions.length * 3} answer journeys`);
   }
   assert.deepEqual(errors, []);
-  fs.writeFileSync(path.join(root, '../docs/answer-audit/browser-results.json'), `${JSON.stringify({ checkedAt: new Date().toISOString(), cases: results, browserErrors: errors }, null, 2)}\n`);
+  fs.writeFileSync(path.join(directory, 'browser-results.json'), `${JSON.stringify({ checkedAt: new Date().toISOString(), cases: results, browserErrors: errors }, null, 2)}\n`);
   console.log(`PASS: ${results.length} real API browser journeys; factual numbers, complete source links, local notices, mobile overflow and no evidence panel.`);
 } finally {
   await browser?.close();

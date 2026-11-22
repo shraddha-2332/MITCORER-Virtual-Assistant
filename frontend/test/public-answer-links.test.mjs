@@ -29,6 +29,25 @@ test('source links are deduplicated without replacing maintainer URLs', () => {
   assert.deepEqual(publicAnswerLinks({ sourceUrl: 'https://mitcorer.edu.in/contact.php', officialLinks: [{ label: 'Contact', url: 'https://mitcorer.edu.in/contact.php' }] }), [{ label: 'Related official page', url: 'https://mitcorer.edu.in/contact.php' }]);
 });
 
+test('an empty related-links list does not hide official links', () => {
+  assert.deepEqual(publicAnswerLinks({
+    relatedLinks: [],
+    officialLinks: [{ label: 'MITCORER First Year B.Tech documents', url: 'https://mitcorer.edu.in/fy-btech-documents.php' }],
+  }), [{ label: 'Related: MITCORER First Year B.Tech documents', url: 'https://mitcorer.edu.in/fy-btech-documents.php' }]);
+});
+
+test('route-specific document evidence uses the route URL instead of the generic checklist source', () => {
+  const message = {
+    text: 'For First Year B.Tech, prepare the route documents.',
+    sourceUrl: 'https://mitcorer.edu.in/fy-btech-documents.php',
+    evidence: [{ id: 'KB-1', title: 'Verified admission checklist', sourceUrl: 'https://mitcorer.edu.in/admissions.php' }],
+    officialLinks: [{ label: 'MITCORER First Year B.Tech documents', url: 'https://mitcorer.edu.in/fy-btech-documents.php' }],
+  };
+  assert.deepEqual(publicAnswerLinks(message), [
+    { label: 'Evidence: MITCORER route-specific admission documents', url: 'https://mitcorer.edu.in/fy-btech-documents.php' },
+  ]);
+});
+
 test('evidence citations are separate from keyword-selected related pages', () => {
   const links = publicAnswerLinks({
     sourceUrl: 'https://mitcorer.edu.in/faq.php',

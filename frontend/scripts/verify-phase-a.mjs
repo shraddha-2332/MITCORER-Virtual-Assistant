@@ -46,10 +46,17 @@ try {
       return data;
     };
     if (width === 360) {
-      const voiceButton = page.getByRole('button', { name: 'Voice input planned for a future release' });
-      assert.equal(await voiceButton.isDisabled(), true);
+      const composer = page.locator('.publicComposer');
+      assert.equal(await composer.getByRole('button').count(), 1);
+      assert.equal(await composer.getByRole('button', { name: 'Send message' }).isDisabled(), true);
       assert.equal(await page.locator('.publicVoiceConsent').count(), 0);
-      results.push({ width, test: 'planned voice icon remains disabled', passed: true });
+      const replies = page.getByRole('region', { name: 'Quick questions' }).last();
+      await replies.getByRole('button', { name: 'CAP admission', exact: true }).focus();
+      await page.keyboard.press('Tab');
+      const focus = await replies.getByRole('button', { name: 'Programmes', exact: true })
+        .evaluate(element => ({ active: element === document.activeElement, outline: getComputedStyle(element).outlineStyle }));
+      assert.deepEqual(focus, { active: true, outline: 'solid' });
+      results.push({ width, test: 'single send action and visible keyboard focus on quick replies', passed: true });
     }
     for (const language of ['en', 'mr', 'hi']) {
       await page.getByRole('combobox', { name: 'Response language', exact: true }).selectOption(language);

@@ -4,7 +4,7 @@
 
 > Good morning. Our project is Mitra, a virtual assistant for MIT College of Railway Engineering and Research, Barshi. Applicants and parents often have to check several pages and notices to find the right fee, document list, or admission rule. The answer can change with the year, admission route, or fee category.
 >
-> With Mitra, they can ask in a chat. The system checks the question against published college records, asks for missing details, and shows the supporting record when available. Applicants can also sign in to submit documents, and staff can review those submissions.
+> With Mitra, they can ask in a chat. The system checks the question against published college records, asks for missing details, and shows the supporting record when available. Applicants can use the admissions checklist as guests and sign in to save progress.
 >
 > We’ll show a fee question and a follow-up, then explain how Mitra finds the answer, protects private information, and checks its results.
 
@@ -16,7 +16,7 @@ This plan covers the full website. Each person has a clear part and a line to pa
 | --- | --- | --- |
 | 0:00–4:00 | **Member 1** | Opening, public chat, fee question and follow-up |
 | 4:00–8:00 | **Member 2** | Admission inquiry, public information and source links |
-| 8:00–12:00 | **Member 3** | Applicant account, document upload and staff review |
+| 8:00–12:00 | **Member 3** | Guest checklist and optional saved progress |
 | 12:00–15:00 | **Member 4** | Admin knowledge review, technical workflow, tests and closing |
 | 15:00–20:00 | **All members** | Optional feature example, then examiner questions |
 
@@ -44,26 +44,20 @@ Say the opening above. Then show the main website and chat.
 
 **Say:** “Mitra can answer from published information and point the visitor to an official next step. If it cannot answer confidently, the visitor can ask staff.”
 
-**Hand off:** “The public inquiry is one part of the website. The next presenter will show the signed-in applicant document workflow.”
+**Hand off:** “The public inquiry is one part of the website. The next presenter will show the guest checklist and optional sign-in.”
 
-### Member 3 · Applicant account and document upload · 4 minutes
+### Member 3 - Admission checklist and optional sign-in (4 minutes)
 
-Use a prepared test account and a harmless sample PDF or image. Do not use a real applicant’s personal document.
-
-1. Show the applicant sign-in or account page.
-2. Open the applicant documents panel.
-3. Choose a sample file and show the upload form. Explain that the applicant can review their own draft.
-4. Submit the document for staff review.
-5. Open the applicant status or notes, if available, then show the staff review page using the demo staff account.
-6. Explain that staff can review the submitted file and update its status. Unsigned visitors cannot view private document status.
-
-**Say:** “An applicant’s draft belongs to that account. When the applicant submits it, authorized staff can review it and record a status or correction note.”
+1. Ask MITRA, "I got MITCORER in CAP. What do I do now?"
+2. Open the checklist as a guest and choose a route and the Centralized CAP process.
+3. Mark the latest completed step and a document as prepared. Show the next official action and its link.
+4. Select **Save my checklist**, sign in with the demo account and save. Reopen the checklist to show the saved progress.
 
 **Hand off:** “We’ve seen the applicant side. The next presenter will show how staff maintain the answers and explain how the system works behind the website.”
 
 ### Member 4 · Staff, admin and technical explanation · 3 minutes
 
-1. Show the staff review queue and the submitted demo document.
+1. Open **Saved admission checklists** to show self-reported progress. Open **Review Inbox** to show where visitor questions and feedback go.
 2. Show the admin knowledge or official-source review screen. Explain that an admin checks information before publishing it for chat answers.
 3. Give the short technical path: “React sends the question to the Node.js API. The backend understands its topic and details, looks up published records in SQLite, and returns the answer and available evidence. Some open-ended questions can use an AI draft, which is checked before display.”
 4. State one validation result accurately: “Our saved local run passed 150 out of 150 bounded checks. That is a test result, not a guarantee of perfect accuracy. Semantic review found two unsuitable answers that we then corrected and covered with tests.”
@@ -151,7 +145,7 @@ Start with questions 1, 8, 12, 13, 16, 21, 24, 29, 37 and 40. Answer in one or t
 
 ### Product and architecture
 
-1. **What problem are you solving?** Applicants and parents need college answers that match their situation. Mitra brings published information and document submission into one place.
+1. **What problem are you solving?** Applicants and parents need college answers that match their situation. Mitra brings published information and admissions guidance into one place.
 2. **What is the project's main contribution?** Mitra remembers details across short follow-ups and shows where an answer came from. We can demonstrate both with the fee example.
 3. **Is the system an admission decision engine?** Mitra gives guidance and tracks submissions. Authorized bodies still decide admissions and scholarships. Intake is the approved number of seats, vacancies are seats available now, and cutoff is a past admission result.
 4. **Why a modular monolith?** We use one backend process with separate modules inside it. That keeps setup simple while giving login, answers and storage their own code.
@@ -185,12 +179,12 @@ Start with questions 1, 8, 12, 13, 16, 21, 24, 29, 37 and 40. Answer in one or t
 26. **How do you prevent stale cached answers?** The cache stores answers for reuse. Mitra checks if the supporting record changed, expired or was removed before reusing an answer. Private account answers stay out of the shared cache.
 27. **How are passwords stored?** We store a salted PBKDF2-SHA256 password hash with 120,000 iterations. The salt makes equal passwords produce different stored values, and the backend compares hashes using constant-time equality.
 28. **Is the access token a JWT?** The access token uses a custom two-part HMAC signature and expires after 15 minutes. Its contents can be read, and the signature detects changes. The refresh token is separate and stored as a hash on the server.
-29. **How do you prevent one applicant reading another’s documents?** The backend checks who is signed in and whether their role or ownership allows access. That includes direct file links. Applicants keep drafts private until they submit them for staff review.
-30. **Why separate applicant uploads from knowledge sources?** Applicant files belong to a private workflow. Official source files go through admin review before their text can become public answer evidence.
+29. **How does MITRA protect a saved checklist?** The API checks the signed-in account before returning or saving progress. Authorized staff can view saved progress for admissions support.
+30. **How does MITRA use official source files?** An admin reviews them before their text can become public answer evidence.
 31. **How are failures handled?** The backend returns a status that explains the type of failure. The UI shows an error if the request takes too long and lets users retry. If the first chat request already reached the server, a retry may add another turn.
 32. **What about XSS, CSRF and brute-force attempts?** React renders supported formatting as UI elements and text. The app checks links, uses SameSite cookies and applies rate limits. Backend role and ownership checks still decide access.
 33. **What would break at higher load?** The backend uses local files, an in-memory rate limit and whole-state updates. At higher load, we would measure slow requests and write conflicts before choosing shared database or file storage.
-34. **How do you deploy and recover it?** Build the frontend, send API requests to the Node service and configure persistent files, secrets and health checks. Test login and document submission after release. Back up the database and files together.
+34. **How do you deploy and recover it?** Build the frontend, send API requests to the Node service and configure persistent files, secrets and health checks. Test guest checklist access and saved checklist recovery after release. Back up the database and files together.
 35. **What observability exists?** Backend logs can show which answer route ran, how long it took and which evidence was used. Audit events help trace privileged changes.
 
 ### Evaluation and examiner follow-ups

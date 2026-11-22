@@ -47,8 +47,13 @@ export function publicAnswerLinks(message, assets = {}) {
       label: [record.title, record.academicYear, record.provenance?.section].filter(Boolean).join(' · '),
       url: record.sourceUrl,
     }));
-  for (const link of evidenceSources) add(`Evidence: ${link.label || 'official record'}`, link.url);
+  const routeDocumentSource = (message.evidence || []).some(record => record.id === 'KB-1')
+    && /(?:First Year B\.Tech|Direct Second Year B\.Tech|Post-SSC Polytechnic)/i.test(String(message.text || ''))
+    ? message.sourceUrl
+    : '';
+  if (routeDocumentSource) add('Evidence: MITCORER route-specific admission documents', routeDocumentSource);
+  else for (const link of evidenceSources) add(`Evidence: ${link.label || 'official record'}`, link.url);
   if (!evidenceSources.length && message.sourceUrl) add('Related official page', message.sourceUrl);
-  for (const link of message.relatedLinks || message.officialLinks || []) add(`Related: ${link.label}`, link.url);
+  for (const link of [...(message.relatedLinks || []), ...(message.officialLinks || [])]) add(`Related: ${link.label}`, link.url);
   return links;
 }

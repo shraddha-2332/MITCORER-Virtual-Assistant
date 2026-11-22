@@ -53,7 +53,7 @@ test('anonymous multilingual uploaded-document status queries get safe guidance 
   }
 });
 
-test('authenticated document-status answers remain scoped to the requesting account', async () => {
+test('authenticated document-status answers do not expose retired records', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-document-status-owner-'));
   const previousDatabaseFile = config.databaseFile;
   const previousGeminiApiKey = config.geminiApiKey;
@@ -71,7 +71,8 @@ test('authenticated document-status answers remain scoped to the requesting acco
     const response = await answerAdmissionQuestion({ question: 'What is my uploaded document review status?', language: 'en' }, {
       id: 'USER-OWN', email: 'applicant@example.test', name: 'Applicant', role: 'applicant',
     });
-    assert.match(response.answer, /1 uploaded file: 1 Submitted for review/i);
+    assert.match(response.answer, /no longer accepts applicant documents/i);
+    assert.doesNotMatch(JSON.stringify(response), /DOC-OWN|transcript\.pdf|Submitted for review/i);
     assert.ok(!response.answer.includes('Needs correction'));
     assert.ok(!response.answer.includes('PRIVATE_REVIEW_NOTE_CANARY'));
   } finally {

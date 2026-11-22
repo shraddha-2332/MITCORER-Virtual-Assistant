@@ -85,6 +85,22 @@ export function formatAnswer(text, next = '') {
       const ordered = lines.every(line => /^\d+[.)]\s+/.test(line));
       return { type: 'list', ...(ordered ? { ordered: true, start: Number(lines[0].match(/^\d+/)[0]) } : {}), items: lines.map((line) => line.replace(/^(?:[-*\u2022]|\d+[.)])\s+/, '')) };
     }
+    if (paragraph.length >= 360) {
+      const sentences = paragraph.match(/[^.!?]+[.!?]+(?:[”’"')\]]*)?(?:\s+|$)/g);
+      if (sentences?.length >= 3 && sentences.join('').trim() === paragraph.trim()) {
+        const readable = [];
+        let group = '';
+        for (const sentence of sentences.map((part) => part.trim())) {
+          if (group && group.length >= 240) {
+            readable.push(group);
+            group = '';
+          }
+          group = group ? `${group} ${sentence}` : sentence;
+        }
+        if (group) readable.push(group);
+        if (readable.length > 1) return readable.map((text) => ({ type: 'paragraph', text }));
+      }
+    }
     return { type: 'paragraph', text: paragraph };
   });
 }

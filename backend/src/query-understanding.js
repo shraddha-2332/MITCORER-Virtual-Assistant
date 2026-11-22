@@ -45,7 +45,7 @@ export function normalizeQuery(input) {
     [/प्रवेशासाठी\s*आवश्यक\s*कागदपत्रे?|प्रवेश\s*के\s*आवश्यक\s*दस्तावेज|admission\s*documents?/gu, ' required admission documents '],
     [/फेरी|राउंड/gu, ' round '],
     [/तसेच|तसंच|तथा|साथ ही|इसके अलावा/gu, ' and '],
-    [/मुली|लड़कियों|लड़कियां|महिलाओं/gu, ' girl '], [/मुलगे|लड़कों/gu, ' boy '],
+    [/मुली|विद्यार्थिनींना|विद्यार्थिनी|लड़कियों|लड़कियां|महिलाओं|छात्राओं|छात्राएं|छात्रा/gu, ' girl '], [/मुलगे|लड़कों/gu, ' boy '],
     [/पात्रता|पात्र|योग्य/gu, ' eligible '], [/कट\s?ऑफ|कटऑफ|कटऑफ/gu, ' cutoff '],
     [/टक्केवारी|प्रतिशत/gu, ' percent '], [/प्रवेश|दाखला/gu, ' admission '],
     [/कागदपत्रे?|दस्तावेज/gu, ' document '], [/शिष्यवृत्ती|छात्रवृत्ति/gu, ' scholarship '],
@@ -185,6 +185,10 @@ export function queryClarification(query) {
   const table = !asksUniformity && /\b(?:all|every|table|structure|category-wise|compare|comparison|versus|vs|both)\b/.test(q.normalized);
   if (q.invalidYears.length) return { kind: 'year', message: 'Please specify a valid consecutive academic year and admission route.' };
   if (q.topics.includes('academicFees') && !table) {
+    if (/\b(?:reserved category|reserved-category|reserved student|eligible reserved)\b/.test(q.normalized)
+      && !q.category.positive.length && !q.service.positive.length) {
+      return { kind: 'feeCategory', message: 'For academic fees, please specify First Year or Direct Second Year and your exact category (for example OBC, SC, ST, EWS, VJNT, SBC, or SEBC). If you mean hostel, mess, or transport fees, tell me which one.' };
+    }
     if (!q.category.positive.length && !q.category.excluded.length && !/\b(?:structure|schedule|breakdown|category-wise)\b/.test(q.normalized)
       && (/\b(?:same for every|same for all|fee for engineering|fee for first year|how much.*pay for admission)\b/.test(q.normalized)
         || asksUniformity
@@ -210,7 +214,7 @@ export function queryClarification(query) {
     && !/\bscholarship\b/.test(q.normalized)
     && !q.category.positive.length
     && !q.route.positive.length && !/\b(?:general checklist|all routes|all categories|document checklist|admission reporting|open category|required admission documents?|admission documents? required)\b/.test(q.normalized)) {
-    return { kind: 'documents', message: 'Are you applying for First Year or Direct Second Year, and which category or concession should I check? Document requirements can differ by route and claim.' };
+    return { kind: 'documents', message: 'Are you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check? Document requirements can differ by route and claim.' };
   }
   if ((/\b(?:am i|can i|will i|my)\b[^?]{0,50}\b(?:eligible|eligibility|qualify)\b/.test(q.normalized)
       || /(?:मी|मैं).{0,35}(?:पात्र|योग्य)|(?:am i|मी).{0,30}eligible/u.test(String(query)))
@@ -242,4 +246,9 @@ export function splitQueryClauses(query) {
   names.forEach((name, index) => { protectedText = protectedText.replaceAll(name, `__branch_${index}__`); });
   return protectedText.split(/\s+(?:and|also|plus|as well as)\s+|[?;।]+\s*|[.!]\s+(?=(?:what|which|how|tell|show|list|does|is|can)\b)|,\s*(?=(?:what|which|how|tell|show|list|does|is|can|intake|scholarship|hostel|mess|fee|placement)\b)/i)
     .map(part => { names.forEach((name, index) => { part = part.replaceAll(`__branch_${index}__`, name); }); return part.trim(); }).filter(Boolean);
+}
+export function findDocumentReference(question) {
+  const text = String(question || '').normalize('NFKC');
+  const tokens = text.match(/(?=[A-Za-z0-9-]*[A-Za-z])(?=[A-Za-z0-9-]*\d)[A-Za-z0-9-]{6,}/g) || [];
+  return tokens.find(token => !/^20\d{2}(?:-\d{2,4})?$/.test(token) && !/^\d{6,}$/.test(token));
 }

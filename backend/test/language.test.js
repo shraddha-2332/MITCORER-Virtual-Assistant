@@ -75,6 +75,23 @@ test('translation validation binds text to the source and rejects number changes
   assert.throws(() => validateTranslations({ fr: 'Texte' }, 'Original text'), /mr and hi/);
 });
 
+test('every published free-text seed record has usable Marathi and Hindi translations', () => {
+  const records = createSeedData().knowledge.filter(record => record.status === 'Published' && !record.facts);
+  assert.equal(records.length, 66);
+  for (const record of records) {
+    for (const language of ['mr', 'hi']) {
+      const translation = record.translations?.[language];
+      assert.ok(translation?.text, `${record.id} is missing ${language}`);
+      assert.equal(translation.sourceHash, sourceTextHash(record.text), `${record.id} ${language} source hash`);
+      assert.equal(sameNumbers(record.text, translation.text), true, `${record.id} ${language} numeric facts`);
+      const localized = localizeResponse({ answer: record.text, evidence: [record], source: record.source }, language, record.title, [record], academicFeeSelection);
+      assert.equal(localized.responseLanguage, language, `${record.id} ${language} response language`);
+      assert.equal(localized.localizationStatus, 'ai-reviewed', `${record.id} ${language} localization method`);
+      assert.equal(localized.answer, translation.text, `${record.id} ${language} translated answer`);
+    }
+  }
+});
+
 test('stale reviewed translations fall back transparently instead of reusing changed facts', () => {
   const record = { id: 'KB-20', status: 'Published', text: 'Updated library hours are 10.',
     translations: { mr: { text: 'ग्रंथालयाची वेळ 9 आहे. कृपया कार्यालयाकडून निश्चित करा.', sourceHash: sourceTextHash('Library hours are 9.'), reviewedBy: 'admin' } } };

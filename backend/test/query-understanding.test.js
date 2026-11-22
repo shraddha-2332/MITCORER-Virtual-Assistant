@@ -279,12 +279,14 @@ test('public queries interpret plurals, paraphrases, typos, native conjunctions 
     assert.match(workshop.answer, /Fitting Shop/i);
     assert.match(workshop.answer, /Welding Shop/i);
     assert.match(workshop.answer, /Carpentry Shop/i);
+    assert.doesNotMatch(workshop.answer, /seminar halls|central computing center/i);
     assert.ok(workshop.officialLinks.some(link => link.url.endsWith('/infrastructure/workshops')));
 
     const computingAndSeminar = await ask('Tell me about the central computing center and seminar halls');
     assert.equal(computingAndSeminar.evidence[0]?.id, 'KB-49');
     assert.match(computingAndSeminar.answer, /100\+/i);
     assert.match(computingAndSeminar.answer, /audio-visual/i);
+    assert.doesNotMatch(computingAndSeminar.answer, /machine shop|welding shop/i);
     assert.ok(computingAndSeminar.officialLinks.some(link => link.url.endsWith('/infrastructure/computer-center')));
   } finally {
     closeDb();
@@ -333,9 +335,32 @@ test('regresses developer-review failures for clarification, scope, and unsuppor
     }
 
     const calendar = await ask('On what exact date does CSE Semester I start in academic year 2026-27?');
-    assert.equal(calendar.source, 'No matching indexed document');
+    assert.equal(calendar.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.match(calendar.answer, /exact semester start date/i);
     assert.equal(calendar.evidence.length, 0);
     assert.doesNotMatch(calendar.answer, /fee|sports|admission reporting/i);
+    for (const [language, question] of [
+      ['mr', '2026-27 शैक्षणिक वर्षात CSE Semester I नेमके कोणत्या तारखेला सुरू होते?'],
+      ['hi', '2026-27 शैक्षणिक वर्ष में CSE Semester I ठीक किस तारीख को शुरू होता है?'],
+    ]) {
+      const response = await ask(question, language);
+      assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE', question);
+      assert.match(response.answer, /सेमिस्टर सुरू होण्याची नेमकी तारीख|सेमेस्टर शुरू होने की सटीक तारीख/u, question);
+      assert.equal(response.evidence.length, 0, question);
+    }
+
+    const entc = await ask('For 2026-27, what are the ENTC First Year B.Tech intake and choice code?');
+    assert.equal(entc.outcomeStatus, 'ANSWERED');
+    assert.match(entc.answer, /Electronics and Telecommunication Engineering/);
+    assert.doesNotMatch(entc.answer, /Other requested information|Which course or programme/);
+
+    const pendingFee = await ask("I accepted my CAP seat but haven't paid the fee. What is remaining?");
+    assert.match(pendingFee.answer, /approved fee payment/);
+    assert.doesNotMatch(pendingFee.answer, /seat acceptance or freeze/);
+
+    const personalScholarship = await ask('Will I personally be approved for AICTE Pragati if I apply?');
+    assert.equal(personalScholarship.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+    assert.match(personalScholarship.answer, /cannot verify your personal Pragati approval/);
 
     const scholarshipDate = await ask('On what exact date will my scholarship money be deposited this year?');
     assert.equal(scholarshipDate.outcomeStatus, 'INSUFFICIENT_EVIDENCE');

@@ -70,7 +70,11 @@ export function validateKnowledgeFields(body, existing = null) {
   if (existing && Object.keys(body).every((key) => key === 'expectedRevision')) throw badRequest('Provide at least one field to update.');
   const next = { ...(existing || {}) };
   if (Object.hasOwn(body, 'verifySource') && typeof body.verifySource !== 'boolean') throw badRequest('Source review confirmation must be a boolean.');
-  if (Object.hasOwn(body, 'provenance')) next.provenance = validateProvenance(body.provenance);
+  if (Object.hasOwn(body, 'provenance')) {
+    // Provenance is a partial-editable metadata object. Preserve omitted
+    // metadata, while allowing an explicit blank/null value to clear a field.
+    next.provenance = validateProvenance({ ...(existing?.provenance || {}), ...body.provenance });
+  }
   for (const [field, max] of [['title', 180], ['category', 80], ['source', 180]]) {
     if (Object.hasOwn(body, field) || !existing) next[field] = string(body[field], field, max);
   }

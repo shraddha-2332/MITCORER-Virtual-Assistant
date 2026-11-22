@@ -6,7 +6,7 @@ These 24 cases are now development diagnostics, not held-out questions. Contract
 
 HTTP contract: passed
 
-For First Year Engineering in AY 2026-27, the approved OMS/Open without EBC income concession academic-year total is INR 1,05,000. These are annual amounts, not semester-wise amounts and not a semester-wise schedule. The record does not establish an installment split. Category concessions require valid admission and category documents.
+For First Year Engineering in AY 2026-27, the approved OMS/Open without EBC income concession academic-year total is INR 1,05,000. These are annual amounts, not semester-wise amounts and not a semester-wise schedule. The record does not establish an installment split. Category concessions require valid admission and category documents. These figures are annual totals; the maintained passage does not establish a tuition-only breakdown.
 
 Evidence IDs: KB-2
 
@@ -32,7 +32,7 @@ HTTP contract: passed
 
 Academic fees: First Year Engineering fees for AY 2026-27 include Open or OMS total INR 1,05,000, Open EBC EWS OBC SEBC boys INR 61,109, girls INR 17,217, VJNT SBC TFWS INR 17,217, and SC ST INR 8,000. Direct Second Year fees for AY 2026-27 include Open or OMS total INR 98,000, Open EBC EWS OBC SEBC boys INR 58,181, girls INR 18,362, VJNT SBC TFWS INR 18,362, and SC ST INR 10,000. These are annual amounts, not semester-wise amounts and not a semester-wise schedule. The record does not establish an installment split. Category concessions require valid admission and category documents. [1]
 
-Hostel and mess fees: For AY 2026-27, the hostel fee is INR 35,000 plus a refundable hostel deposit of INR 5,000, for a hostel total of INR 40,000. Room availability, hostel and mess rules, and payment process must be confirmed with the college. [2]
+Hostel fees: For AY 2026-27, the hostel fee is INR 35,000 plus a refundable hostel deposit of INR 5,000, for a hostel total of INR 40,000. Room availability, hostel and mess rules, and payment process must be confirmed with the college. [2]
 
 Hostel and mess fees: For AY 2026-27, Mess fees are INR 42,000 per year. Room availability, hostel and mess rules, and payment process must be confirmed with the college. [2]
 
@@ -70,7 +70,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-For AY 2026-27, Computer Science and Engineering has a published sanctioned intake of 120. Sanctioned intake is the programme’s approved capacity; it does not show how many seats remain available today. The published page does not confirm current vacancies, and the indexed records do not contain a live vacancy count. Check the current CAP or ACAP notice for availability.
+For AY 2026-27, Computer Science and Engineering has sanctioned intake 120 and choice code 0690124210. Intake does not confirm current vacancies or guarantee admission.
 
 Evidence IDs: KB-10
 
@@ -82,7 +82,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-MITCORER lists a bus facility. The published page does not state a route list, stops, timetable, seat availability, or transport fee. Confirm the current route and timetable with the college before planning travel.
+MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment.
 
 Evidence IDs: KB-19
 
@@ -142,7 +142,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-Which course or programme do you mean? Please specify the programme and admission route, such as first-year B.Tech or Polytechnic. I do not have conversation context for “it” or “its”.
+Which fee do you mean—academic, hostel, mess, or transport? Please also specify First Year or Direct Second Year and the applicable category.
 
 Evidence IDs: none
 
@@ -207,11 +207,9 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-बस व वाहतूक: या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.
+या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.
 
-MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment. [1]
-
-इतर विचारलेली माहिती: या भागासाठी पुरेशी प्रकाशित अधिकृत माहिती उपलब्ध नाही. कृपया महाविद्यालयाकडून तपशील निश्चित करा.
+MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment.
 
 Evidence IDs: KB-19
 
@@ -223,9 +221,15 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.
+ग्रंथालय: या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.
 
-MITCORER states that it has a well-equipped library with digital resources and journals. The public FAQ does not publish borrowing rules, timings, or access eligibility, so those operational details require confirmation from the library.
+MITCORER states that it has a well-equipped library with digital resources and journals. The public FAQ does not publish borrowing rules, timings, or access eligibility, so those operational details require confirmation from the library. [1]
+
+इतर विचारलेली माहिती: या भागासाठी पुरेशी प्रकाशित अधिकृत माहिती उपलब्ध नाही. कृपया महाविद्यालयाकडून तपशील निश्चित करा.
+
+ग्रंथालय: या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.
+
+MITCORER states that it has a well-equipped library with digital resources and journals. The public FAQ does not publish borrowing rules, timings, or access eligibility, so those operational details require confirmation from the library. [1]
 
 Evidence IDs: KB-20
 
@@ -237,7 +241,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-तुम्ही कोणत्या अभ्यासक्रमाबद्दल विचारत आहात? कृपया अभ्यासक्रम आणि प्रवेशमार्ग स्पष्ट करा, उदाहरणार्थ प्रथम वर्ष B.Tech किंवा Polytechnic. मागील संदेशांचा संदर्भ या उत्तरासाठी वापरला जात नाही.
+तुम्हाला शैक्षणिक, वसतिगृह, मेस की वाहतूक शुल्क विचारायचे आहे? शुल्काचा प्रकार आणि प्रवेशमार्ग स्पष्ट करा.
 
 Evidence IDs: none
 
@@ -302,11 +306,9 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-बस और परिवहन: इस जानकारी का समीक्षा किया हुआ हिंदी अनुवाद उपलब्ध नहीं है। तथ्यों को बदले बिना मूल अंग्रेजी जानकारी नीचे दी गई है।
+इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।
 
-MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment. [1]
-
-अन्य पूछी गई जानकारी: इस भाग के लिए पर्याप्त प्रकाशित आधिकारिक जानकारी उपलब्ध नहीं है। कृपया कॉलेज से विवरण की पुष्टि करें।
+MITCORER lists a bus facility under campus infrastructure. The currently published Bus Facility page does not state a route list, stops, timetable, seat availability, or transport fee. Those details must be confirmed from the current transport notice or admission staff before travel or payment.
 
 Evidence IDs: KB-19
 
@@ -318,11 +320,9 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-पुस्तकालय: इस जानकारी का समीक्षा किया हुआ हिंदी अनुवाद उपलब्ध नहीं है। तथ्यों को बदले बिना मूल अंग्रेजी जानकारी नीचे दी गई है।
+इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।
 
-MITCORER states that it has a well-equipped library with digital resources and journals. The public FAQ does not publish borrowing rules, timings, or access eligibility, so those operational details require confirmation from the library. [1]
-
-अन्य पूछी गई जानकारी: इस भाग के लिए पर्याप्त प्रकाशित आधिकारिक जानकारी उपलब्ध नहीं है। कृपया कॉलेज से विवरण की पुष्टि करें।
+MITCORER states that it has a well-equipped library with digital resources and journals. The public FAQ does not publish borrowing rules, timings, or access eligibility, so those operational details require confirmation from the library.
 
 Evidence IDs: KB-20
 
@@ -334,7 +334,7 @@ Reviewer / date / corrections: __________
 
 HTTP contract: passed
 
-आप किस पाठ्यक्रम के बारे में पूछ रहे हैं? कृपया पाठ्यक्रम और प्रवेश मार्ग बताएं, जैसे प्रथम वर्ष B.Tech या Polytechnic। इस उत्तर में पिछले संदेशों का संदर्भ उपयोग नहीं किया जाता।
+आप शैक्षणिक, छात्रावास, मेस या परिवहन शुल्क पूछ रहे हैं? शुल्क का प्रकार और प्रवेश मार्ग स्पष्ट करें।
 
 Evidence IDs: none
 

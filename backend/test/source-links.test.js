@@ -30,7 +30,7 @@ test('sources follow answer topics and unsupported routes never use engineering 
     assert.deepEqual(bus.evidence.map(record => record.id), ['KB-19']);
     assert.doesNotMatch(bus.answer, /1,05,000/);
     const docs = await ask('What documents are required for First Year admission?');
-    assert.equal(docs.sourceUrl, 'https://mitcorer.edu.in/mitcorer/public/admissions/documents');
+    assert.equal(docs.sourceUrl, 'https://mitcorer.edu.in/fy-btech-documents.php');
     assert.deepEqual(docs.evidence.map(record => record.id), ['KB-1']);
     const seatMatrix = await ask('What is CSE seat matrix and intake?');
     assert.deepEqual(seatMatrix.evidence.map(record => record.id), ['KB-6']);

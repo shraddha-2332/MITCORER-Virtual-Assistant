@@ -25,7 +25,9 @@ const links = {
   mitcorerPlacement: 'https://mitcorer.edu.in/mitcorer/public/placements',
   mitcorerPlacementRecords: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
   mitcorerScholarships: 'https://mitcorer.edu.in/mitcorer/public/admissions/scholarship',
-  mitcorerDocuments: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+  mitcorerDocuments: 'https://mitcorer.edu.in/fy-btech-documents.php',
+  mitcorerDseDocuments: 'https://mitcorer.edu.in/d-sy-btech-documents-required.php',
+  mitcorerPolytechnicDocuments: 'https://mitcorer.edu.in/fy-polytechnic-documents.php',
   mahadbt2026: 'https://mahadbt2.maharashtra.gov.in/',
   nationalScholarships: 'https://scholarships.gov.in/',
   technicalAdmissions: 'https://fe2026.mahacet.org/StaticPages/HomePage',
@@ -151,10 +153,21 @@ export function buildOfficialNavigationAnswer(question) {
       `Scholarship eligibility, documents, amounts, and deadlines depend on the scheme; confirm them on that scheme’s official portal. ${mahadbtGuidance} Open the MITCORER scheme list to identify the applicable scheme, then verify its current requirements before applying.`,
       [{ label: 'MITCORER Scholarship Schemes', url: links.mitcorerScholarships }, { label: mahaDbtLabel, url: mahaDbtUrl }, { label: 'National Scholarship Portal', url: links.nationalScholarships }]);
   }
-  if (asksMitcorer && /\b(document|certificate|marksheet|reporting|after allotment)\b/i.test(q)) {
+  if (asksMitcorer && /\b(document|certificate|marksheet|reporting|after allotment)\b/i.test(q)
+    && hasFindIntent(q)) {
+    const documentRoute = /\b(?:direct second year|dse|lateral entry)\b/i.test(q) ? 'dse'
+      : /\b(?:polytechnic|post\s*ssc|diploma)\b/i.test(q) ? 'polytechnic' : 'firstYear';
+    const routeDocumentLink = documentRoute === 'dse'
+      ? { label: 'MITCORER Direct Second Year B.Tech documents', url: links.mitcorerDseDocuments }
+      : documentRoute === 'polytechnic'
+        ? { label: 'MITCORER Polytechnic documents', url: links.mitcorerPolytechnicDocuments }
+        : { label: 'MITCORER First Year B.Tech documents', url: links.mitcorerDocuments };
     return response('MITCORER admission document navigation',
-      'Required admission documents depend on the course and route (First Year or Direct Second Year, CAP or institute-level). Open the current MITCORER checklist and compare it with the current-year State CET Cell technical admission notice before reporting.',
-      [{ label: 'MITCORER Required Admission Documents', url: links.mitcorerDocuments }, { label: 'State CET Cell technical admission notices', url: links.technicalAdmissions }]);
+      'Required admission documents depend on the course and route (First Year or Direct Second Year, CAP or institute-level). Open the matching MITCORER document list and compare it with the current-year State CET Cell technical admission notice before reporting.',
+      [
+        routeDocumentLink,
+        { label: 'State CET Cell technical admission notices', url: links.technicalAdmissions },
+      ]);
   }
   if (asksMitcorer && /\b(calendar|timetable|time table|semester dates|academic year)\b/i.test(q)) {
     return response('MITCORER academic calendar navigation',

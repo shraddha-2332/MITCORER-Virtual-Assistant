@@ -1,30 +1,60 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #182232;
-  background: #f2f5f4;
+  color: var(--color-ink);
+  background: var(--color-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #182232;
-  --muted: #667386;
-  --line: #dde5e4;
-  --surface: #fff;
-  --soft: #f7faf9;
-  --navy: #0f2634;
-  --blue: #245f78;
-  --green: #147152;
-  --maroon: #7a1f2b;
+  /* MITRA design tokens. Legacy names below remain aliases while existing screens migrate. */
+  --color-canvas: #f2f5f4;
+  --color-surface: #fff;
+  --color-surface-soft: #f7faf9;
+  --color-ink: #182232;
+  --color-ink-muted: #667386;
+  --color-line: #dde5e4;
+  --color-brand-deep: #0f2634;
+  --color-brand-blue: #245f78;
+  --color-brand-green: #147152;
+  --color-brand-maroon: #7a1f2b;
+  --color-brand-gold: #dba034;
+  --color-success-soft: #e2f3eb;
+  --color-warning-soft: #fff6df;
+  --color-focus: #16845f;
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --shadow-card: 0 18px 48px rgba(17, 32, 46, 0.11);
+  --font-size-caption: 12px;
+  --font-size-body: 14px;
+  --font-size-section: 18px;
+  --font-size-title: 24px;
+  --control-height: 42px;
+  --ink: var(--color-ink);
+  --muted: var(--color-ink-muted);
+  --line: var(--color-line);
+  --surface: var(--color-surface);
+  --soft: var(--color-surface-soft);
+  --navy: var(--color-brand-deep);
+  --blue: var(--color-brand-blue);
+  --green: var(--color-brand-green);
+  --maroon: var(--color-brand-maroon);
   --ink2: #26313f;
-  --mint: #e2f3eb;
-  --gold: #dba034;
-  --warn: #fff6df;
-  --shadow: 0 18px 48px rgba(17, 32, 46, 0.11);
+  --mint: var(--color-success-soft);
+  --gold: var(--color-brand-gold);
+  --warn: var(--color-warning-soft);
+  --shadow: var(--shadow-card);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #f2f5f4; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--color-canvas); }
 button, input, select, textarea { font: inherit; }
 button { border: 0; }
+.uiButton { --button-bg: var(--color-brand-green); --button-fg: #fff; --button-border: transparent; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--control-height); padding: 0 16px; border: 1px solid var(--button-border); border-radius: var(--radius-control); background: var(--button-bg); color: var(--button-fg); font-size: var(--font-size-body); font-weight: 750; line-height: 1.25; text-align: center; text-decoration: none; cursor: pointer; transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+.uiButton:hover:not(:disabled) { filter: brightness(.96); }
+.uiButton:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-focus) 35%, transparent); outline-offset: 2px; }
+.uiButton:disabled { opacity: .58; cursor: not-allowed; }
+.uiButton--secondary { --button-bg: var(--color-brand-deep); }
+.uiButton--outline { --button-bg: var(--color-surface); --button-fg: var(--color-brand-green); --button-border: var(--color-line); }
+.uiButton--compact { min-height: 36px; padding: 0 12px; font-size: var(--font-size-caption); }
 
 .publicAssistantShell { position: relative; min-height: 100dvh; overflow: hidden; background: linear-gradient(135deg, #f5f8f7 0%, #eef5f2 52%, #f9fbfa 100%); }
 .publicAssistantShell::before { content: ''; position: absolute; inset: 0; opacity: .08; background: url('./assets/mitcorer-campus.webp') center / cover no-repeat; }
@@ -58,11 +88,10 @@ button { border: 0; }
 .publicAssistantPanel header .publicLanguageBadge { position: absolute; right: 0; bottom: 0; padding: 1px 2px; background: #0d2639; color: #fff; font-size: 8px; font-weight: 700; line-height: 1.2; pointer-events: none; }
 .publicLanguageControl:focus-within, .publicHeaderActions > button:focus-visible { outline: 2px solid #9be2c9; outline-offset: 2px; }
 .publicLanguageControl:hover, .publicHeaderActions > button:hover { background: rgba(255,255,255,.12); }
-.publicChatMessages { min-height: 0; overflow-y: auto; padding: 16px 12px; background-color: #f7f8f5; background-image: radial-gradient(#dce6e0 1px, transparent 1px); background-size: 18px 18px; }
-.publicCampusWelcome { min-height: 104px; display: flex; align-items: end; margin: 0 0 12px; padding: 12px; border-radius: 10px; background-position: center; background-size: cover; color: #fff; overflow: hidden; }
-.publicCampusWelcome div { display: grid; gap: 4px; }.publicCampusWelcome span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; opacity: .9; }.publicCampusWelcome strong { max-width: 260px; font-size: 16px; line-height: 1.2; }.publicCampusWelcome a { display: inline-flex; align-items: center; gap: 4px; width: fit-content; color: #fff; font-size: 11px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
-.campusWelcomeActions { display: flex !important; flex-wrap: wrap; align-items: center; gap: 5px 12px !important; }
-.campusWelcomeActions button { display: inline-flex; align-items: center; gap: 4px; width: fit-content; padding: 0; border: 0; background: transparent; color: #fff; font: inherit; font-size: 11px; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.publicChatMessages { min-height: 0; overflow-y: auto; padding: 16px 12px; background-color: #f7f8f5; }
+.publicCampusWelcome { min-height: 76px; display: flex; align-items: end; margin: 0 0 12px; padding: 8px 12px; border-radius: 10px; background-position: center 42%; background-size: cover; }
+.publicCampusWelcome a { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; color: #fff; font-size: 12px; font-weight: 750; text-decoration: underline; text-underline-offset: 3px; }
+.publicCampusWelcome a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 2px; }
 .publicBubble { display: flex; gap: 8px; margin-bottom: 12px; }
 .publicBubble.user { justify-content: flex-end; }
 .publicBubbleAvatar { width: 27px; height: 27px; margin-top: 2px; padding: 2px; border: 1px solid #d8e2de; }
@@ -95,7 +124,12 @@ button { border: 0; }
 .publicProgrammePicker label { display: grid; gap: 6px; color: #31546b; font-size: 11px; font-weight: 800; }.publicProgrammePicker select { width: 100%; min-height: 38px; border: 1px solid #aebfc5; border-radius: 7px; padding: 0 10px; background: #fff; color: var(--ink); font-weight: 700; }
 .publicAnswerList { display: grid; gap: 8px; padding: 0; list-style: none; }.publicAnswerList li { padding: 8px 9px; border-radius: 7px; background: #f0f6f3; color: #233e4c; }.publicAnswerList strong { display: block; }.publicAnswerList span { display: block; margin-top: 3px; color: #547070; font-size: 12px; }
 .publicQuickReplies button, .publicQuickReplies a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 11px; border: 1px solid #174d68; border-radius: 999px; background: #fff; color: #174d68; font-size: 11px; font-weight: 800; text-decoration: none; cursor: pointer; }
-.publicQuickReplies button:hover:not(:disabled), .publicQuickReplies button:focus-visible, .publicQuickReplies a:hover, .publicQuickReplies a:focus-visible { background: #eaf4f6; outline: none; }
+.publicQuickReplies button:hover:not(:disabled), .publicQuickReplies a:hover { background: #eaf4f6; }
+.publicQuickReplies button:focus-visible, .publicQuickReplies a:focus-visible {
+  outline: 2px solid #174d68;
+  outline-offset: 2px;
+  background: #eaf4f6;
+}
 .publicQuickReplies button:disabled { opacity: .55; cursor: wait; }
 
 .escalationCard {
@@ -215,13 +249,10 @@ button { border: 0; }
   color: #4b5563;
   border: 1px solid #d1d5db;
 }
-.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 42px 42px; gap: 8px; align-items: flex-end; padding: 8px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
-.publicComposer textarea { grid-column: 1; grid-row: 1; }
-.publicComposer > button[type="submit"] { grid-column: 3; grid-row: 1; }
-.publicComposer > .publicVoiceButton { grid-column: 2; grid-row: 1; padding: 0; border: 1px solid #aebfc5; background: #f5f8f7; color: #174d68; }
-.publicComposer > .publicVoiceButton:disabled { opacity: .55; cursor: not-allowed; }
-.publicComposer textarea { width: 100%; min-height: 38px; max-height: 130px; resize: none; border: 1px solid #d9e2dc; border-radius: 8px; outline: 0; color: var(--ink); font-size: 14px; line-height: 1.4; box-sizing: border-box; padding: 8px 10px; overflow-y: hidden; font-family: inherit; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; transition: border-color .15s ease; }
+.publicComposer { display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 8px; align-items: flex-end; padding: 8px 12px; border-top: 1px solid #e1e7e3; background: #fff; }
+.publicComposer textarea { width: 100%; min-height: 42px; max-height: 130px; resize: none; border: 1px solid #d9e2dc; border-radius: 8px; color: var(--ink); font-size: 14px; line-height: 1.4; box-sizing: border-box; padding: 8px 10px; overflow-y: hidden; font-family: inherit; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; transition: border-color .15s ease; }
 .publicComposer textarea:focus { border-color: #146548; }
+.publicComposer :is(textarea, button):focus-visible { outline: 2px solid #174d68; outline-offset: 2px; }
 .publicComposer textarea::-webkit-scrollbar { width: 4px; }
 .publicComposer textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 .publicComposer textarea::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
@@ -830,6 +861,7 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .knowledgeFilters label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 800; }
 .knowledgeFilters input, .knowledgeFilters select { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 12px; }
 .knowledgeRecordList { display: grid; gap: 8px; }
+.knowledgeEditorAnchor { scroll-margin-top: 20px; }
 .knowledgeRecordRow { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: start; padding: 14px 15px; border: 1px solid #e5ece9; border-radius: 9px; background: #fff; }
 .knowledgeRecordRow:hover { border-color: #bdd5cd; background: #fcfefd; }
 .knowledgeRecordTitle { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
@@ -1061,31 +1093,8 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .escalationVerifiedContacts a { color: #c2410c; font-weight: 750; overflow-wrap: anywhere; }
 .applicantPortalEntry { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .answerPortalEntry { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; padding: 8px 11px; border: 1px solid #cbd6d0; border-radius: 7px; color: #146548; font-weight: 650; text-decoration: none; }
-.documentReviewList { display: grid; gap: 13px; }
-.documentReviewPage { gap: 22px; }
-.documentReviewPage .pageHeading { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 4px 2px 18px; border-bottom: 1px solid var(--line); }
-.documentReviewPage .pageHeading > div { max-width: 760px; }
-.documentReviewPage .pageHeading h1 { margin: 6px 0 8px; font-size: clamp(26px, 3vw, 34px); line-height: 1.15; letter-spacing: -.025em; }
-.documentReviewPage .pageHeading p { max-width: 700px; margin: 0; color: #65756d; font-size: 15px; line-height: 1.55; }
-.documentReviewPage .pageHeading > button { flex: 0 0 auto; min-height: 42px; padding: 9px 16px; border: 1px solid #cbd6d0; border-radius: 8px; background: #fff; color: #24513e; font-size: 14px; font-weight: 650; cursor: pointer; transition: background .15s ease, border-color .15s ease; }
-.documentReviewPage .pageHeading > button:hover:not(:disabled) { border-color: #8ca99b; background: #f5faf7; }
-.documentReviewPage .pageHeading > button:disabled { opacity: .65; cursor: progress; }
-.documentReviewPage > .knowledgeEmpty { min-height: 104px; display: grid; place-items: center; box-sizing: border-box; padding: 24px; border: 1px dashed #cbd9d4; border-radius: 10px; background: #fbfcfb; color: #617168; font-size: 14px; }
-.documentReviewCard { display: grid; gap: 13px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-.documentReviewCard .statusPill { padding: 5px 9px; border-radius: 999px; background: #edf4ef; color: #24513e; font-size: 12px; font-weight: 650; }
-.documentReviewCard > header, .documentReviewCard > footer { display: flex; align-items: center; gap: 10px; }
-.documentReviewCard > header > div { display: grid; gap: 4px; }
-.documentReviewCard > header > div span, .documentReviewCard > p { color: #65756d; font-size: 13px; }
-.documentReviewCard > p { margin: 0; }
-.documentReviewCard > header .statusPill { margin-left: auto; }
-.documentReviewCard > label { display: grid; gap: 6px; color: #34443c; font-size: 13px; font-weight: 650; }
-.documentReviewCard textarea { width: 100%; box-sizing: border-box; padding: 9px 11px; border: 1px solid #cbd6d0; border-radius: 7px; color: #202724; font: inherit; resize: vertical; }
-.documentReviewCard > footer > span { flex: 1; }
-.documentReviewCard > footer > button { min-height: 36px; padding: 7px 10px; border: 1px solid #cbd6d0; border-radius: 6px; background: #fff; color: #24513e; cursor: pointer; }
-.documentReviewCard > footer > button.knowledgePrimaryAction { background: #146548; color: #fff; }
-.documentReviewCard > footer > button:disabled { opacity: .55; cursor: not-allowed; }
 .portalModalBackdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(7,32,51,.72); }
-.portalModal { position: relative; width: min(100%, 440px); padding: 28px; border-radius: 14px; background: #fff; color: #202724; box-shadow: 0 20px 48px rgba(0,0,0,.25); }
+.portalModal { position: relative; width: min(100%, 440px); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 28px; border-radius: 14px; background: #fff; color: #202724; box-shadow: 0 20px 48px rgba(0,0,0,.25); }
 .portalModal h2 { margin: 7px 36px 8px 0; font-size: 23px; }
 .portalModal p { color: #5c6b65; font-size: 14px; line-height: 1.55; }
 .portalModalClose { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f2f5f3; cursor: pointer; }
@@ -1096,12 +1105,60 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .portalAccessForm button:disabled, .portalUploadForm button:disabled, .applicantDocumentListHead button:disabled { opacity: .55; cursor: not-allowed; }
 .portalModeToggle { margin-top: 15px; padding: 0; border: 0; background: none; color: #14689a; text-decoration: underline; cursor: pointer; }
 .applicantPortalPage { min-height: 100vh; background: #f4f7f5; color: #202724; }
-.applicantPortalHeader { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px max(22px, calc((100vw - 1120px)/2)); border-bottom: 1px solid var(--line); background: #fff; }
-.applicantPortalHeader > div:last-child { display: flex; align-items: center; gap: 16px; font-size: 13px; }
-.applicantPortalHeader button, .applicantDocumentList article button { padding: 8px 12px; border: 1px solid #cbd6d0; border-radius: 6px; background: #fff; color: #24513e; cursor: pointer; }
-.applicantPortalContent { width: min(100% - 36px, 920px); margin: 36px auto; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.applicantWorkspaceSidebar { flex: 0 0 270px; }
+.applicantWorkspaceSidebar .sideNav button small { margin-left: auto; padding: 3px 6px; border-radius: 999px; background: #f5eee1; color: #805719; font-size: 9px; font-weight: 800; }
+.applicantWorkspaceSidebar .sideNav button:focus-visible { outline: 2px solid #146548; outline-offset: 2px; }
+.applicantMain { height: 100vh; }
+.applicantTopHeader h1 { font-size: 16px; }
+.applicantTopHeader > div:first-of-type { min-width: 0; }
+.applicantTopHeader > div:first-of-type h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.applicantWorkspaceBody { height: calc(100vh - 70px); padding: 22px; overflow: auto; }
+.applicantPortalContent { width: min(100%,1240px); min-width: 0; margin: 0 auto; padding: 26px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.applicantDocumentList article button { padding: 8px 12px; border: 1px solid #cbd6d0; border-radius: 6px; background: #fff; color: #24513e; cursor: pointer; }
 .applicantPortalContent h1 { margin: 4px 0 8px; font-size: 28px; }
 .applicantPortalContent > p { color: #5c6b65; line-height: 1.6; }
+.applicantHomeDashboard { gap: 16px; }
+.adminOpsGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.adminOpsGrid > button { display: grid; grid-template-columns: 24px minmax(0,1fr) 15px; align-items: center; gap: 8px; min-height: 72px; padding: 10px; border: 1px solid #e7eeea; border-radius: 8px; background: #fff; color: var(--blue); text-align: left; cursor: pointer; }
+.adminOpsGrid > button:hover { border-color: #a9cbbb; background: #f8fbf9; }
+.adminOpsGrid > button > span { display: grid; gap: 4px; }
+.adminOpsGrid strong { color: #1b3448; font-size: 12px; }
+.adminOpsGrid small { color: var(--muted); font-size: 10px; line-height: 1.35; }
+.adminAttentionActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.adminAttentionActions button { display: inline-flex; align-items: center; gap: 6px; min-height: 33px; padding: 6px 9px; border: 1px solid #d5e1db; border-radius: 7px; background: #fff; color: #146548; font-size: 11px; font-weight: 800; cursor: pointer; }
+.adminAttentionActions button:hover { background: #f0f7f3; }
+.applicantJourneyHome { display: grid; gap: 16px; max-width: 1120px; margin: 0 auto; }
+.applicantJourneyHero { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 26px; border: 1px solid #c8ddd5; border-radius: 14px; background: linear-gradient(115deg,#f0f8f4 0%,#fff 72%); box-shadow: 0 10px 28px rgba(24,38,55,.05); }
+.applicantJourneyHero h1 { margin: 5px 0 7px; color: #102f43; font-size: 27px; letter-spacing: -.02em; }
+.applicantJourneyHero p { max-width: 760px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.applicantRouteBadge { align-self: flex-start; flex: 0 0 auto; padding: 8px 11px; border: 1px solid #cde0d4; border-radius: 999px; background: #fff; color: #176447; font-size: 11px; font-weight: 800; }
+.applicantNextStep { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 17px 19px; border: 1px solid #bcd9ca; border-left: 4px solid #146548; border-radius: 10px; background: #f4faf6; }
+.applicantNextStep h2 { margin: 3px 0 4px; color: #183c30; font-size: 17px; }
+.applicantNextStep p { margin: 0; color: #62736b; font-size: 12px; line-height: 1.5; }
+.applicantNextStep > button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 39px; flex: 0 0 auto; padding: 0 13px; border-radius: 7px; background: var(--green); color: #fff; font-size: 12px; font-weight: 800; cursor: pointer; }
+.applicantJourneyGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 11px; }
+.applicantJourneyCard { display: grid; grid-template-columns: 30px minmax(0,1fr); align-content: start; gap: 10px; min-height: 184px; padding: 16px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 6px 20px rgba(24,38,55,.04); }
+.applicantStepNumber { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: #eff3f1; color: #5e7067; font-size: 12px; font-weight: 850; }
+.applicantStepNumber.complete { background: #e4f4eb; color: #176447; }
+.applicantJourneyCard .eyebrow { color: #7a8c82; font-size: 10px; }
+.applicantJourneyCard h2 { margin: 3px 0 7px; color: #183c30; font-size: 15px; }
+.applicantJourneyCard p { min-height: 45px; margin: 0 0 12px; color: #62736b; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.applicantJourneyCard button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; color: #146548; font-size: 11px; font-weight: 800; cursor: pointer; }
+.applicantOptionalGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.applicantOptionalGrid > button { display: grid; grid-template-columns: 24px minmax(0,1fr) 16px; align-items: center; gap: 10px; min-height: 64px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: #176447; text-align: left; cursor: pointer; }
+.applicantOptionalGrid > button:hover { border-color: #a9cbbb; background: #f8fbf9; }
+.applicantOptionalGrid > button > span { display: grid; gap: 4px; }
+.applicantOptionalGrid strong { color: #1b3448; font-size: 12px; }
+.applicantOptionalGrid small { color: var(--muted); font-size: 10px; }
+.applicantStaffReviewNote { margin: 13px 0 0; padding: 11px 12px; border: 1px solid #dce6eb; border-radius: 8px; background: #f6f9fb; color: #536779; font-size: 11px; line-height: 1.5; }
+.applicantDetailPage { display: grid; gap: 18px; }
+.applicantDetailPage h1 { margin: 2px 0 8px; color: #183c30; font-size: 27px; }
+.applicantDetailPage .admissionDashboardHeading p { max-width: 760px; margin: 0; color: #62736b; font-size: 13px; line-height: 1.6; }
+.applicantDetailForm { display: grid; gap: 17px; padding: 19px; border: 1px solid #e1eae5; border-radius: 10px; background: #fff; }
+.applicantDetailForm > button[type="submit"]:not(.uiButton) { justify-self: start; min-height: 42px; padding: 10px 18px; border: 0; border-radius: 7px; background: #146548; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+.applicantDetailForm > button[type="submit"].uiButton { justify-self: start; }
+.applicantDetailForm > button:disabled:not(.uiButton) { opacity: .6; cursor: wait; }
+.applicantDocumentsPage { margin-top: 0; }
 .portalUploadForm { grid-template-columns: minmax(180px, .8fr) minmax(220px, 1.4fr) auto; align-items: end; margin: 22px 0 30px; padding: 18px; border: 1px solid var(--line); border-radius: 9px; background: #fbfcfb; }
 .applicantDocumentListHead { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
 .applicantDocumentListHead h2 { margin: 0 0 12px; font-size: 19px; }
@@ -1113,17 +1170,179 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .applicantDocumentList article > div:last-child { display: flex; gap: 8px; }
 .portalPrivacyNote { display: flex; align-items: flex-start; gap: 9px; margin-top: 8px; padding: 12px 14px; border: 1px solid #e3ebe6; border-radius: 8px; background: #f7faf8; color: #51635a !important; font-size: 13px; line-height: 1.5; }
 .portalPrivacyNote svg { flex: 0 0 auto; margin-top: 2px; }
+.admissionDashboardSection, .admissionChecklistSection, .applicantUploadsSection { display: grid; gap: 16px; margin: 22px 0 30px; scroll-margin-top: 18px; }
+.admissionWorkspaceCard { scroll-margin-top: 20px; }
+.admissionDashboardHeading h2 { margin: 3px 0 5px; color: #183c30; font-size: 21px; }
+.admissionDashboardHeading p, .admissionWorkspaceCardHead p, .admissionChecklistSection > .admissionDashboardHeading p { margin: 0; color: #62736b; font-size: 13px; line-height: 1.5; }
+.admissionProgressSummary { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.admissionProgressSummary article { display: grid; gap: 4px; padding: 13px 15px; border: 1px solid #e1eae5; border-radius: 9px; background: #f8fbf9; }
+.admissionProgressSummary strong { color: #176447; font-size: 22px; }
+.admissionProgressSummary span { color: #52655c; font-size: 12px; }
+.admissionWorkspaceGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); align-items: start; gap: 12px; }
+.admissionWorkspaceCard { display: grid; align-content: start; gap: 12px; min-width: 0; padding: 15px; border: 1px solid #e1eae5; border-radius: 10px; background: #fff; }
+.admissionWorkspaceCardHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.admissionWorkspaceCardHead h3 { margin: 0 0 5px; color: #183c30; font-size: 15px; }
+.admissionWorkspaceCardHead p { overflow-wrap: anywhere; }
+.applicantSecondaryButton { min-height: 36px; padding: 7px 11px; border: 1px solid #cad9d0; border-radius: 7px; background: #fff; color: #1d674b; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.applicantSecondaryButton:hover { background: #f1f8f4; }
+.admissionWorkspaceForm { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid #e8efeb; }
+.admissionWorkspaceForm > button[type="submit"] { min-height: 40px; padding: 9px 14px; border: 0; border-radius: 7px; background: #146548; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.admissionWorkspaceForm > button:disabled { opacity: .6; cursor: wait; }
+.admissionWorkspaceFields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.admissionWorkspaceFields label { display: grid; align-content: start; gap: 5px; color: #44574e; font-size: 12px; font-weight: 700; }
+.admissionWorkspaceFields input, .admissionWorkspaceFields select, .admissionWorkspaceFields textarea { width: 100%; min-height: 38px; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd8d1; border-radius: 7px; background: #fff; color: #202724; font: inherit; font-size: 13px; }
+.admissionWorkspaceFields textarea { resize: vertical; }
+.admissionWorkspaceNotes, .admissionFieldHint { grid-column: 1 / -1; }
+.admissionFieldHint { margin: 0; color: #62736b; font-size: 12px; line-height: 1.5; }
+.admissionPreferenceRow { display: grid; grid-template-columns: minmax(0,1fr) minmax(120px,.7fr) auto; grid-column: 1 / -1; align-items: end; gap: 8px; }
+.admissionChecklistGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+.admissionChecklistItem { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 11px 12px; border: 1px solid #e4ece8; border-radius: 8px; background: #fbfcfb; }
+.admissionChecklistItem > div { display: grid; gap: 4px; min-width: 0; }
+.admissionChecklistItem strong { color: #34483e; font-size: 12px; }
+.admissionChecklistItem small { color: #9a5b12; font-size: 11px; line-height: 1.4; }
+.admissionDocumentStatus { max-width: 52%; padding: 5px 8px; border-radius: 999px; background: #edf1ef; color: #56645d; font-size: 10px; font-weight: 800; line-height: 1.25; text-align: center; }
+.admissionDocumentStatus.ready { background: #e5f5ed; color: #176447; }
+.admissionDocumentStatus.submitted { background: #eaf2fb; color: #285b91; }
+.admissionDocumentStatus.correction { background: #fff1e6; color: #a74d12; }
+.admissionConditionalDocs { padding: 12px 0; border-top: 1px solid #e8efeb; }
+.admissionConditionalDocs summary { color: #45594f; font-size: 13px; font-weight: 700; cursor: pointer; }
+.admissionConditionalDocs .admissionChecklistGrid { margin-top: 12px; }
+.admissionLoading { color: #62736b; font-size: 13px; }
+.checklistGroupTitle { margin: 2px 0 -7px; color: #34483e; font-size: 14px; }
+.documentWorkflowBlock { display: grid; gap: 10px; padding: 16px; border: 1px solid #e1eae5; border-radius: 10px; background: #fbfcfb; }
+.documentWorkflowBlock > h3 { margin: 0; color: #183c30; font-size: 15px; }
+.documentWorkflowBlock .portalUploadForm { margin: 0; padding: 0; border: 0; background: transparent; }
+.documentTypeControl { display: grid; grid-column: 1 / -1; gap: 6px; min-width: 0; }
+.documentTypeLabel { color: #34443c; font-size: 13px; font-weight: 650; }
+.documentTypePicker { position: relative; z-index: 20; min-width: 0; }
+.documentTypePicker > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; box-sizing: border-box; padding: 9px 12px; border: 1px solid #cbd6d0; border-radius: 7px; background: #fff; color: #263b31; cursor: pointer; list-style: none; }
+.documentTypePicker > summary::-webkit-details-marker, .documentPickerConditional > summary::-webkit-details-marker { display: none; }
+.documentTypePicker > summary::after { content: '▾'; color: #146548; font-size: 14px; }
+.documentTypePicker[open] > summary { border-color: #7da891; border-radius: 7px 7px 0 0; }
+.documentTypePicker > summary span { font-size: 13px; font-weight: 700; }
+.documentTypePicker > summary small { margin-left: auto; color: #6a7971; font-size: 11px; }
+.documentTypePickerPanel { position: absolute; z-index: 50; top: calc(100% - 1px); right: 0; left: 0; display: grid; gap: 8px; max-height: min(55vh, 430px); overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 12px; border: 1px solid #cbd6d0; border-top: 0; border-radius: 0 0 8px 8px; background: #fff; box-shadow: 0 10px 22px rgba(24,52,39,.13); }
+.documentTypePickerPanel > p, .documentPickerConditional > p { margin: 0; color: #62736b; font-size: 12px; line-height: 1.45; }
+.documentTypePickerPanel > h4, .documentPickerAdditional > h4 { margin: 5px 0 0; color: #52655c; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.documentPickerRoute { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 10px; border-radius: 7px; background: #f3f8f5; color: #355548; font-size: 12px; }
+.documentPickerRoute a { color: #146548; font-weight: 700; text-decoration: none; }
+.documentPickerRoute small { flex-basis: 100%; color: #687b71; font-size: 11px; line-height: 1.4; }
+.documentTypeOption { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 0 10px; border: 1px solid #e1eae5; border-radius: 8px; background: #fbfcfb; }
+.documentTypeOption.hasDocument { border-color: #cfdfd5; background: #fff; }
+.documentTypeChoice { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 9px 10px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.documentTypeChoice:hover, .documentTypeChoice[aria-pressed="true"] { background: #f0f7f3; }
+.documentTypeChoice > span:first-child { display: grid; gap: 3px; min-width: 0; }
+.documentTypeChoice strong { color: #34483e; font-size: 12px; }
+.documentTypeChoice small { overflow-wrap: anywhere; color: #66766e; font-size: 10px; }
+.documentTypeChoice .admissionDocumentStatus { flex: 0 0 auto; max-width: 160px; }
+.documentPickerConditional { display: grid; gap: 8px; padding-top: 9px; border-top: 1px solid #e8efeb; }
+.documentPickerConditional > summary { color: #45594f; font-size: 12px; font-weight: 700; cursor: pointer; list-style: none; }
+.documentPickerConditional > summary::before { content: '＋'; display: inline-block; width: 20px; color: #146548; }
+.documentPickerConditional[open] > summary::before { content: '−'; }
+.documentPickerAdditional { display: grid; gap: 8px; }
+.documentWorkflowBlock .documentSubmitReview { margin-top: 2px; }
+.checklistRouteNote { margin: 0; color: #62736b; font-size: 12px; }
+.checklistDocumentActions { display: flex; grid-column: 1 / -1; gap: 7px; }
+.checklistDocumentActions button { padding: 5px 9px; border: 1px solid #d5e1db; border-radius: 6px; background: #fff; color: #24513e; font-size: 11px; font-weight: 700; cursor: pointer; }
+.documentSubmitReview { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; border: 1px solid #cde4d8; border-radius: 9px; background: #f3faf6; }
+.documentSubmitReview > div { display: grid; gap: 4px; }
+.documentSubmitReview strong { color: #155b40; font-size: 14px; }
+.documentSubmitReview span { color: #52655c; font-size: 12px; line-height: 1.45; }
+.documentSubmitReview > button:not(.uiButton) { min-height: 40px; flex: 0 0 auto; padding: 9px 14px; border: 0; border-radius: 7px; background: #146548; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.documentSubmitReview > button.uiButton { flex: 0 0 auto; }
+.documentSubmitReview > button:disabled:not(.uiButton) { opacity: .55; cursor: not-allowed; }
+.capNextStep { grid-column: 1 / -1; padding: 13px 15px; border: 1px solid #cde4d8; border-radius: 9px; background: linear-gradient(135deg,#f0f8f3,#f7fbf9); }
+.capNextStep strong { color: #155b40; font-size: 13px; }
+.capNextStep p { margin: 6px 0 8px; color: #33483e; font-size: 14px; line-height: 1.5; }
+.capNextStep a, .programPreferencePicker > a, .officialFinderLink { color: #146548; font-size: 12px; font-weight: 750; text-decoration: none; }
+.capNextStep a:hover, .programPreferencePicker > a:hover, .officialFinderLink:hover { text-decoration: underline; }
+.programPreferencePicker { display: grid; gap: 8px; padding: 12px; border: 1px solid #e2ebe6; border-radius: 9px; background: #f8fbf9; }
+.programPreferencePicker label { display: grid; gap: 5px; color: #44574e; font-size: 12px; font-weight: 700; }
+.programPreferenceList { display: grid; gap: 7px; grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; counter-reset: prefs; }
+.programPreferenceList:empty { display: none; }
+.programPreferenceList li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid #e1eae5; border-radius: 8px; background: #fff; }
+.programPreferenceList li > span { display: flex; align-items: center; gap: 9px; color: #263b31; font-size: 13px; font-weight: 650; }
+.programPreferenceList li > span b { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: #e7f3ec; color: #176447; font-size: 12px; }
+.programPreferenceList li > div { display: flex; gap: 5px; }
+.programPreferenceList button { min-height: 30px; padding: 5px 8px; border: 1px solid #d5e1db; border-radius: 6px; background: #fff; color: #24513e; font-size: 11px; font-weight: 700; cursor: pointer; }
+.programPreferenceList button:disabled { opacity: .4; cursor: not-allowed; }
+.scholarshipPrivacyNote { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border: 1px solid #dce9e1; border-radius: 8px; background: #f5faf7; color: #4b6256; font-size: 12px; line-height: 1.45; }
+.scholarshipPrivacyNote svg { flex: 0 0 auto; }
+.admissionWorkspaceFields > .wide { grid-column: 1 / -1; }
+.scholarshipResults { display: grid; gap: 9px; padding: 13px; border: 1px solid #e1eae5; border-radius: 9px; background: #fbfcfb; }
+.scholarshipResultsHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.scholarshipResultsHead h4 { margin: 0 0 4px; color: #183c30; font-size: 14px; }
+.scholarshipResultsHead p { margin: 0; color: #62736b; font-size: 11px; line-height: 1.4; }
+.scholarshipResultsHead > span { display: grid; place-items: center; min-width: 27px; height: 27px; padding: 0 6px; border-radius: 999px; background: #e9f4ee; color: #176447; font-size: 11px; font-weight: 850; }
+.scholarshipSchemeSelect { display: grid; gap: 6px; color: #44574e; font-size: 12px; font-weight: 700; }
+.scholarshipSchemeSelect select { width: 100%; min-height: 40px; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd8d1; border-radius: 7px; background: #fff; color: #202724; font: inherit; font-size: 13px; }
+.scholarshipSelectedScheme { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 12px; border: 1px solid #cde4d8; border-radius: 8px; background: #f3faf6; }
+.scholarshipSelectedScheme > div { display: grid; gap: 4px; min-width: 0; }
+.scholarshipSelectedScheme strong { color: #244638; font-size: 12px; }
+.scholarshipSelectedScheme small { color: #62736b; font-size: 10px; line-height: 1.45; }
+.scholarshipSelectedScheme a { flex: 0 0 auto; color: #146548; font-size: 11px; font-weight: 800; }
+.scholarshipRouteChoice { display: grid; align-content: start; justify-items: start; gap: 6px; color: #44574e; font-size: 12px; }
+.scholarshipRouteChoice p { margin: 0; color: #52655c; font-size: 13px; font-weight: 600; }
+.programPreferenceList li > span { display: grid; grid-template-columns: 28px minmax(0,1fr); align-items: center; gap: 0 8px; }
+.programPreferenceList li > span b { grid-row: span 2; }
+.programChoiceCode { grid-column: 2; color: #687b71; font-size: 11px; }
+.officialFinderLink { display: inline-flex; align-items: center; }
+.admissionChecklistItem { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px 12px; padding: 13px; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.admissionChecklistItem:hover { border-color: #b9d6c7; box-shadow: 0 4px 14px rgba(25,79,55,.07); background: #fff; }
+.admissionChecklistItem > div { align-self: start; }
+.admissionChecklistItem .admissionDocumentStatus { justify-self: end; }
+.checklistUploadLink { justify-self: start; display: inline-flex; align-items: center; text-decoration: none; }
 @media (max-width: 700px) {
   .portalUploadForm { grid-template-columns: 1fr; }
-  .applicantPortalHeader { align-items: flex-start; padding: 14px 18px; }
-  .applicantPortalHeader > div:last-child { align-items: flex-end; flex-direction: column; gap: 8px; }
+  .admissionProgressSummary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .admissionWorkspaceGrid, .admissionChecklistGrid { grid-template-columns: 1fr; }
+  .admissionPreferenceRow { grid-template-columns: 1fr; }
+  .admissionWorkspaceFields { grid-template-columns: 1fr; }
+  .admissionWorkspaceNotes, .admissionFieldHint { grid-column: auto; }
+  .admissionChecklistItem { align-items: flex-start; flex-direction: column; }
+  .admissionDocumentStatus { max-width: 100%; }
+  .documentSubmitReview { align-items: stretch; flex-direction: column; }
+  .applicantWorkspaceBody { height: calc(100vh - 72px); padding: 10px; }
   .applicantPortalContent { padding: 20px; }
+  .adminOpsGrid { grid-template-columns: 1fr; }
+  .applicantJourneyHero { flex-direction: column; padding: 20px; }
+  .applicantNextStep { align-items: flex-start; flex-direction: column; }
+  .applicantNextStep > button { width: 100%; }
+  .applicantJourneyGrid { grid-template-columns: 1fr; }
+  .applicantJourneyCard { min-height: auto; }
+  .applicantJourneyCard p { min-height: auto; }
+  .applicantOptionalGrid { grid-template-columns: 1fr; }
+  .applicantDetailPage h1 { font-size: 23px; }
+  .applicantDetailForm { padding: 14px; }
+  .scholarshipSelectedScheme { align-items: flex-start; flex-direction: column; }
   .applicantDocumentList article { align-items: flex-start; flex-direction: column; }
-  .documentReviewCard > footer { align-items: stretch; flex-direction: column; }
-  .documentReviewCard > footer > span { display: none; }
-  .documentReviewPage .pageHeading { align-items: flex-start; flex-direction: column; }
-  .documentReviewPage .pageHeading { gap: 14px; }
-  .documentReviewPage .pageHeading > button { width: 100%; }
+}
+
+.applicantAdminFilters { grid-template-columns: minmax(220px,1fr) auto; align-items: end; }
+.applicantAdminFilters > span { padding: 10px 0; color: var(--muted); font-size: 12px; }
+.applicantAdminList { display: grid; gap: 12px; }
+.applicantAdminCard { display: grid; gap: 14px; padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: 0 6px 18px rgba(24,38,55,.04); }
+.applicantAdminCard > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid #e7eeea; }
+.applicantAdminCard > header > div { display: grid; gap: 4px; min-width: 0; }
+.applicantAdminCard h2 { margin: 0; color: var(--ink); font-size: 16px; }
+.applicantAdminCard > header span { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+.applicantAdminCard > header button, .applicantReviewFilter button { min-height: 34px; padding: 7px 10px; border: 1px solid #cbd9d2; border-radius: 7px; background: #fff; color: #146548; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.applicantAdminDetails { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.applicantAdminDetails section { min-width: 0; padding: 12px; border: 1px solid #e7eeea; border-radius: 8px; background: #fbfcfb; }
+.applicantAdminDetails h3 { margin: 0 0 8px; color: #29483a; font-size: 12px; }
+.applicantAdminDetails p { margin: 0; color: #4d6257; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.applicantAdminDetails small { display: block; margin-top: 5px; color: #748179; font-size: 10px; line-height: 1.4; }
+.applicantAdminDetails dl { display: grid; gap: 6px; margin: 0; }
+.applicantAdminDetails dl > div { display: grid; grid-template-columns: minmax(95px,.55fr) minmax(0,1fr); gap: 8px; font-size: 11px; }
+.applicantAdminDetails dt { color: #6c7972; }
+.applicantAdminDetails dd { margin: 0; color: #34483e; font-weight: 700; overflow-wrap: anywhere; }
+.applicantAdminCard > footer { color: var(--muted); font-size: 10px; }
+.applicantReviewFilter { display: flex; align-items: center; gap: 8px; margin: 7px 0 0 !important; font-size: 11px !important; }
+.applicantReviewFilter button { min-height: 28px; padding: 4px 8px; }
+@media (max-width: 700px) {
+  .applicantAdminFilters, .applicantAdminDetails { grid-template-columns: 1fr; }
+  .applicantAdminCard > header { align-items: flex-start; flex-direction: column; }
+  .applicantAdminCard > header button { width: 100%; }
 }
 .operationsTable { overflow-x: auto; max-width: 100%; }
 .operationsOutcomes { display: flex; flex-wrap: wrap; gap: 1rem; }
@@ -1147,3 +1366,29 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .assistantOperations, .operationsAnalytics, .operationsTriage { scroll-margin-top: 20px; }
 .operationsTriage { margin-top: 20px; }
 @media (max-width: 620px) { .assistantOperationsHead { flex-direction: column; } }
+
+.admissionChecklistDialog {
+  position: fixed;
+  inset: 0;
+  width: min(32rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 1.5rem;
+  overflow: auto;
+  border: 1px solid #d1dfdb;
+  border-radius: 1rem;
+  background: #fff;
+  color: #172e36;
+}
+
+.admissionChecklistDialog::backdrop { background: #072033b8; }
+.admissionChecklistDialog fieldset { display: grid; gap: .65rem; border: 0; padding: 0; margin: 1rem 0 0; min-width: 0; }
+.admissionChecklistDialog label { display: grid; gap: .25rem; }
+.admissionChecklistDialog select { padding: .45rem; border: 1px solid #748b83; border-radius: .35rem; }
+.admissionChecklistDialog h3, .admissionChecklistDialog fieldset p { margin: .25rem 0 0; }
+.admissionChecklistDialog a { color: #075a44; text-decoration: underline; }
+.admissionChecklistDialog .checklistItem { display: flex; align-items: center; gap: .5rem; }
+.admissionChecklistDialog .checklistActions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.admissionChecklistDialog .checklistActions button { border: 1px solid #146548; border-radius: .4rem; padding: .6rem; background: #fff; color: #10523b; }
+.admissionChecklistDialog .checklistActions button:first-child { background: #146548; color: #fff; }
+.admissionChecklistDialog .checklistActions button:disabled { opacity: .55; cursor: not-allowed; }

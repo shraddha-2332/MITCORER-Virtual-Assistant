@@ -32,10 +32,11 @@ export function buildClarificationAnswer(normalized) {
   }
   const clarification = queryClarification(normalized);
   if (clarification) return { clarification: true, clarificationKind: clarification.kind, source: 'Clarification required', evidence: [], answer: clarification.message, next: '' };
-  const ambiguousIntake = /\bintake\b/.test(normalized) && !entities.test(normalized)
+  const hasEntity = entities.test(normalized) || understandQuery(normalized).branch.positive.length > 0;
+  const ambiguousIntake = /\bintake\b/.test(normalized) && !hasEntity
     && !/\b(?:all|program\w*|course\w*|branch\w*|b\.?tech)\b/.test(normalized);
   const bareReference = /\b(?:it|its|that|this)\b/.test(normalized)
-    && /\b(?:intake|fee\w*|cost\w*|eligib\w*)\b/.test(normalized) && !entities.test(normalized)
+    && /\b(?:intake|fee\w*|cost\w*|eligib\w*)\b/.test(normalized) && !hasEntity
     && !/\b(?:hostel|mess|first year|direct second|fy|dse)\b/.test(normalized);
   if (!ambiguousIntake && !bareReference) return null;
   return { clarification: true, source: 'Clarification required', evidence: [],
@@ -82,7 +83,7 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (/admission|allotment|reporting|\bcap\b/.test(normalized) && /remaining|pending|checklist|last step|final step|what.*next/.test(normalized)) return null;
   if (/\b(?:faculty|faculties|teacher|teachers|professor|professors|teaching staff)\b/i.test(normalized) && !/\b(?:fee|fees|cost|hostel|mess|cutoff|cut-off|scholarship)\b/i.test(normalized)) return null;
   if (/mou|corporate readiness|railway signaling|railway track|railway technology|railway diploma|railway modules/.test(normalized)) return null;
-  let parts = clauses(normalized);
+  let parts = clauses(normalized).filter(part => !/^(?:(?:for|in|ay|academic year)\s+)*(?:20\d{2}[-–/]\d{2,4})[?. ]*$/i.test(part));
   if (/\bscholarship\b/.test(normalized) && parts.length === 2 && /^(?:where|how)(?: (?:can|do|should) i)?(?: to)? apply[?. ]*$/.test(parts[1])) return null;
   // A branch comparison is one attribute applied independently to each entity.
   const compared = understandQuery(normalized).branch.positive;
@@ -100,7 +101,10 @@ export function buildCompoundAnswer(question, normalized, records) {
       && !/b\.?tech|engineering|academic|tuition|first.year|direct.second|\bdse\b|hostel|mess/.test(normalized)) topic = 'transport';
     if (/\b(?:hostel|mess)\b/.test(normalized) && /\b(?:fee\w*|payment\w*|cost\w*|charges?|deposit)\b/.test(normalized)
       && !/facilit|amenit/.test(part) && (topic === 'hostel' || topic === 'academicFees' && /\bdeposit\b/.test(part))) topic = 'accommodationFees';
-    if (topic === 'unknown' && /\b(?:bus|transport)\b/.test(normalized) && /^(?:what are (?:the )?)?(?:routes|stops|timings)[?. ]*$/.test(part)) topic = 'transport';
+    if (topic === 'unknown' && /\b(?:bus|transport)\b/.test(normalized)
+      && /\b(?:routes?|stops?|timings?|timetable|schedule|fare|passes through)\b|गावातून|थांबे|वेळापत्रक|भाडे|ठहराव|समय[- ]सारणी|किराया/u.test(part)) topic = 'transport';
+    if (topic === 'unknown' && /\b(?:library|libraries|journals)\b/.test(normalized)
+      && /\b(?:borrow\w*|loan|books?|hours?|timings?|close[sd]?)\b|पुस्तक|उधार|बंद होत|बंद होता/u.test(part)) topic = 'library';
     return { question: part, topic };
   });
   // This common parent-style question contains several comma-separated facts;
@@ -119,6 +123,9 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (/seat matrix/.test(normalized) && !/current|historical/.test(normalized)
     && planned.every((part) => ['seatMatrix', 'programmes'].includes(part.topic))) return null;
   const known = new Set(planned.filter((part) => part.topic !== 'unknown').map((part) => part.topic));
+  if (known.size === 1 && known.has('programmes') && planned.every(part => part.topic === 'programmes')
+    && compared.length <= 1 && understandQuery(normalized).route.positive.length <= 1
+    && understandQuery(normalized).academicYears.length <= 1) return null;
   const scoped = new Set(planned.map((part) => `${part.topic}:${part.question.match(/\b20\d{2}-\d{2}\b/)?.[0] || ''}:${/direct second|\bdse\b|lateral|second year/.test(part.question) ? 'dse' : /first[- ]year|\bfy\b/.test(part.question) ? 'fy' : ''}`));
   if (asksForAllPrograms(normalized) && known.size === 1 && known.has('programmes')) return null;
   if (!known.size || (known.size === 1 && planned.every((part) => part.topic !== 'unknown') && scoped.size === 1)) return null;
@@ -134,6 +141,7 @@ export function buildCompoundAnswer(question, normalized, records) {
     if (part.topic === 'accommodationFees') {
       if (!/fee|payment|amount|semester|charge|cost|deposit/.test(query)) query += ' fee';
       if (!/\b(?:hostel|mess)\b/.test(query) && /\bdeposit\b/.test(query)) query += ' hostel';
+      if (!understandQuery(query).academicYears.length && context.query.academicYears.length === 1) query += ` AY ${context.query.academicYears[0]}`;
     }
     if (part.topic === 'academicFees') {
       if (known.has('accommodationFees') && !/\b(?:academic|tuition|engineering)\b/.test(query)) query += ' academic';

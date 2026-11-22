@@ -44,7 +44,8 @@ test('expired managed facts and future passages are suppressed in retrieval, nat
   assert.deepEqual((await call('/api/public-assistant/ask', { question: 'library' })).data.evidence, []);
   await call('/api/knowledge/KB-16', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   const placement = await call('/api/public-assistant/ask', { question: 'placement highlights' });
-  assert.deepEqual(placement.data.evidence, []); assert.doesNotMatch(placement.data.answer, /21 LPA/);
+  assert.deepEqual(placement.data.evidence.map(record => record.id), ['KB-70']); assert.match(placement.data.answer, /21 LPA/);
+  assert.ok(placement.data.evidence.every(record => record.id !== 'KB-16'));
   await call('/api/knowledge/KB-31', { expectedRevision: 0, provenance: { validUntil: '2000-01-01' }, verifySource: true }, token);
   assert.deepEqual((await call('/api/public-assistant/ask', { question: 'attendance requirement' })).data.evidence, []);
 }));
@@ -60,6 +61,24 @@ test('review action persists, edits invalidate its binding, and historical scope
   await call('/api/knowledge/KB-6', { expectedRevision: 1, text, verifySource: true }, token);
   assert.equal((await call('/api/public-assistant/ask', { question: 'historical seat matrix 2024-25' })).data.evidence[0].verification.status, 'recorded');
   assert.equal((await call('/api/knowledge/KB-6', { expectedRevision: 2, verification: { verifiedAt: '2026-10-10' } }, token)).status, 400);
+}));
+test('admin can edit a record carrying existing provenance attribution fields', async () => fixture(async (call, token) => {
+  const record = getDb().knowledge.find(item => item.id === 'KB-17');
+  assert.equal(record.provenance.verifiedFrom, 'MITCORER official Contact Us page');
+  const response = await call('/api/knowledge/KB-17', {
+    expectedRevision: record.revision ?? 0,
+    title: `${record.title} (checked)`,
+    category: record.category,
+    source: record.source,
+    sourceUrl: record.sourceUrl,
+    text: record.text,
+    status: record.status,
+    tags: record.tags,
+    facts: null,
+    provenance: record.provenance,
+  }, token);
+  assert.equal(response.status, 200, JSON.stringify(response));
+  assert.equal(response.data.provenance.verifiedFrom, 'MITCORER official Contact Us page');
 }));
 test('reviewed pages inherit metadata, keep stable passage IDs on republishing, and reject invalid batches atomically', async () => fixture(async (call, token) => {
   getDb().officialSources.unshift({ id: 'SRC-TEST', title: 'Riverrail notice', documentType: 'Admissions', sourceAuthority: 'Fixture authority', originalFileName: 'notice.pdf', academicYear: '2026-27' }); saveDb();
@@ -88,7 +107,8 @@ test('superseded and conflicting structured facts decline rather than silently c
   const conflict = await call('/api/public-assistant/ask', { question: 'first year fees' });
   assert.equal(conflict.data.conflict, true); assert.match(conflict.data.answer, /disagree/); assert.doesNotMatch(conflict.data.answer, /1,05,000/);
   const suppressed = await call('/api/knowledge/KB-conflict', { expectedRevision: 0, provenance: { supersededBy: 'KB-2' } }, token);
-  assert.equal(suppressed.status, 200);
+  assert.equal(suppressed.status, 200, JSON.stringify(suppressed));
+  assert.equal(getDb().knowledge.find(record => record.id === 'KB-conflict').provenance.supersededBy, 'KB-2');
   assert.match((await call('/api/public-assistant/ask', { question: 'first year fees' })).data.answer, /1,05,000/);
   assert.equal((await call('/api/knowledge/KB-2', { expectedRevision: 0, provenance: { supersededBy: 'KB-conflict' } }, token)).status, 400);
 }));

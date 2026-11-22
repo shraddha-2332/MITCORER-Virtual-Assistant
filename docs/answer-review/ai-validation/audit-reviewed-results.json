@@ -146,7 +146,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 76.99090000000001
+    "latencyMs": 85.56730000000002
   },
   {
     "id": "AUD-002",
@@ -277,7 +277,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 105.17840000000001
+    "latencyMs": 118.10140000000001
   },
   {
     "id": "AUD-003",
@@ -419,7 +419,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 13.034099999999967
+    "latencyMs": 17.633299999999963
   },
   {
     "id": "AUD-004",
@@ -542,7 +542,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.543200000000013
+    "latencyMs": 2.0353999999999814
   },
   {
     "id": "AUD-005",
@@ -669,7 +669,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 8.146000000000015
+    "latencyMs": 9.668299999999988
   },
   {
     "id": "AUD-006",
@@ -782,7 +782,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.2293999999999983
+    "latencyMs": 1.4548000000000343
   },
   {
     "id": "AUD-007",
@@ -895,7 +895,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.6072000000000344
+    "latencyMs": 1.2527000000000044
   },
   {
     "id": "AUD-008",
@@ -1008,7 +1008,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.1473000000000297
+    "latencyMs": 1.4309000000000083
   },
   {
     "id": "AUD-009",
@@ -1121,7 +1121,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.4157000000000153
+    "latencyMs": 1.462500000000034
   },
   {
     "id": "AUD-010",
@@ -1234,7 +1234,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.2144999999999868
+    "latencyMs": 2.0173000000000343
   },
   {
     "id": "AUD-011",
@@ -1384,7 +1384,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.462199999999996
+    "latencyMs": 10.415999999999997
   },
   {
     "id": "AUD-012",
@@ -1486,7 +1486,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.9904000000000224
+    "latencyMs": 0.9960999999999558
   },
   {
     "id": "AUD-013",
@@ -1636,7 +1636,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 7.9956000000000245
+    "latencyMs": 9.57080000000002
   },
   {
     "id": "AUD-014",
@@ -1786,7 +1786,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.408299999999997
+    "latencyMs": 7.7620000000000005
   },
   {
     "id": "AUD-015",
@@ -1936,7 +1936,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.126199999999983
+    "latencyMs": 6.6141999999999825
   },
   {
     "id": "AUD-016",
@@ -1967,6 +1967,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -1983,7 +1995,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -2058,7 +2070,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.622699999999952
+    "latencyMs": 2.535599999999988
   },
   {
     "id": "AUD-017",
@@ -2089,6 +2101,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2105,7 +2129,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -2180,7 +2204,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.9780000000000086
+    "latencyMs": 1.1265000000000214
   },
   {
     "id": "AUD-018",
@@ -2211,6 +2235,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2227,7 +2263,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -2302,7 +2338,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.5421000000000049
+    "latencyMs": 0.7857999999999947
   },
   {
     "id": "AUD-019",
@@ -2333,6 +2369,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2349,7 +2397,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -2424,7 +2472,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.6086999999999989
+    "latencyMs": 2.129599999999982
   },
   {
     "id": "AUD-020",
@@ -2455,6 +2503,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2471,7 +2531,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -2546,7 +2606,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.8725999999999772
+    "latencyMs": 0.7442000000000348
   },
   {
     "id": "AUD-021",
@@ -2578,6 +2638,18 @@
           "sourceUrl": "https://mitcorer.edu.in/library.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2672,7 +2744,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.131400000000042
+    "latencyMs": 6.745699999999999
   },
   {
     "id": "AUD-022",
@@ -2704,6 +2776,18 @@
           "sourceUrl": "https://mitcorer.edu.in/library.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2798,7 +2882,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.3104999999999905
+    "latencyMs": 5.803899999999999
   },
   {
     "id": "AUD-023",
@@ -2830,6 +2914,18 @@
           "sourceUrl": "https://mitcorer.edu.in/library.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -2924,7 +3020,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.967399999999998
+    "latencyMs": 4.281000000000006
   },
   {
     "id": "AUD-024",
@@ -2956,6 +3052,18 @@
           "sourceUrl": "https://mitcorer.edu.in/library.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -3050,7 +3158,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.373899999999992
+    "latencyMs": 4.436999999999955
   },
   {
     "id": "AUD-025",
@@ -3082,6 +3190,18 @@
           "sourceUrl": "https://mitcorer.edu.in/library.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -3176,7 +3296,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.5989000000000146
+    "latencyMs": 3.059199999999919
   },
   {
     "id": "AUD-026",
@@ -3317,7 +3437,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.2952999999999975
+    "latencyMs": 4.826099999999997
   },
   {
     "id": "AUD-027",
@@ -3466,7 +3586,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.6386999999999716
+    "latencyMs": 3.827099999999973
   },
   {
     "id": "AUD-028",
@@ -3607,7 +3727,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.2916999999999916
+    "latencyMs": 3.766200000000026
   },
   {
     "id": "AUD-029",
@@ -3738,7 +3858,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.792500000000018
+    "latencyMs": 5.248800000000074
   },
   {
     "id": "AUD-030",
@@ -3861,7 +3981,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.8485999999999763
+    "latencyMs": 0.9832999999999856
   },
   {
     "id": "AUD-031",
@@ -3893,6 +4013,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4015,7 +4147,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.744100000000003
+    "latencyMs": 5.385999999999967
   },
   {
     "id": "AUD-032",
@@ -4047,6 +4179,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4169,7 +4313,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.2894999999999754
+    "latencyMs": 4.020200000000045
   },
   {
     "id": "AUD-033",
@@ -4201,6 +4345,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4323,7 +4479,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.4318000000000097
+    "latencyMs": 5.5797000000000025
   },
   {
     "id": "AUD-034",
@@ -4355,6 +4511,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4477,7 +4645,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.4377000000000066
+    "latencyMs": 5.4325999999999794
   },
   {
     "id": "AUD-035",
@@ -4509,6 +4677,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4631,7 +4811,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.328100000000006
+    "latencyMs": 8.567900000000009
   },
   {
     "id": "AUD-036",
@@ -4652,8 +4832,7 @@
     "mustContain": [],
     "acceptance": "Return relevant maintained information; preserve factual amounts and uncertainty.",
     "actualEvidence": [
-      "KB-23",
-      "KB-36"
+      "KB-23"
     ],
     "actualResponse": {
       "evidence": [
@@ -4661,10 +4840,22 @@
           "id": "KB-23",
           "title": "MITCORER hostel facilities",
           "category": "Facilities",
-          "source": "MITCORER Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
+          "source": "MITCORER official FAQ (hostel facilities)",
+          "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER नुसार मुला-मुलींसाठी स्वतंत्र वसतिगृहे, RO पिण्याचे पाणी, स्वतंत्र सौर जलतापन व्यवस्था, सुरक्षित स्वच्छ वातावरण आणि आपत्कालीन वाहन सुविधा उपलब्ध आहेत. खोलीची उपलब्धता, वाटप, नियम आणि प्रवेशाच्या तारखा सार्वजनिक FAQ मध्ये निश्चित केलेल्या नाहीत; सध्याच्या वसतिगृह सूचनेत तपासा.",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के अनुसार लड़कों और लड़कियों के लिए अलग छात्रावास, RO पेयजल, अलग सौर जल-तापन व्यवस्था, सुरक्षित स्वच्छ वातावरण और आपातकालीन वाहन सुविधा उपलब्ध हैं। कमरे की उपलब्धता, आवंटन, नियम और प्रवेश तिथियाँ सार्वजनिक FAQ में निश्चित नहीं हैं; वर्तमान छात्रावास सूचना में जाँचें।",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -4677,44 +4868,21 @@
             "sha256": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
             "truncated": false
           }
-        },
-        {
-          "id": "KB-36",
-          "title": "MITCORER campus facilities",
-          "category": "Facilities",
-          "source": "MITCORER official brochure and Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-          "score": 200,
-          "revision": 0,
-          "academicYear": null,
-          "provenance": {},
-          "verification": {
-            "status": "not-recorded",
-            "verifiedAt": null
-          },
-          "citationId": "KB-36:0:79ff816101ab",
-          "passage": {
-            "text": "The official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
-            "sha256": "79ff816101ab8e3372902c6fb9756bebaef38a1566f664a5b9f2701380a0861b",
-            "truncated": false
-          }
         }
       ],
-      "recordId": [
-        "KB-23",
-        "KB-36"
-      ],
-      "source": "MITCORER Admissions FAQ",
-      "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.\n\nThe official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
+      "recordId": "KB-23",
+      "source": "MITCORER official FAQ (hostel facilities)",
+      "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
+      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.",
       "next": "",
       "actionView": "visit",
       "actionLabel": "Explore facilities",
+      "managedRecordId": "KB-23",
       "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "model": "deterministic-rag-fallback",
@@ -4743,7 +4911,7 @@
       "sourceLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "relatedLinks": []
@@ -4799,7 +4967,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.187000000000012
+    "latencyMs": 10.972899999999981
   },
   {
     "id": "AUD-037",
@@ -4913,7 +5081,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.317200000000014
+    "latencyMs": 2.4090999999999667
   },
   {
     "id": "AUD-038",
@@ -5027,7 +5195,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.7343000000000188
+    "latencyMs": 5.66680000000008
   },
   {
     "id": "AUD-039",
@@ -5048,8 +5216,7 @@
     "mustContain": [],
     "acceptance": "Return relevant maintained information; preserve factual amounts and uncertainty.",
     "actualEvidence": [
-      "KB-23",
-      "KB-36"
+      "KB-23"
     ],
     "actualResponse": {
       "evidence": [
@@ -5057,10 +5224,22 @@
           "id": "KB-23",
           "title": "MITCORER hostel facilities",
           "category": "Facilities",
-          "source": "MITCORER Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
+          "source": "MITCORER official FAQ (hostel facilities)",
+          "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER नुसार मुला-मुलींसाठी स्वतंत्र वसतिगृहे, RO पिण्याचे पाणी, स्वतंत्र सौर जलतापन व्यवस्था, सुरक्षित स्वच्छ वातावरण आणि आपत्कालीन वाहन सुविधा उपलब्ध आहेत. खोलीची उपलब्धता, वाटप, नियम आणि प्रवेशाच्या तारखा सार्वजनिक FAQ मध्ये निश्चित केलेल्या नाहीत; सध्याच्या वसतिगृह सूचनेत तपासा.",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के अनुसार लड़कों और लड़कियों के लिए अलग छात्रावास, RO पेयजल, अलग सौर जल-तापन व्यवस्था, सुरक्षित स्वच्छ वातावरण और आपातकालीन वाहन सुविधा उपलब्ध हैं। कमरे की उपलब्धता, आवंटन, नियम और प्रवेश तिथियाँ सार्वजनिक FAQ में निश्चित नहीं हैं; वर्तमान छात्रावास सूचना में जाँचें।",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5073,44 +5252,21 @@
             "sha256": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
             "truncated": false
           }
-        },
-        {
-          "id": "KB-36",
-          "title": "MITCORER campus facilities",
-          "category": "Facilities",
-          "source": "MITCORER official brochure and Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-          "score": 200,
-          "revision": 0,
-          "academicYear": null,
-          "provenance": {},
-          "verification": {
-            "status": "not-recorded",
-            "verifiedAt": null
-          },
-          "citationId": "KB-36:0:79ff816101ab",
-          "passage": {
-            "text": "The official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
-            "sha256": "79ff816101ab8e3372902c6fb9756bebaef38a1566f664a5b9f2701380a0861b",
-            "truncated": false
-          }
         }
       ],
-      "recordId": [
-        "KB-23",
-        "KB-36"
-      ],
-      "source": "MITCORER Admissions FAQ",
-      "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.\n\nThe official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
+      "recordId": "KB-23",
+      "source": "MITCORER official FAQ (hostel facilities)",
+      "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
+      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.",
       "next": "",
       "actionView": "visit",
       "actionLabel": "Explore facilities",
+      "managedRecordId": "KB-23",
       "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "model": "deterministic-rag-fallback",
@@ -5139,7 +5295,7 @@
       "sourceLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "relatedLinks": []
@@ -5195,7 +5351,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.3927999999999656
+    "latencyMs": 8.320799999999963
   },
   {
     "id": "AUD-040",
@@ -5309,7 +5465,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.6261000000000081
+    "latencyMs": 2.7595999999999776
   },
   {
     "id": "AUD-041",
@@ -5342,6 +5498,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5447,7 +5615,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.8315000000000055
+    "latencyMs": 8.118799999999965
   },
   {
     "id": "AUD-042",
@@ -5480,6 +5648,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5585,7 +5765,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.7286000000000286
+    "latencyMs": 7.928100000000086
   },
   {
     "id": "AUD-043",
@@ -5618,6 +5798,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5705,7 +5897,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.385500000000036
+    "latencyMs": 6.477200000000039
   },
   {
     "id": "AUD-044",
@@ -5738,6 +5930,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5843,7 +6047,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.0118999999999687
+    "latencyMs": 8.797500000000014
   },
   {
     "id": "AUD-045",
@@ -5876,6 +6080,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -5963,7 +6179,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.77819999999997
+    "latencyMs": 5.379700000000071
   },
   {
     "id": "AUD-046",
@@ -6113,7 +6329,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.423999999999978
+    "latencyMs": 4.879800000000046
   },
   {
     "id": "AUD-047",
@@ -6263,7 +6479,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.569000000000017
+    "latencyMs": 4.073000000000093
   },
   {
     "id": "AUD-048",
@@ -6395,7 +6611,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.14609999999999
+    "latencyMs": 4.232300000000009
   },
   {
     "id": "AUD-049",
@@ -6527,7 +6743,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.8589000000000055
+    "latencyMs": 3.763400000000047
   },
   {
     "id": "AUD-050",
@@ -6678,7 +6894,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.4944000000000415
+    "latencyMs": 4.7269000000000005
   },
   {
     "id": "AUD-051",
@@ -6711,6 +6927,18 @@
           "source": "Maharashtra CET Cell CAP admission process guidance",
           "sourceUrl": "https://cetcell.mahacet.org/",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -6731,6 +6959,18 @@
           "source": "MITCORER First Year B.Tech Eligibility Criteria 2026-27",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "महाराष्ट्र राज्यातील प्रथम वर्ष B.Tech प्रवेशासाठी प्रकाशित 2026-27 निकषांनुसार भारतीय नागरिकत्व, Physics आणि Mathematics हे अनिवार्य विषय असलेले 10+2 किंवा समकक्ष शिक्षण तसेच स्वीकार्य तिसरा विषय आवश्यक आहे. एकत्रित किमान गुण 45 percent किंवा पात्र महाराष्ट्र आरक्षित, EWS आणि PwD उमेदवारांसाठी 40 percent असावेत. PCM MHT-CET 2026 चे सर्व विषय देणे आणि PCM गुण शून्यापेक्षा अधिक असणे आवश्यक आहे. अखिल भारतीय उमेदवारांसाठी नियमांनुसार शून्यापेक्षा अधिक JEE Main गुण किंवा नमूद PCM MHT-CET मार्ग लागू होऊ शकतो. मूलभूत पात्रता मिळाल्याने प्रवेश प्रक्रियेत सहभागी होता येते; CSE किंवा अन्य शाखेची हमी मिळत नाही. शाखा वाटप गुणवत्ता, प्रवर्ग, जागेचा प्रकार, CAP फेरी, पर्यायपत्रातील पसंती, रिक्त जागा आणि लागू कटऑफवर अवलंबून असते.",
+              "sourceHash": "0d01d535e34e53713a410fb95111e4776329ea093ef1409436822744f72a2c7b",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "महाराष्ट्र राज्य के प्रथम वर्ष B.Tech प्रवेश के प्रकाशित 2026-27 मानदंडों के अनुसार भारतीय नागरिकता, Physics और Mathematics अनिवार्य विषयों के साथ 10+2 या समकक्ष शिक्षा तथा स्वीकार्य तीसरा विषय आवश्यक है। कुल न्यूनतम अंक 45 percent, या पात्र महाराष्ट्र आरक्षित, EWS और PwD उम्मीदवारों के लिए 40 percent होने चाहिए। PCM MHT-CET 2026 के सभी विषयों में उपस्थित होना और PCM स्कोर शून्य से अधिक होना आवश्यक है। अखिल भारतीय उम्मीदवार नियमों के अनुसार शून्य से अधिक JEE Main स्कोर या बताए गए PCM MHT-CET मार्ग का उपयोग कर सकते हैं। मूल पात्रता से प्रवेश प्रक्रिया में भाग लेने की अनुमति मिलती है; CSE या किसी अन्य शाखा की गारंटी नहीं। शाखा आवंटन मेरिट, श्रेणी, सीट प्रकार, CAP राउंड, विकल्प-पत्र की पसंद, रिक्तियों और लागू कटऑफ पर निर्भर करता है।",
+              "sourceHash": "0d01d535e34e53713a410fb95111e4776329ea093ef1409436822744f72a2c7b",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -6817,7 +7057,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.5054000000000087
+    "latencyMs": 0.5865000000000009
   },
   {
     "id": "AUD-052",
@@ -6848,6 +7088,18 @@
           "source": "MITCORER scholarship page",
           "sourceUrl": "https://www.mitcorer.edu.in/scholarship.php",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -6950,7 +7202,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.5658999999999992
+    "latencyMs": 0.4601000000000113
   },
   {
     "id": "AUD-053",
@@ -6978,13 +7230,25 @@
           "id": "KB-17",
           "title": "MITCORER official contact details",
           "category": "Contact",
-          "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+          "source": "MITCORER official Contact Us page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nमहाविद्यालय कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nसंकेतस्थळ: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
-            "section": "Contact Us / Contact Numbers / Email Address",
+            "section": "Contact Us / Address / Contact Numbers / Email Address",
             "capturedAt": "2026-11-19"
           },
           "verification": {
@@ -7000,9 +7264,9 @@
         }
       ],
       "recordId": "KB-17",
-      "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+      "source": "MITCORER official Contact Us page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
-      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nMITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nAdmission Helpline: +91 91584 14343.\nCollege Office: +91 91584 14444.\n\nEmail: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nWebsite: https://mitcorer.edu.in/.",
+      "answer": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
       "next": "",
       "actionView": "visit",
       "actionLabel": "View contact details",
@@ -7010,7 +7274,7 @@
       "anchored": true,
       "officialLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         },
         {
@@ -7039,12 +7303,12 @@
         }
       ],
       "requestedLanguage": "hi",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "hi",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -7100,7 +7364,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.5774999999999864
+    "latencyMs": 5.485299999999938
   },
   {
     "id": "AUD-054",
@@ -7131,6 +7395,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -7147,7 +7423,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -7224,7 +7500,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.5384999999999991
+    "latencyMs": 0.5783000000000129
   },
   {
     "id": "AUD-055",
@@ -7254,8 +7530,19 @@
           "category": "Facilities",
           "source": "MITCORER official Library Rules page checked 2026-11-19",
           "sourceUrl": "https://mitcorer.edu.in/library.php",
-          "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -7270,15 +7557,11 @@
           }
         }
       ],
-      "recordId": "KB-20",
+      "managedRecordId": "KB-20",
       "source": "MITCORER official Library Rules page checked 2026-11-19",
       "sourceUrl": "https://mitcorer.edu.in/library.php",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nMITCORER’s library provides books, digital resources, and journals. The official Library Rules page publishes general access rules: library users must sign in the users register, an identity card is compulsory for library access, and users must follow conduct and property-counter rules. The page describes book issue and return through the library system. The page text reviewed does not specify library opening hours or borrowing limits/loan periods; confirm those details with the library. The Library Details page lists library@mitcorer.edu.in for library contact.",
+      "answer": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
       "next": "",
-      "actionView": "inquiry",
-      "actionLabel": "Request library details",
-      "managedRecordId": "KB-20",
-      "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -7289,9 +7572,9 @@
       "outcomeStatus": "ANSWERED",
       "suggestions": [],
       "requestedLanguage": "mr",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "mr",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -7351,7 +7634,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.5785999999999945
+    "latencyMs": 3.5150999999999613
   },
   {
     "id": "AUD-056",
@@ -7483,7 +7766,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 44.70580000000001
+    "latencyMs": 50.44940000000008
   },
   {
     "id": "AUD-057",
@@ -7615,7 +7898,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.9856000000000904
+    "latencyMs": 3.932399999999916
   },
   {
     "id": "AUD-058",
@@ -7645,8 +7928,19 @@
           "category": "Facilities",
           "source": "MITCORER public Bus Facility page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/infrastructure/bus",
-          "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या सार्वजनिक Bus Facility पृष्ठावर प्रत्येकी 60 विद्यार्थ्यांची नमूद क्षमता आणि Wi-Fi असलेल्या तीन बसेस दाखवल्या आहेत. मार्ग, थांबे, वेळापत्रक, सध्याची आसन उपलब्धता किंवा वाहतूक शुल्क पृष्ठावर दिलेले नाही. मार्गावर अवलंबून राहण्यापूर्वी किंवा शुल्क भरण्यापूर्वी सध्याच्या वाहतूक कार्यालयाकडून किंवा प्रवेश कर्मचाऱ्यांकडून तपशील निश्चित करा.",
+              "sourceHash": "b6ceacf4962540e1c5d76410a1503820162dd370efdb43e2adab23efeae15722",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के सार्वजनिक Bus Facility पृष्ठ पर तीन बसें दिखाई गई हैं, जिनमें प्रत्येक की बताई गई क्षमता 60 विद्यार्थी और Wi-Fi है। पृष्ठ पर मार्ग, स्टॉप, समय-सारणी, वर्तमान सीट उपलब्धता या परिवहन शुल्क नहीं दिया गया है। किसी मार्ग पर निर्भर होने या शुल्क भरने से पहले वर्तमान परिवहन कार्यालय या प्रवेश कर्मचारियों से विवरण की पुष्टि करें।",
+              "sourceHash": "b6ceacf4962540e1c5d76410a1503820162dd370efdb43e2adab23efeae15722",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -7661,15 +7955,11 @@
           }
         }
       ],
-      "recordId": "KB-19",
+      "managedRecordId": "KB-19",
       "source": "MITCORER public Bus Facility page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/infrastructure/bus",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nMITCORER’s public Bus Facility page shows three buses, each with a stated capacity of 60 students and Wi-Fi. The page does not publish routes, stops, timetable, current seat availability, or transport fee. Confirm those operational details with the current transport office or admission staff before relying on a route or paying a fee.",
+      "answer": "MITCORER च्या सार्वजनिक Bus Facility पृष्ठावर प्रत्येकी 60 विद्यार्थ्यांची नमूद क्षमता आणि Wi-Fi असलेल्या तीन बसेस दाखवल्या आहेत. मार्ग, थांबे, वेळापत्रक, सध्याची आसन उपलब्धता किंवा वाहतूक शुल्क पृष्ठावर दिलेले नाही. मार्गावर अवलंबून राहण्यापूर्वी किंवा शुल्क भरण्यापूर्वी सध्याच्या वाहतूक कार्यालयाकडून किंवा प्रवेश कर्मचाऱ्यांकडून तपशील निश्चित करा.",
       "next": "",
-      "actionView": "inquiry",
-      "actionLabel": "Request bus details",
-      "managedRecordId": "KB-19",
-      "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER bus facility",
@@ -7680,9 +7970,9 @@
       "outcomeStatus": "ANSWERED",
       "suggestions": [],
       "requestedLanguage": "mr",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "mr",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER bus facility",
@@ -7742,7 +8032,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 18.816599999999994
+    "latencyMs": 23.379699999999957
   },
   {
     "id": "AUD-059",
@@ -7773,6 +8063,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -7789,7 +8091,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -7866,7 +8168,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.005800000000022
+    "latencyMs": 0.6624000000000478
   },
   {
     "id": "AUD-060",
@@ -7898,6 +8200,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -7915,7 +8229,7 @@
       "recordId": "KB-18",
       "source": "MITCORER scholarship page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nMITCORER’s published scholarship page lists Maharashtra state schemes, including the Rajarshi Chhatrapati Shahu Maharaj tuition-fee scheme, Dr. Punjabrao Deshmukh hostel allowance, post-matric scholarships and fee schemes for OBC, SBC, VJNT and SC students, a post-matric scholarship for students with disabilities, and minority-community schemes. It also lists the AICTE Pragati Scholarship for Girl Students (Technical Degree). Maharashtra state applications are handled through the MahaDBT portal; Pragati applications are handled through the National Scholarship Portal (NSP). Scheme eligibility, application dates, documents, and admission-route conditions must be checked on the relevant portal.",
+      "answer": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
       "next": "",
       "actionView": "scholarships",
       "actionLabel": "View scholarship schemes",
@@ -7956,9 +8270,9 @@
         }
       ],
       "requestedLanguage": "mr",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "mr",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER scholarship and financial-aid guidance",
@@ -8021,7 +8335,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.434900000000084
+    "latencyMs": 3.8496999999999844
   },
   {
     "id": "AUD-061",
@@ -8172,7 +8486,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 15.06919999999991
+    "latencyMs": 16.691800000000057
   },
   {
     "id": "AUD-062",
@@ -8202,13 +8516,25 @@
           "id": "KB-17",
           "title": "MITCORER official contact details",
           "category": "Contact",
-          "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+          "source": "MITCORER official Contact Us page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 43,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nमहाविद्यालय कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nसंकेतस्थळ: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
-            "section": "Contact Us / Contact Numbers / Email Address",
+            "section": "Contact Us / Address / Contact Numbers / Email Address",
             "capturedAt": "2026-11-19"
           },
           "verification": {
@@ -8230,6 +8556,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 23,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या Contact Us पृष्ठावर रेल्वे आणि रस्त्याने कॅम्पसला जाण्याची माहिती आहे:\n\n- पत्ता: Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n- नियमित रेल्वे Barshi ला Kurduvadi Junction, Solapur, Latur आणि Mumbai शी जोडतात असे पृष्ठ सांगते. प्रवासाच्या तारखेसाठी मार्ग आणि वेळापत्रक रेल्वेकडून तपासा.\n- MSRTC आणि खासगी बसेस Barshi Central Bus Stand पर्यंत येतात; तेथून कॅम्पससाठी थोडे अंतर ऑटो-रिक्षाने जावे लागते असे पृष्ठ सांगते. प्रवासापूर्वी सध्याचा बस ऑपरेटर, थांबा आणि सेवा निश्चित करा.\n- जुन्या Contact पृष्ठावरील स्थानिक स्थानक/बसस्थानक अंतराची माहिती नव्या पृष्ठावरील जवळीक वर्णनाशी विसंगत आहे. संस्थेने ही विसंगती दूर करेपर्यंत अचूक अंतर किंवा प्रवासवेळ सांगितलेली नाही.",
+              "sourceHash": "63fd75044ef7d3a806d0506ef008452c890f48fb6624b8be7138cec6be85b4cb",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के Contact Us पृष्ठ पर रेल और सड़क से परिसर पहुँचने की जानकारी है:\n\n- पता: Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n- पृष्ठ के अनुसार नियमित ट्रेनें Barshi को Kurduvadi Junction, Solapur, Latur और Mumbai से जोड़ती हैं। यात्रा की तारीख के लिए मार्ग और समय-सारणी रेलवे से जाँचें।\n- पृष्ठ के अनुसार MSRTC और निजी बसें Barshi Central Bus Stand तक पहुँचती हैं; वहाँ से परिसर तक थोड़ी दूरी ऑटो-रिक्शा से तय करनी होती है। यात्रा से पहले वर्तमान बस ऑपरेटर, स्टॉप और सेवा की पुष्टि करें।\n- पुराने Contact पृष्ठ पर स्थानीय स्टेशन/बस स्टैंड की दूरी नए पृष्ठ के निकटता-विवरण से मेल नहीं खाती। संस्था के समाधान तक यहाँ कोई सटीक दूरी या यात्रा समय नहीं बताया गया है।",
+              "sourceHash": "63fd75044ef7d3a806d0506ef008452c890f48fb6624b8be7138cec6be85b4cb",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
             "section": "Contact Us / How to Reach Us",
@@ -8254,6 +8592,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 23,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेश चौकशी कक्ष: सोमवार–शनिवार, 9:00 AM–5:00 PM (प्रकल्पमालकाने दिलेल्या आधीच्या Contact Us उताऱ्यातील वेळ). सध्याच्या Contact Us उताऱ्यात प्रवेश हेल्पलाइन +91 91584 14343 आणि महाविद्यालय कार्यालय +91 91584 14444 दिले आहे. ईमेल: info.mitcorer@mitpune.edu.in. ही वेळ प्रवेश चौकशी कक्षाची आहे; सर्व प्रशासकीय कार्यालये किंवा कॅम्पस भेटींचे वेळापत्रक म्हणून पुष्टी नाही. या वेळेबाहेर भेट देण्यापूर्वी किंवा कॅम्पस भेटीसाठी फोन करा.",
+              "sourceHash": "3edf866d88f24d8cc515852e269c619419a80145dfb6e95c5493b68124df10d9",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश पूछताछ डेस्क: सोमवार–शनिवार, 9:00 AM–5:00 PM (परियोजना स्वामी द्वारा दिए गए पहले Contact Us अंश में बताई गई समय-सारणी). वर्तमान Contact Us अंश में प्रवेश हेल्पलाइन +91 91584 14343 और कॉलेज कार्यालय +91 91584 14444 दिया है। ईमेल: info.mitcorer@mitpune.edu.in. यह प्रवेश पूछताछ डेस्क का समय है; सभी प्रशासनिक कार्यालयों या परिसर भ्रमण का पुष्ट कार्यक्रम नहीं। इस समय के बाहर आने या परिसर भ्रमण के लिए पहले फोन करें।",
+              "sourceHash": "3edf866d88f24d8cc515852e269c619419a80145dfb6e95c5493b68124df10d9",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
             "section": "Contact Us / Admissions Enquiry Desk",
@@ -8271,15 +8621,15 @@
           }
         }
       ],
-      "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nMITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nAdmission Helpline: +91 91584 14343.\nCollege Office: +91 91584 14444.\n\nEmail: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nWebsite: https://mitcorer.edu.in/.",
+      "source": "MITCORER official Contact Us page",
+      "answer": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nमहाविद्यालय कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nसंकेतस्थळ: https://mitcorer.edu.in/.",
       "next": "",
       "actionView": "inquiry",
       "actionLabel": "Request verified information",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
       "officialLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -8304,12 +8654,12 @@
         }
       ],
       "requestedLanguage": "mr",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "mr",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -8360,7 +8710,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.6721000000000004
+    "latencyMs": 4.751600000000053
   },
   {
     "id": "AUD-063",
@@ -8390,8 +8740,19 @@
           "category": "Facilities",
           "source": "MITCORER official Library Rules page checked 2026-11-19",
           "sourceUrl": "https://mitcorer.edu.in/library.php",
-          "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -8406,15 +8767,11 @@
           }
         }
       ],
-      "recordId": "KB-20",
+      "managedRecordId": "KB-20",
       "source": "MITCORER official Library Rules page checked 2026-11-19",
       "sourceUrl": "https://mitcorer.edu.in/library.php",
-      "answer": "या माहितीचे पुनरावलोकन केलेले मराठी भाषांतर उपलब्ध नाही. तथ्ये न बदलता मूळ इंग्रजी माहिती खाली दिली आहे.\n\nMITCORER’s library provides books, digital resources, and journals. The official Library Rules page publishes general access rules: library users must sign in the users register, an identity card is compulsory for library access, and users must follow conduct and property-counter rules. The page describes book issue and return through the library system. The page text reviewed does not specify library opening hours or borrowing limits/loan periods; confirm those details with the library. The Library Details page lists library@mitcorer.edu.in for library contact.",
+      "answer": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
       "next": "",
-      "actionView": "inquiry",
-      "actionLabel": "Request library details",
-      "managedRecordId": "KB-20",
-      "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -8425,9 +8782,9 @@
       "outcomeStatus": "ANSWERED",
       "suggestions": [],
       "requestedLanguage": "mr",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "mr",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -8487,7 +8844,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.058499999999981
+    "latencyMs": 3.199299999999994
   },
   {
     "id": "AUD-064",
@@ -8638,7 +8995,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.023300000000063
+    "latencyMs": 4.922700000000077
   },
   {
     "id": "AUD-065",
@@ -8770,7 +9127,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.3747999999999365
+    "latencyMs": 4.2444000000000415
   },
   {
     "id": "AUD-066",
@@ -8902,7 +9259,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.9174000000000433
+    "latencyMs": 5.199399999999969
   },
   {
     "id": "AUD-067",
@@ -8933,6 +9290,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -8949,7 +9318,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nGeneral reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -9026,7 +9395,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.48240000000009786
+    "latencyMs": 0.5434000000000196
   },
   {
     "id": "AUD-068",
@@ -9054,13 +9423,25 @@
           "id": "KB-17",
           "title": "MITCORER official contact details",
           "category": "Contact",
-          "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+          "source": "MITCORER official Contact Us page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nमहाविद्यालय कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nसंकेतस्थळ: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
-            "section": "Contact Us / Contact Numbers / Email Address",
+            "section": "Contact Us / Address / Contact Numbers / Email Address",
             "capturedAt": "2026-11-19"
           },
           "verification": {
@@ -9076,9 +9457,9 @@
         }
       ],
       "recordId": "KB-17",
-      "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+      "source": "MITCORER official Contact Us page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
-      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nMITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nAdmission Helpline: +91 91584 14343.\nCollege Office: +91 91584 14444.\n\nEmail: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nWebsite: https://mitcorer.edu.in/.",
+      "answer": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
       "next": "",
       "actionView": "visit",
       "actionLabel": "View contact details",
@@ -9086,7 +9467,7 @@
       "anchored": true,
       "officialLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -9111,12 +9492,12 @@
         }
       ],
       "requestedLanguage": "hi",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "hi",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -9167,7 +9548,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.591099999999983
+    "latencyMs": 4.78309999999999
   },
   {
     "id": "AUD-069",
@@ -9197,8 +9578,19 @@
           "category": "Facilities",
           "source": "MITCORER official Library Rules page checked 2026-11-19",
           "sourceUrl": "https://mitcorer.edu.in/library.php",
-          "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या ग्रंथालयात पुस्तके, डिजिटल साधने आणि नियतकालिके आहेत. अधिकृत Library Rules पृष्ठावर सर्वसाधारण नियम दिले आहेत: ग्रंथालय वापरणाऱ्यांनी वापरकर्ता नोंदवहीत सही करावी, प्रवेशासाठी ओळखपत्र अनिवार्य आहे आणि वर्तन व सामान ठेवण्याच्या काउंटरचे नियम पाळावेत. पुस्तकांची देवाणघेवाण ग्रंथालय प्रणालीद्वारे होते. पाहिलेल्या पृष्ठावर ग्रंथालयाची वेळ किंवा पुस्तक ठेवण्याची मर्यादा/कालावधी नमूद नाही; हे तपशील ग्रंथालयाकडून निश्चित करा. Library Details पृष्ठावर संपर्कासाठी library@mitcorer.edu.in दिले आहे.",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
+              "sourceHash": "9eae07dddcc6b5209570bfe829476baa90b43e983d4f85475f255be8431c967a",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -9213,15 +9605,11 @@
           }
         }
       ],
-      "recordId": "KB-20",
+      "managedRecordId": "KB-20",
       "source": "MITCORER official Library Rules page checked 2026-11-19",
       "sourceUrl": "https://mitcorer.edu.in/library.php",
-      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nMITCORER’s library provides books, digital resources, and journals. The official Library Rules page publishes general access rules: library users must sign in the users register, an identity card is compulsory for library access, and users must follow conduct and property-counter rules. The page describes book issue and return through the library system. The page text reviewed does not specify library opening hours or borrowing limits/loan periods; confirm those details with the library. The Library Details page lists library@mitcorer.edu.in for library contact.",
+      "answer": "MITCORER के पुस्तकालय में पुस्तकें, डिजिटल संसाधन और पत्रिकाएँ हैं। आधिकारिक Library Rules पृष्ठ पर सामान्य नियम हैं: पुस्तकालय उपयोगकर्ताओं को उपयोगकर्ता रजिस्टर में हस्ताक्षर करना होगा, प्रवेश के लिए पहचान पत्र अनिवार्य है और आचरण तथा सामान काउंटर के नियमों का पालन करना होगा। पुस्तक जारी और वापस करने की प्रक्रिया पुस्तकालय प्रणाली से होती है। देखे गए पृष्ठ पर पुस्तकालय का समय या उधार सीमा/अवधि नहीं बताई गई है; इन विवरणों की पुष्टि पुस्तकालय से करें। Library Details पृष्ठ पर संपर्क के लिए library@mitcorer.edu.in दिया है।",
       "next": "",
-      "actionView": "inquiry",
-      "actionLabel": "Request library details",
-      "managedRecordId": "KB-20",
-      "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -9232,9 +9620,9 @@
       "outcomeStatus": "ANSWERED",
       "suggestions": [],
       "requestedLanguage": "hi",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "hi",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER library and digital resources",
@@ -9294,7 +9682,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.921199999999999
+    "latencyMs": 3.4593000000000984
   },
   {
     "id": "AUD-070",
@@ -9326,6 +9714,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -9343,7 +9743,7 @@
       "recordId": "KB-18",
       "source": "MITCORER scholarship page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
-      "answer": "इस जानकारी का समीक्षित हिंदी अनुवाद उपलब्ध नहीं है। मूल अंग्रेज़ी जानकारी नीचे दी गई है।\n\nMITCORER’s published scholarship page lists Maharashtra state schemes, including the Rajarshi Chhatrapati Shahu Maharaj tuition-fee scheme, Dr. Punjabrao Deshmukh hostel allowance, post-matric scholarships and fee schemes for OBC, SBC, VJNT and SC students, a post-matric scholarship for students with disabilities, and minority-community schemes. It also lists the AICTE Pragati Scholarship for Girl Students (Technical Degree). Maharashtra state applications are handled through the MahaDBT portal; Pragati applications are handled through the National Scholarship Portal (NSP). Scheme eligibility, application dates, documents, and admission-route conditions must be checked on the relevant portal.",
+      "answer": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
       "next": "",
       "actionView": "scholarships",
       "actionLabel": "View scholarship schemes",
@@ -9384,9 +9784,9 @@
         }
       ],
       "requestedLanguage": "hi",
-      "responseLanguage": "mixed",
-      "localizationStatus": "fallback",
-      "languageReviewStatus": "translation-unavailable",
+      "responseLanguage": "hi",
+      "localizationStatus": "ai-reviewed",
+      "languageReviewStatus": "human-review-pending",
       "sourceLinks": [
         {
           "label": "MITCORER scholarship and financial-aid guidance",
@@ -9449,7 +9849,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.181600000000003
+    "latencyMs": 3.852100000000064
   },
   {
     "id": "AUD-071",
@@ -9599,7 +9999,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.401200000000017
+    "latencyMs": 4.144699999999943
   },
   {
     "id": "AUD-072",
@@ -9749,7 +10149,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.5645999999999276
+    "latencyMs": 4.236300000000028
   },
   {
     "id": "AUD-073",
@@ -9898,7 +10298,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.280900000000088
+    "latencyMs": 4.61749999999995
   },
   {
     "id": "AUD-074",
@@ -9992,7 +10392,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 1.2807999999999993
+    "latencyMs": 0.814899999999966
   },
   {
     "id": "AUD-075",
@@ -10142,7 +10542,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.929499999999962
+    "latencyMs": 2.816500000000019
   },
   {
     "id": "AUD-076",
@@ -10292,7 +10692,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.7567000000000235
+    "latencyMs": 5.2105999999999995
   },
   {
     "id": "AUD-077",
@@ -10441,7 +10841,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.878500000000031
+    "latencyMs": 3.947999999999979
   },
   {
     "id": "AUD-078",
@@ -10535,7 +10935,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.5819000000000187
+    "latencyMs": 0.6804000000000769
   },
   {
     "id": "AUD-079",
@@ -10685,7 +11085,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.899599999999964
+    "latencyMs": 3.8459000000000287
   },
   {
     "id": "AUD-080",
@@ -10835,7 +11235,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.993099999999913
+    "latencyMs": 4.110599999999977
   },
   {
     "id": "AUD-081",
@@ -10984,7 +11384,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.6152000000000726
+    "latencyMs": 3.968399999999974
   },
   {
     "id": "AUD-082",
@@ -11078,7 +11478,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.3431999999999107
+    "latencyMs": 0.7850999999999431
   },
   {
     "id": "AUD-083",
@@ -11228,7 +11628,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.1557999999999993
+    "latencyMs": 3.6963000000000648
   },
   {
     "id": "AUD-084",
@@ -11378,7 +11778,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.622600000000034
+    "latencyMs": 4.016899999999964
   },
   {
     "id": "AUD-085",
@@ -11527,7 +11927,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.3098999999999705
+    "latencyMs": 4.284899999999993
   },
   {
     "id": "AUD-086",
@@ -11621,7 +12021,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.8188000000000102
+    "latencyMs": 0.4576000000000704
   },
   {
     "id": "AUD-087",
@@ -11754,7 +12154,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.35329999999999
+    "latencyMs": 4.479100000000017
   },
   {
     "id": "AUD-088",
@@ -11887,7 +12287,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.260200000000054
+    "latencyMs": 4.6743999999999915
   },
   {
     "id": "AUD-089",
@@ -12036,7 +12436,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.527300000000082
+    "latencyMs": 3.5715000000000146
   },
   {
     "id": "AUD-090",
@@ -12130,7 +12530,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.39009999999996126
+    "latencyMs": 0.7436999999999898
   },
   {
     "id": "AUD-091",
@@ -12228,7 +12628,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering"
         }
       ],
-      "conversationId": "CHAT-AEFE352B",
+      "conversationId": "CHAT-2C569A98",
       "context": {
         "branch": "Computer Engineering",
         "lastTopic": "intake"
@@ -12285,7 +12685,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 17.223700000000008
+    "latencyMs": 30.780099999999948
   },
   {
     "id": "AUD-092",
@@ -12383,7 +12783,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/civil-engineering"
         }
       ],
-      "conversationId": "CHAT-AEFE352B",
+      "conversationId": "CHAT-2C569A98",
       "context": {
         "branch": "Civil Engineering",
         "lastTopic": "intake"
@@ -12438,7 +12838,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 8.409599999999955
+    "latencyMs": 15.658599999999979
   },
   {
     "id": "AUD-093",
@@ -12536,7 +12936,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering"
         }
       ],
-      "conversationId": "CHAT-AEFE352B",
+      "conversationId": "CHAT-2C569A98",
       "context": {
         "branch": "Mechanical & Rail Engineering",
         "lastTopic": "intake"
@@ -12591,7 +12991,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.104900000000043
+    "latencyMs": 14.486800000000017
   },
   {
     "id": "AUD-094",
@@ -12623,6 +13023,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER मधील विभागीय नेतृत्व आणि शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागप्रमुख Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) आणि Cybersecurity मधील B.Tech Honors; उच्च-कार्यक्षमता प्रोग्रामिंग, AI/ML आणि संगणकीय प्रयोगशाळांचा आधार.\n- Civil Engineering: विभागप्रमुख Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science आणि Software Engineering मधील B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental आणि CAD प्रयोगशाळा.\n- Mechanical & Rail Engineering: विभागप्रमुख Dr. Sanjay Pandurang Mane. रेल्वे तंत्रज्ञान, रोबोटिक्स आणि ऑटोमोटिव्ह अभियांत्रिकीवर भर; CAD/CAM, Robotics, Heat Transfer आणि Central Workshop सुविधा.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER का विभागीय नेतृत्व और शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागाध्यक्ष Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) और Cybersecurity में B.Tech Honors; हाई-परफॉर्मेंस प्रोग्रामिंग, AI/ML और कंप्यूटेशनल प्रयोगशालाओं का सहयोग.\n- Civil Engineering: विभागाध्यक्ष Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science और Software Engineering में B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental और CAD प्रयोगशालाएँ.\n- Mechanical & Rail Engineering: विभागाध्यक्ष Dr. Sanjay Pandurang Mane. रेलवे तकनीक, रोबोटिक्स और ऑटोमोटिव इंजीनियरिंग पर ध्यान; CAD/CAM, Robotics, Heat Transfer और Central Workshop सुविधाएँ.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -12691,7 +13103,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering"
         }
       ],
-      "conversationId": "CHAT-AEFE352B",
+      "conversationId": "CHAT-2C569A98",
       "context": {
         "branch": "Mechanical & Rail Engineering",
         "lastTopic": "intake"
@@ -12742,7 +13154,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 10.56370000000004
+    "latencyMs": 18.179399999999987
   },
   {
     "id": "AUD-095",
@@ -12774,6 +13186,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER मधील विभागीय नेतृत्व आणि शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागप्रमुख Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) आणि Cybersecurity मधील B.Tech Honors; उच्च-कार्यक्षमता प्रोग्रामिंग, AI/ML आणि संगणकीय प्रयोगशाळांचा आधार.\n- Civil Engineering: विभागप्रमुख Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science आणि Software Engineering मधील B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental आणि CAD प्रयोगशाळा.\n- Mechanical & Rail Engineering: विभागप्रमुख Dr. Sanjay Pandurang Mane. रेल्वे तंत्रज्ञान, रोबोटिक्स आणि ऑटोमोटिव्ह अभियांत्रिकीवर भर; CAD/CAM, Robotics, Heat Transfer आणि Central Workshop सुविधा.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER का विभागीय नेतृत्व और शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागाध्यक्ष Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) और Cybersecurity में B.Tech Honors; हाई-परफॉर्मेंस प्रोग्रामिंग, AI/ML और कंप्यूटेशनल प्रयोगशालाओं का सहयोग.\n- Civil Engineering: विभागाध्यक्ष Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science और Software Engineering में B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental और CAD प्रयोगशालाएँ.\n- Mechanical & Rail Engineering: विभागाध्यक्ष Dr. Sanjay Pandurang Mane. रेलवे तकनीक, रोबोटिक्स और ऑटोमोटिव इंजीनियरिंग पर ध्यान; CAD/CAM, Robotics, Heat Transfer और Central Workshop सुविधाएँ.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -12842,7 +13266,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/mechanical-rail-engineering"
         }
       ],
-      "conversationId": "CHAT-AEFE352B",
+      "conversationId": "CHAT-2C569A98",
       "context": {
         "branch": "Mechanical & Rail Engineering",
         "lastTopic": "intake"
@@ -12893,7 +13317,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.537699999999973
+    "latencyMs": 16.411100000000033
   },
   {
     "id": "AUD-096",
@@ -12964,7 +13388,7 @@
           "url": "https://www.mitcorer.edu.in/Admissions-Open-2026-27.html"
         }
       ],
-      "conversationId": "CHAT-A0BFED51",
+      "conversationId": "CHAT-218E831B",
       "context": {
         "category": "OBC",
         "gender": "girls",
@@ -13031,7 +13455,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.2531999999999925
+    "latencyMs": 12.851599999999962
   },
   {
     "id": "AUD-097",
@@ -13104,7 +13528,7 @@
           "url": "https://www.mitcorer.edu.in/Admissions-Open-2026-27.html"
         }
       ],
-      "conversationId": "CHAT-A0BFED51",
+      "conversationId": "CHAT-218E831B",
       "context": {
         "category": "OBC",
         "gender": "boys",
@@ -13161,7 +13585,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 5.905399999999986
+    "latencyMs": 14.65790000000004
   },
   {
     "id": "AUD-098",
@@ -13234,7 +13658,7 @@
           "url": "https://www.mitcorer.edu.in/Admissions-Open-2026-27.html"
         }
       ],
-      "conversationId": "CHAT-A0BFED51",
+      "conversationId": "CHAT-218E831B",
       "context": {
         "category": "OBC",
         "gender": "boys",
@@ -13291,7 +13715,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.370300000000043
+    "latencyMs": 14.930700000000002
   },
   {
     "id": "AUD-099",
@@ -13352,7 +13776,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-A0BFED51",
+      "conversationId": "CHAT-218E831B",
       "context": {
         "category": "OBC",
         "gender": "boys",
@@ -13412,7 +13836,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.121399999999994
+    "latencyMs": 13.024499999999989
   },
   {
     "id": "AUD-100",
@@ -13473,7 +13897,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-A0BFED51",
+      "conversationId": "CHAT-218E831B",
       "context": {
         "category": "OBC",
         "gender": "boys",
@@ -13527,7 +13951,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 5.795700000000011
+    "latencyMs": 13.735200000000077
   },
   {
     "id": "AUD-101",
@@ -13625,7 +14049,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/civil-engineering"
         }
       ],
-      "conversationId": "CHAT-3839BA42",
+      "conversationId": "CHAT-A18FD95D",
       "context": {
         "branch": "Civil Engineering",
         "lastTopic": "intake"
@@ -13682,7 +14106,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.866999999999962
+    "latencyMs": 14.045900000000074
   },
   {
     "id": "AUD-102",
@@ -13779,7 +14203,7 @@
           "url": "https://www.mitcorer.edu.in/Admissions-Open-2026-27.html"
         }
       ],
-      "conversationId": "CHAT-3839BA42",
+      "conversationId": "CHAT-A18FD95D",
       "context": {
         "branch": "Civil Engineering",
         "lastTopic": "fees"
@@ -13832,7 +14256,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 10.207499999999982
+    "latencyMs": 18.410300000000007
   },
   {
     "id": "AUD-103",
@@ -13921,7 +14345,7 @@
           "url": "https://www.mitcorer.edu.in/Admissions-Open-2026-27.html"
         }
       ],
-      "conversationId": "CHAT-3839BA42",
+      "conversationId": "CHAT-A18FD95D",
       "context": {
         "branch": "Computer Engineering",
         "lastTopic": "fees"
@@ -13976,7 +14400,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.750999999999976
+    "latencyMs": 16.504599999999982
   },
   {
     "id": "AUD-104",
@@ -14037,7 +14461,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-3839BA42",
+      "conversationId": "CHAT-A18FD95D",
       "context": {
         "branch": "Computer Engineering",
         "lastTopic": "accommodationFees",
@@ -14095,7 +14519,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 5.611400000000003
+    "latencyMs": 13.797199999999975
   },
   {
     "id": "AUD-105",
@@ -14146,9 +14570,21 @@
           "id": "KB-23",
           "title": "MITCORER hostel facilities",
           "category": "Facilities",
-          "source": "MITCORER Admissions FAQ",
-          "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations",
+          "source": "MITCORER official FAQ (hostel facilities)",
+          "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER नुसार मुला-मुलींसाठी स्वतंत्र वसतिगृहे, RO पिण्याचे पाणी, स्वतंत्र सौर जलतापन व्यवस्था, सुरक्षित स्वच्छ वातावरण आणि आपत्कालीन वाहन सुविधा उपलब्ध आहेत. खोलीची उपलब्धता, वाटप, नियम आणि प्रवेशाच्या तारखा सार्वजनिक FAQ मध्ये निश्चित केलेल्या नाहीत; सध्याच्या वसतिगृह सूचनेत तपासा.",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के अनुसार लड़कों और लड़कियों के लिए अलग छात्रावास, RO पेयजल, अलग सौर जल-तापन व्यवस्था, सुरक्षित स्वच्छ वातावरण और आपातकालीन वाहन सुविधा उपलब्ध हैं। कमरे की उपलब्धता, आवंटन, नियम और प्रवेश तिथियाँ सार्वजनिक FAQ में निश्चित नहीं हैं; वर्तमान छात्रावास सूचना में जाँचें।",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -14165,8 +14601,8 @@
       ],
       "composed": true,
       "clarification": false,
-      "source": "[1] Hostel and mess fees AY 2026-27 (Hostel and mess fee structure shared for AY 2026-27) · [2] MITCORER hostel facilities (MITCORER Admissions FAQ)",
-      "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations",
+      "source": "[1] Hostel and mess fees AY 2026-27 (Hostel and mess fee structure shared for AY 2026-27) · [2] MITCORER hostel facilities (MITCORER official FAQ (hostel facilities))",
+      "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
       "answer": "Hostel fees: For AY 2026-27, the hostel fee is INR 35,000 plus a refundable hostel deposit of INR 5,000, for a hostel total of INR 40,000. Room availability, hostel and mess rules, and payment process must be confirmed with the college. [1]\n\nHostel facilities: MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice. [2]",
       "sections": [
         {
@@ -14199,7 +14635,7 @@
       "officialLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "next": "",
@@ -14229,11 +14665,11 @@
       "sourceLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://mitcorer.edu.in/mitcorer/public/infrastructure/hostel-accommodations"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "relatedLinks": [],
-      "conversationId": "CHAT-3839BA42",
+      "conversationId": "CHAT-A18FD95D",
       "context": {
         "branch": "Computer Engineering",
         "lastTopic": "accommodationFees",
@@ -14285,7 +14721,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 8.817600000000084
+    "latencyMs": 18.244899999999916
   },
   {
     "id": "AUD-106",
@@ -14346,7 +14782,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-3ABF57A1",
+      "conversationId": "CHAT-A667FEDE",
       "context": {
         "lastTopic": "accommodationFees",
         "service": "hostel"
@@ -14403,7 +14839,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 7.310400000000072
+    "latencyMs": 14.18970000000013
   },
   {
     "id": "AUD-107",
@@ -14466,7 +14902,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-3ABF57A1",
+      "conversationId": "CHAT-A667FEDE",
       "context": {
         "lastTopic": "accommodationFees",
         "service": "hostel"
@@ -14519,7 +14955,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 6.065200000000004
+    "latencyMs": 13.78449999999998
   },
   {
     "id": "AUD-108",
@@ -14582,7 +15018,7 @@
       "localizationStatus": "original",
       "sourceLinks": [],
       "relatedLinks": [],
-      "conversationId": "CHAT-3ABF57A1",
+      "conversationId": "CHAT-A667FEDE",
       "context": {
         "lastTopic": "accommodationFees",
         "service": "hostel"
@@ -14639,7 +15075,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 5.673900000000003
+    "latencyMs": 14.365199999999959
   },
   {
     "id": "AUD-109",
@@ -14737,7 +15173,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering"
         }
       ],
-      "conversationId": "CHAT-3ABF57A1",
+      "conversationId": "CHAT-A667FEDE",
       "context": {
         "lastTopic": "intake",
         "service": "hostel",
@@ -14795,7 +15231,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.222800000000007
+    "latencyMs": 17.65689999999995
   },
   {
     "id": "AUD-110",
@@ -14893,7 +15329,7 @@
           "url": "https://mitcorer.edu.in/mitcorer/public/department/civil-engineering"
         }
       ],
-      "conversationId": "CHAT-3ABF57A1",
+      "conversationId": "CHAT-A667FEDE",
       "context": {
         "lastTopic": "intake",
         "service": "hostel",
@@ -14949,7 +15385,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 9.331900000000019
+    "latencyMs": 18.70119999999997
   },
   {
     "id": "AUD-111",
@@ -15028,6 +15464,18 @@
           "source": "MITCORER scholarship page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/scholarship",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -15224,7 +15672,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 5.335300000000075
+    "latencyMs": 5.747900000000072
   },
   {
     "id": "AUD-112",
@@ -15379,7 +15827,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.3086000000000695
+    "latencyMs": 3.237100000000055
   },
   {
     "id": "AUD-113",
@@ -15564,7 +16012,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.469600000000014
+    "latencyMs": 4.488499999999931
   },
   {
     "id": "AUD-114",
@@ -15593,6 +16041,18 @@
           "source": "Maharashtra CET Cell CAP admission process guidance",
           "sourceUrl": "https://cetcell.mahacet.org/",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -15611,7 +16071,7 @@
       "clarification": true,
       "source": "[1] Maharashtra CAP admission workflow (Maharashtra CET Cell CAP admission process guidance)",
       "sourceUrl": "https://cetcell.mahacet.org/",
-      "answer": "Admission process: CAP admission proceeds through candidate registration and scrutiny, merit-list publication, option-form submission, round-wise allotment, seat acceptance or freeze/betterment decision where applicable, and institute reporting. Dates, conditions, and candidate actions must be confirmed from the current Maharashtra CET Cell notice for the relevant academic year and round. [1]\n\nRequired documents: Are you applying for First Year or Direct Second Year, and which category or concession should I check? Document requirements can differ by route and claim.",
+      "answer": "Admission process: CAP admission proceeds through candidate registration and scrutiny, merit-list publication, option-form submission, round-wise allotment, seat acceptance or freeze/betterment decision where applicable, and institute reporting. Dates, conditions, and candidate actions must be confirmed from the current Maharashtra CET Cell notice for the relevant academic year and round. [1]\n\nRequired documents: Are you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check? Document requirements can differ by route and claim.",
       "sections": [
         {
           "topic": "admissions",
@@ -15631,7 +16091,7 @@
           "title": "Required documents",
           "question": "required document",
           "normalizedQuery": "required document",
-          "answer": "Are you applying for First Year or Direct Second Year, and which category or concession should I check? Document requirements can differ by route and claim.",
+          "answer": "Are you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check? Document requirements can differ by route and claim.",
           "officialLinks": [],
           "status": "clarification",
           "clarificationKind": "documents",
@@ -15704,7 +16164,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.5775999999999613
+    "latencyMs": 2.8899999999998727
   },
   {
     "id": "AUD-115",
@@ -15901,7 +16361,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.8659000000000106
+    "latencyMs": 4.990299999999934
   },
   {
     "id": "AUD-116",
@@ -16020,7 +16480,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.390800000000013
+    "latencyMs": 3.2920999999998912
   },
   {
     "id": "AUD-117",
@@ -16052,6 +16512,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/department/computer-science-engineering",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER मधील विभागीय नेतृत्व आणि शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागप्रमुख Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) आणि Cybersecurity मधील B.Tech Honors; उच्च-कार्यक्षमता प्रोग्रामिंग, AI/ML आणि संगणकीय प्रयोगशाळांचा आधार.\n- Civil Engineering: विभागप्रमुख Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science आणि Software Engineering मधील B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental आणि CAD प्रयोगशाळा.\n- Mechanical & Rail Engineering: विभागप्रमुख Dr. Sanjay Pandurang Mane. रेल्वे तंत्रज्ञान, रोबोटिक्स आणि ऑटोमोटिव्ह अभियांत्रिकीवर भर; CAD/CAM, Robotics, Heat Transfer आणि Central Workshop सुविधा.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER का विभागीय नेतृत्व और शैक्षणिक विशेषीकरण:\n\n- Computer Science & Engineering (CSE): विभागाध्यक्ष Prof. Somnath Mule. Artificial Intelligence (AI), Machine Learning (ML) और Cybersecurity में B.Tech Honors; हाई-परफॉर्मेंस प्रोग्रामिंग, AI/ML और कंप्यूटेशनल प्रयोगशालाओं का सहयोग.\n- Civil Engineering: विभागाध्यक्ष Prof. Amit Raosaheb Shinde (स्थापना 2017). AI & Data Science और Software Engineering में B.Tech Minor; Strength of Materials, Surveying, Concrete Technology, Environmental और CAD प्रयोगशालाएँ.\n- Mechanical & Rail Engineering: विभागाध्यक्ष Dr. Sanjay Pandurang Mane. रेलवे तकनीक, रोबोटिक्स और ऑटोमोटिव इंजीनियरिंग पर ध्यान; CAD/CAM, Robotics, Heat Transfer और Central Workshop सुविधाएँ.",
+              "sourceHash": "1a6d933502a833ab156f18a940a6097a1d756e0483206092367e2fcd8c3b40da",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -16170,7 +16642,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.6277000000000044
+    "latencyMs": 3.179700000000139
   },
   {
     "id": "AUD-118",
@@ -16283,7 +16755,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.42470000000003
+    "latencyMs": 4.17470000000003
   },
   {
     "id": "AUD-119",
@@ -16396,7 +16868,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.36749999999995
+    "latencyMs": 2.706899999999905
   },
   {
     "id": "AUD-120",
@@ -16417,8 +16889,7 @@
     "mustContain": [],
     "acceptance": "Return relevant maintained information; preserve factual amounts and uncertainty.",
     "actualEvidence": [
-      "KB-23",
-      "KB-36"
+      "KB-23"
     ],
     "actualResponse": {
       "evidence": [
@@ -16426,10 +16897,22 @@
           "id": "KB-23",
           "title": "MITCORER hostel facilities",
           "category": "Facilities",
-          "source": "MITCORER Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
+          "source": "MITCORER official FAQ (hostel facilities)",
+          "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER नुसार मुला-मुलींसाठी स्वतंत्र वसतिगृहे, RO पिण्याचे पाणी, स्वतंत्र सौर जलतापन व्यवस्था, सुरक्षित स्वच्छ वातावरण आणि आपत्कालीन वाहन सुविधा उपलब्ध आहेत. खोलीची उपलब्धता, वाटप, नियम आणि प्रवेशाच्या तारखा सार्वजनिक FAQ मध्ये निश्चित केलेल्या नाहीत; सध्याच्या वसतिगृह सूचनेत तपासा.",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के अनुसार लड़कों और लड़कियों के लिए अलग छात्रावास, RO पेयजल, अलग सौर जल-तापन व्यवस्था, सुरक्षित स्वच्छ वातावरण और आपातकालीन वाहन सुविधा उपलब्ध हैं। कमरे की उपलब्धता, आवंटन, नियम और प्रवेश तिथियाँ सार्वजनिक FAQ में निश्चित नहीं हैं; वर्तमान छात्रावास सूचना में जाँचें।",
+              "sourceHash": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -16442,44 +16925,21 @@
             "sha256": "8fdbfe5a6e482e94631338e8b03887f95953e0264ca19f96466bb64b79339ad5",
             "truncated": false
           }
-        },
-        {
-          "id": "KB-36",
-          "title": "MITCORER campus facilities",
-          "category": "Facilities",
-          "source": "MITCORER official brochure and Admissions FAQ",
-          "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-          "score": 200,
-          "revision": 0,
-          "academicYear": null,
-          "provenance": {},
-          "verification": {
-            "status": "not-recorded",
-            "verifiedAt": null
-          },
-          "citationId": "KB-36:0:79ff816101ab",
-          "passage": {
-            "text": "The official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
-            "sha256": "79ff816101ab8e3372902c6fb9756bebaef38a1566f664a5b9f2701380a0861b",
-            "truncated": false
-          }
         }
       ],
-      "recordId": [
-        "KB-23",
-        "KB-36"
-      ],
-      "source": "MITCORER Admissions FAQ",
-      "sourceUrl": "https://www.mitcorer.edu.in/hostel-amenities.php",
-      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.\n\nThe official MITCORER brochure lists hostels, mess and canteen, transportation, solar water heating, parking, guest houses, railway model room, security, computer labs, sports, library, laboratories, Wi-Fi, RO water, and a gym. The Admissions FAQ also lists classrooms, a seminar hall, and workshops.",
+      "recordId": "KB-23",
+      "source": "MITCORER official FAQ (hostel facilities)",
+      "sourceUrl": "https://www.mitcorer.edu.in/faq.php",
+      "answer": "MITCORER states that separate boys and girls hostel facilities are available with RO drinking water, separate solar water-heating systems, a safe hygienic environment, and an emergency vehicle facility. Room availability, allotment, rules, and joining dates are not confirmed by this public FAQ and must be checked against the current hostel notice.",
       "next": "",
       "actionView": "visit",
       "actionLabel": "Explore facilities",
+      "managedRecordId": "KB-23",
       "anchored": true,
       "officialLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "model": "deterministic-rag-fallback",
@@ -16508,7 +16968,7 @@
       "sourceLinks": [
         {
           "label": "MITCORER hostel facilities",
-          "url": "https://www.mitcorer.edu.in/hostel-amenities.php"
+          "url": "https://www.mitcorer.edu.in/faq.php"
         }
       ],
       "relatedLinks": []
@@ -16564,7 +17024,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.3633000000000948
+    "latencyMs": 3.667599999999993
   },
   {
     "id": "AUD-121",
@@ -16677,7 +17137,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.6474999999999227
+    "latencyMs": 3.217399999999998
   },
   {
     "id": "AUD-122",
@@ -16767,7 +17227,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.345299999999952
+    "latencyMs": 0.4350000000001728
   },
   {
     "id": "AUD-123",
@@ -16894,7 +17354,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.0195999999999685
+    "latencyMs": 2.371900000000096
   },
   {
     "id": "AUD-124",
@@ -17017,7 +17477,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.3508000000000493
+    "latencyMs": 4.036800000000085
   },
   {
     "id": "AUD-125",
@@ -17142,7 +17602,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.620200000000068
+    "latencyMs": 2.6603000000000065
   },
   {
     "id": "AUD-126",
@@ -17265,7 +17725,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.8949000000000069
+    "latencyMs": 3.0125000000000455
   },
   {
     "id": "AUD-127",
@@ -17388,7 +17848,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.7546999999999571
+    "latencyMs": 1.0378999999998086
   },
   {
     "id": "AUD-128",
@@ -17503,7 +17963,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.6163000000000238
+    "latencyMs": 0.8706999999999425
   },
   {
     "id": "AUD-129",
@@ -17640,7 +18100,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.0815999999999804
+    "latencyMs": 5.548499999999876
   },
   {
     "id": "AUD-130",
@@ -17671,6 +18131,18 @@
           "source": "Verified admission checklist",
           "sourceUrl": "",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -17687,7 +18159,7 @@
       ],
       "source": "Verified admission checklist",
       "sourceUrl": "",
-      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year or Direct Second Year, and which category or concession should I check?",
+      "answer": "General reporting checklist (conditional, not a personalized list):\n\nAdmission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.\n\nAre you applying for First Year B.Tech, Direct Second Year B.Tech, or Polytechnic? Which category or concession should I check?",
       "clarification": true,
       "clarificationKind": "documents",
       "officialLinks": [
@@ -17762,7 +18234,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.6650000000000773
+    "latencyMs": 0.4795999999998912
   },
   {
     "id": "AUD-131",
@@ -17797,6 +18269,18 @@
           "sourceUrl": "https://cetcell.mahacet.org/",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "CAP प्रवेशात उमेदवार नोंदणी आणि छाननी, गुणवत्ता यादीचे प्रकाशन, पर्यायपत्र सादर करणे, फेरीनुसार जागा वाटप, लागू असल्यास जागा स्वीकारणे किंवा freeze/betterment निर्णय आणि संस्थेत प्रवेश अहवाल देणे या टप्प्यांचा समावेश होतो. संबंधित शैक्षणिक वर्ष आणि फेरीसाठीच्या तारखा, अटी आणि उमेदवारांची कार्यवाही सध्याच्या Maharashtra CET Cell सूचनेत तपासा.",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "CAP प्रवेश में उम्मीदवार पंजीकरण और जाँच, मेरिट सूची प्रकाशित होना, विकल्प फॉर्म जमा करना, राउंड के अनुसार आवंटन, जहाँ लागू हो सीट स्वीकारना या freeze/betterment निर्णय और संस्थान में रिपोर्ट करना शामिल है। संबंधित शैक्षणिक वर्ष और राउंड की तिथियाँ, शर्तें और उम्मीदवार की कार्रवाई वर्तमान Maharashtra CET Cell सूचना में जाँचें।",
+              "sourceHash": "33b67214f74f0e881cfb739a38d79b8857363182a5abaf28f0813816835b5be8",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -17818,6 +18302,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "Non-CAP, Against-CAP, ACAP आणि संस्थान-स्तरीय प्रवेश म्हणजे लागू CAP फेऱ्यांनंतर उपलब्ध जागांसाठी पात्र उमेदवारांची संस्थेची प्रक्रिया. MITCORER प्रथम वर्ष आणि थेट द्वितीय वर्षासाठी स्वतंत्र वेळापत्रके, रिक्त जागा, तात्पुरत्या गुणवत्ता याद्या, अंतिम गुणवत्ता याद्या आणि वाटप सूचना प्रकाशित करते. अर्जदारांनी सध्याचा संस्थेचा अर्ज सादर करावा, प्रकाशित गुणवत्ता प्रक्रियेचे पालन करावे आणि सूचनेतील मुदतीत आवश्यक मूळ कागदपत्रांसह प्रत्यक्ष प्रवेश निश्चित करावा. रिक्त जागा किंवा अर्जामुळे वाटपाची हमी मिळत नाही. शिष्यवृत्ती किंवा शुल्क सवलतीची पात्रता स्वतंत्रपणे तपासावी; संस्थान-स्तरीय प्रवेशामुळे योजनेची पात्रता सिद्ध होत नाही.",
+              "sourceHash": "da7a8c70051e17fb58b3be3774ff9bf9eb27b5840357ea0f9699ddcd8f63b8e1",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "Non-CAP, Against-CAP, ACAP और संस्थान-स्तरीय प्रवेश का अर्थ लागू CAP राउंड के बाद उपलब्ध सीटों के लिए पात्र उम्मीदवारों की संस्थान प्रक्रिया है। MITCORER प्रथम वर्ष और सीधे द्वितीय वर्ष के लिए अलग-अलग कार्यक्रम, रिक्तियाँ, अस्थायी मेरिट सूची, अंतिम मेरिट सूची और आवंटन सूचनाएँ प्रकाशित करता है। आवेदक वर्तमान संस्थान फॉर्म जमा करें, प्रकाशित मेरिट प्रक्रिया का पालन करें और सूचना की समय-सीमा में आवश्यक मूल दस्तावेज़ों के साथ व्यक्तिगत रूप से प्रवेश की पुष्टि करें। रिक्ति या आवेदन से सीट आवंटन की गारंटी नहीं मिलती। छात्रवृत्ति या शुल्क रियायत की पात्रता अलग से जाँचें; संस्थान-स्तरीय प्रवेश अपने आप योजना की पात्रता सिद्ध नहीं करता।",
+              "sourceHash": "da7a8c70051e17fb58b3be3774ff9bf9eb27b5840357ea0f9699ddcd8f63b8e1",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -17839,6 +18335,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "महाराष्ट्र राज्यातील प्रथम वर्ष B.Tech प्रवेशासाठी प्रकाशित 2026-27 निकषांनुसार भारतीय नागरिकत्व, Physics आणि Mathematics हे अनिवार्य विषय असलेले 10+2 किंवा समकक्ष शिक्षण तसेच स्वीकार्य तिसरा विषय आवश्यक आहे. एकत्रित किमान गुण 45 percent किंवा पात्र महाराष्ट्र आरक्षित, EWS आणि PwD उमेदवारांसाठी 40 percent असावेत. PCM MHT-CET 2026 चे सर्व विषय देणे आणि PCM गुण शून्यापेक्षा अधिक असणे आवश्यक आहे. अखिल भारतीय उमेदवारांसाठी नियमांनुसार शून्यापेक्षा अधिक JEE Main गुण किंवा नमूद PCM MHT-CET मार्ग लागू होऊ शकतो. मूलभूत पात्रता मिळाल्याने प्रवेश प्रक्रियेत सहभागी होता येते; CSE किंवा अन्य शाखेची हमी मिळत नाही. शाखा वाटप गुणवत्ता, प्रवर्ग, जागेचा प्रकार, CAP फेरी, पर्यायपत्रातील पसंती, रिक्त जागा आणि लागू कटऑफवर अवलंबून असते.",
+              "sourceHash": "0d01d535e34e53713a410fb95111e4776329ea093ef1409436822744f72a2c7b",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "महाराष्ट्र राज्य के प्रथम वर्ष B.Tech प्रवेश के प्रकाशित 2026-27 मानदंडों के अनुसार भारतीय नागरिकता, Physics और Mathematics अनिवार्य विषयों के साथ 10+2 या समकक्ष शिक्षा तथा स्वीकार्य तीसरा विषय आवश्यक है। कुल न्यूनतम अंक 45 percent, या पात्र महाराष्ट्र आरक्षित, EWS और PwD उम्मीदवारों के लिए 40 percent होने चाहिए। PCM MHT-CET 2026 के सभी विषयों में उपस्थित होना और PCM स्कोर शून्य से अधिक होना आवश्यक है। अखिल भारतीय उम्मीदवार नियमों के अनुसार शून्य से अधिक JEE Main स्कोर या बताए गए PCM MHT-CET मार्ग का उपयोग कर सकते हैं। मूल पात्रता से प्रवेश प्रक्रिया में भाग लेने की अनुमति मिलती है; CSE या किसी अन्य शाखा की गारंटी नहीं। शाखा आवंटन मेरिट, श्रेणी, सीट प्रकार, CAP राउंड, विकल्प-पत्र की पसंद, रिक्तियों और लागू कटऑफ पर निर्भर करता है।",
+              "sourceHash": "0d01d535e34e53713a410fb95111e4776329ea093ef1409436822744f72a2c7b",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -17860,6 +18368,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/admissions/documents",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "प्रवेशाच्या वेळी सामान्यतः CET किंवा JEE गुणपत्रिका, 10वीची गुणपत्रिका, 12वीची गुणपत्रिका किंवा DSE साठी डिप्लोमाच्या गुणपत्रिका, शाळा सोडल्याचा दाखला, रहिवास किंवा राष्ट्रीयत्वाचा पुरावा, CAP वाटपपत्र, लागू असल्यास जात प्रमाणपत्र आणि जात वैधता प्रमाणपत्र, लागू असल्यास नॉन-क्रीमी लेयर प्रमाणपत्र, सवलतीच्या दाव्यासाठी उत्पन्न प्रमाणपत्र, पासपोर्ट आकाराची छायाचित्रे, आधार आणि शिष्यवृत्ती प्रक्रियेसाठी आवश्यक असल्यास बँक तपशील लागतात.",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "प्रवेश के समय सामान्यतः CET या JEE स्कोरकार्ड, 10वीं की अंकसूची, 12वीं की अंकसूची या DSE के लिए डिप्लोमा अंकसूचियाँ, स्थानांतरण प्रमाणपत्र, निवास या राष्ट्रीयता का प्रमाण, CAP आवंटन पत्र, लागू होने पर जाति प्रमाणपत्र और जाति वैधता प्रमाणपत्र, लागू होने पर नॉन-क्रीमी लेयर प्रमाणपत्र, शुल्क रियायत के दावे के लिए आय प्रमाणपत्र, पासपोर्ट आकार के फोटो, आधार और छात्रवृत्ति प्रक्रिया के लिए आवश्यक होने पर बैंक विवरण चाहिए।",
+              "sourceHash": "82aaba6cfc7d1567f9e45e1c1e41435f15d71e34dd22a2708ef7511af887eca5",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -17993,7 +18513,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.437800000000038
+    "latencyMs": 5.878199999999879
   },
   {
     "id": "AUD-132",
@@ -18118,7 +18638,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.8188000000000102
+    "latencyMs": 1.3800999999998567
   },
   {
     "id": "AUD-133",
@@ -18299,7 +18819,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.0171000000000276
+    "latencyMs": 3.8478000000000065
   },
   {
     "id": "AUD-134",
@@ -18331,6 +18851,18 @@
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/about",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MIT College of Railway Engineering and Research (MITCORER) हे सोलापूर जिल्ह्यातील बार्शी येथील MIT Group चे महाविद्यालय आहे. प्रत्यक्ष रेल्वे पद्धतींवर आधारित अभ्यासक्रमाद्वारे महाविद्यालय रेल्वे तंत्रज्ञानावर लक्ष केंद्रित करते. भावी नेतृत्व घडवण्याचे उद्दिष्ट ठेवून असाइनमेंट, प्रकल्प, संवादात्मक वर्ग, कॅम्पस सुविधा आणि उद्योगसहभागातून व्यावहारिक शिक्षण दिले जाते.\n\n- अधिकृत संकेतस्थळ: https://mitcorer.edu.in/\n- आभासी सहाय्यक: Mitra प्रवेश, अभ्यासक्रम, शुल्क, शिष्यवृत्ती आणि सुविधांबाबत 24/7 पडताळलेले मार्गदर्शन देते.",
+              "sourceHash": "380ba2341c79262115e0622c0d25c07e2acea97169ccf4f0d3ace8144f37cb6e",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MIT College of Railway Engineering and Research (MITCORER), सोलापुर जिले के बार्शी में स्थित MIT Group का कॉलेज है। वास्तविक रेलवे प्रथाओं पर आधारित पाठ्यक्रम के माध्यम से कॉलेज रेलवे तकनीक पर ध्यान देता है। भावी नेतृत्व तैयार करने के उद्देश्य से असाइनमेंट, परियोजनाओं, संवादात्मक कक्षाओं, परिसर सुविधाओं और उद्योग सहभागिता के जरिए व्यावहारिक शिक्षा दी जाती है।\n\n- आधिकारिक वेबसाइट: https://mitcorer.edu.in/\n- वर्चुअल सहायक: Mitra प्रवेश, पाठ्यक्रम, शुल्क, छात्रवृत्ति और सुविधाओं पर 24/7 सत्यापित मार्गदर्शन देती है।",
+              "sourceHash": "380ba2341c79262115e0622c0d25c07e2acea97169ccf4f0d3ace8144f37cb6e",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -18428,7 +18960,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.110400000000027
+    "latencyMs": 3.956100000000106
   },
   {
     "id": "AUD-135",
@@ -18459,6 +18991,18 @@
           "source": "MITCORER scholarship page",
           "sourceUrl": "https://www.mitcorer.edu.in/scholarship.php",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -18559,7 +19103,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.42089999999996053
+    "latencyMs": 0.4858000000001539
   },
   {
     "id": "AUD-136",
@@ -18693,7 +19237,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.402600000000007
+    "latencyMs": 5.701099999999997
   },
   {
     "id": "AUD-137",
@@ -18825,7 +19369,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.8319999999999936
+    "latencyMs": 5.346199999999953
   },
   {
     "id": "AUD-138",
@@ -18959,7 +19503,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.943399999999997
+    "latencyMs": 3.940399999999954
   },
   {
     "id": "AUD-139",
@@ -18987,13 +19531,25 @@
           "id": "KB-17",
           "title": "MITCORER official contact details",
           "category": "Contact",
-          "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+          "source": "MITCORER official Contact Us page",
           "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
           "score": 200,
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nमहाविद्यालय कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nसंकेतस्थळ: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nप्रवेश हेल्पलाइन: +91 91584 14343.\nकॉलेज कार्यालय: +91 91584 14444.\n\nईमेल: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nवेबसाइट: https://mitcorer.edu.in/.",
+              "sourceHash": "9ae4013a4a242ad047cc8f8aa08b6ec14888e3fec28934795509876b55700ab2",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {
-            "section": "Contact Us / Contact Numbers / Email Address",
+            "section": "Contact Us / Address / Contact Numbers / Email Address",
             "capturedAt": "2026-11-19"
           },
           "verification": {
@@ -19009,7 +19565,7 @@
         }
       ],
       "recordId": "KB-17",
-      "source": "MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)",
+      "source": "MITCORER official Contact Us page",
       "sourceUrl": "https://mitcorer.edu.in/mitcorer/public/contact-us",
       "answer": "MITCORER, Industrial Estate No. 03 - Barshi, Dist. Solapur, Maharashtra - 413401.\n\nAdmission Helpline: +91 91584 14343.\nCollege Office: +91 91584 14444.\n\nEmail: principal.mitcorer@mitpune.edu.in; info.mitcorer@mitpune.edu.in.\n\nWebsite: https://mitcorer.edu.in/.",
       "next": "",
@@ -19019,7 +19575,7 @@
       "anchored": true,
       "officialLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         },
         {
@@ -19052,7 +19608,7 @@
       "localizationStatus": "original",
       "sourceLinks": [
         {
-          "label": "MITCORER official contact details · Contact Us / Contact Numbers / Email Address",
+          "label": "MITCORER official contact details · Contact Us / Address / Contact Numbers / Email Address",
           "url": "https://mitcorer.edu.in/mitcorer/public/contact-us"
         }
       ],
@@ -19108,7 +19664,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 4.0861999999999625
+    "latencyMs": 4.759800000000041
   },
   {
     "id": "AUD-140",
@@ -19191,7 +19747,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.6638000000000375
+    "latencyMs": 0.7314000000001215
   },
   {
     "id": "AUD-141",
@@ -19266,7 +19822,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.1856999999999971
+    "latencyMs": 0.19620000000008986
   },
   {
     "id": "AUD-142",
@@ -19360,7 +19916,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.3451000000000022
+    "latencyMs": 0.401299999999992
   },
   {
     "id": "AUD-143",
@@ -19445,7 +20001,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.30320000000006075
+    "latencyMs": 0.30929999999989377
   },
   {
     "id": "AUD-144",
@@ -19522,7 +20078,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.23509999999998854
+    "latencyMs": 0.2699000000000069
   },
   {
     "id": "AUD-145",
@@ -19635,7 +20191,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 3.991600000000062
+    "latencyMs": 3.9010000000000673
   },
   {
     "id": "AUD-146",
@@ -19714,7 +20270,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.23899999999991905
+    "latencyMs": 0.5751999999999953
   },
   {
     "id": "AUD-147",
@@ -19791,7 +20347,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.22329999999999472
+    "latencyMs": 0.24469999999996617
   },
   {
     "id": "AUD-148",
@@ -19868,7 +20424,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.18050000000005184
+    "latencyMs": 0.2038000000000011
   },
   {
     "id": "AUD-149",
@@ -19981,7 +20537,7 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 2.546699999999987
+    "latencyMs": 2.804100000000062
   },
   {
     "id": "AUD-150",
@@ -20010,6 +20566,18 @@
           "source": "MITCORER scholarship page",
           "sourceUrl": "https://www.mitcorer.edu.in/scholarship.php",
           "revision": 0,
+          "translations": {
+            "mr": {
+              "text": "MITCORER च्या प्रकाशित शिष्यवृत्ती पृष्ठावर महाराष्ट्र राज्याच्या योजना आहेत: राजर्षी छत्रपती शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख वसतिगृह भत्ता, OBC, SBC, VJNT आणि SC विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती व शुल्क योजना, दिव्यांग विद्यार्थ्यांसाठी मॅट्रिकोत्तर शिष्यवृत्ती आणि अल्पसंख्याक समुदायांच्या योजना. AICTE Pragati Scholarship for Girl Students (Technical Degree) ही योजनाही दिली आहे. महाराष्ट्र राज्याच्या अर्जांसाठी MahaDBT आणि Pragati अर्जांसाठी National Scholarship Portal (NSP) वापरले जाते. योजनेची पात्रता, अर्जाच्या तारखा, कागदपत्रे आणि प्रवेशमार्गाच्या अटी संबंधित पोर्टलवर तपासा.",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            },
+            "hi": {
+              "text": "MITCORER के प्रकाशित छात्रवृत्ति पृष्ठ पर महाराष्ट्र राज्य की योजनाएँ सूचीबद्ध हैं: राजर्षि छत्रपति शाहू महाराज शिक्षण शुल्क योजना, डॉ. पंजाबराव देशमुख छात्रावास भत्ता, OBC, SBC, VJNT और SC विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति और शुल्क योजनाएँ, दिव्यांग विद्यार्थियों के लिए पोस्ट-मैट्रिक छात्रवृत्ति तथा अल्पसंख्यक समुदाय की योजनाएँ। इसमें AICTE Pragati Scholarship for Girl Students (Technical Degree) भी है। महाराष्ट्र राज्य के आवेदन MahaDBT और Pragati आवेदन National Scholarship Portal (NSP) पर किए जाते हैं। योजना की पात्रता, आवेदन तिथियाँ, दस्तावेज़ और प्रवेश मार्ग की शर्तें संबंधित पोर्टल पर जाँचें।",
+              "sourceHash": "17ce742b556e7fa1dce3ebaac0c5eb24e51e6a01d900556419accfad1caae6e6",
+              "status": "ai-reviewed-pending-human-review"
+            }
+          },
           "academicYear": null,
           "provenance": {},
           "verification": {
@@ -20108,6 +20676,6 @@
     "status": "PASS_BOUNDED_CONTRACT",
     "failures": [],
     "rootCause": null,
-    "latencyMs": 0.46280000000001564
+    "latencyMs": 0.7494000000001506
   }
 ]

@@ -33,9 +33,9 @@ function createWorkflowCases() {
   const states = [
     { detail: 'I am at the last step of admission.', expectedText: 'allotment or institute-level merit' },
     { detail: 'I received my CAP allotment.', expectedText: 'seat acceptance or freeze' },
-    { detail: 'I received allotment, accepted the seat, and uploaded all documents.', expectedText: 'approved fee payment' },
-    { detail: 'I received allotment, accepted the seat, uploaded documents, and paid the fee.', expectedText: 'institute reporting' },
-    { detail: 'I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting.', expectedText: 'all main workflow stages appear complete' },
+    { detail: 'I received allotment, accepted the seat, and have my documents ready.', expectedText: 'approved fee payment' },
+    { detail: 'I received allotment, accepted the seat, have my documents ready, and paid the fee.', expectedText: 'institute reporting' },
+    { detail: 'I received allotment, accepted the seat, have my documents ready, paid the fee, and completed reporting.', expectedText: 'all main workflow stages appear complete' },
   ];
   const forms = [
     (detail) => `My category is Open. ${detail} What is remaining?`,
@@ -63,7 +63,7 @@ function createWorkflowCases() {
           language,
           question: `${prefix}${form(state.detail)}`,
           expectedCategory: 'documents',
-          expectedAction: 'documents',
+          expectedAction: 'applicantPortal',
           mustInclude: state.expectedText,
         });
         index += 1;
@@ -117,9 +117,10 @@ async function main() {
       const outcomeMatches = expectsClarification
         ? payload.data?.clarification === true && actualCategory === ''
         : item.intent === 'document_status'
-          // Applicant uploads are private account data, not institutional
-          // knowledge evidence. Verify the personal-record response surface.
-          ? actualCategory === '' && payload.data?.source === 'My document records' && payload.data?.actionView === 'documents'
+          ? actualCategory === '' && payload.data?.source === 'Applicant document status'
+            && payload.data?.actionView === 'applicantPortal'
+            && answer.includes('no longer accepts applicant documents')
+            && payload.data.officialLinks?.some(link => link.url.endsWith('/contact-us'))
           : actualCategory === expectedCategory;
       if (response.status !== 200 || !outcomeMatches || !actionMatches || (expectedText && !answer.includes(expectedText))) {
         failures.push({ id: item.id, intent: item.intent, question, expectedCategory, actualCategory, status: response.status, action: payload.data?.actionView, expectedText });

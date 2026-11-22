@@ -75,9 +75,8 @@ export function KnowledgeRecordEditor({ record, onSave, onCancel }) {
           </div>)}<button type="button" disabled={form.facts.programs.length >= 30} onClick={() => updateFacts((facts) => ({ ...facts, programs: [...facts.programs, { name: '', intake: '', choiceCode: '' }] }))}>Add programme</button></div>}
         </>}
         {!form.facts && <div className="wide">
-          <p>AI translations are checked against the English source and preserve its numbers. Their language review is still pending. When the English source changes, the existing translations stop being used until reviewed again.</p>
-          <label>Marathi translation{record.translations?.mr?.status === 'ai-reviewed-pending-human-review' ? ' (AI reviewed; human review pending)' : ''}<textarea rows={4} maxLength={100000} value={translations.mr} onChange={(event) => { setTranslations((current) => ({ ...current, mr: event.target.value })); setTranslationsReviewed(false); }} /></label>
-          <label>Hindi translation{record.translations?.hi?.status === 'ai-reviewed-pending-human-review' ? ' (AI reviewed; human review pending)' : ''}<textarea rows={4} maxLength={100000} value={translations.hi} onChange={(event) => { setTranslations((current) => ({ ...current, hi: event.target.value })); setTranslationsReviewed(false); }} /></label>
+          <label>Marathi translation<textarea rows={4} maxLength={100000} value={translations.mr} onChange={(event) => { setTranslations((current) => ({ ...current, mr: event.target.value })); setTranslationsReviewed(false); }} /></label>
+          <label>Hindi translation<textarea rows={4} maxLength={100000} value={translations.hi} onChange={(event) => { setTranslations((current) => ({ ...current, hi: event.target.value })); setTranslationsReviewed(false); }} /></label>
           <label><input type="checkbox" checked={translationsReviewed} onChange={(event) => setTranslationsReviewed(event.target.checked)} /> I reviewed these translations against the current source text.</label>
         </div>}
         <button type="submit" disabled={Boolean(record.freshnessReview && form.status === 'Published' && !sourceReviewed)}>{busy ? 'Saving…' : record.freshnessReview && form.status === 'Published' ? 'Confirm review and publish' : 'Save record'}</button><button type="button" onClick={onCancel}>Cancel</button>

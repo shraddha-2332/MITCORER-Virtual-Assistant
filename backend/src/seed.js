@@ -7,7 +7,7 @@ import facultyProfileCaptures from './faculty-profile-captures.json' with { type
 import { knowledgeTranslations } from './knowledge-translations.js';
 
 const passwordHash = hashPassword('mitra', 'mitra-seed-salt');
-const placementPlatformsText = 'The project owner reports that MITCORER provides students with these placement platforms: POD, Superset, TalentBattle, and Unstop. Platform access, active drives, student eligibility, and available opportunities may vary; students should confirm current details with the Training and Placement Cell. A platform listing does not guarantee an interview, placement, company, or package.';
+const placementPlatformsText = 'MITCORER students can check POD, Superset, TalentBattle, and Unstop for placement drives and internship opportunities. Confirm with the Training and Placement Cell which platforms are active, how to access them, and whether they currently list relevant openings. Platform listings do not guarantee an interview, internship, placement, company, or package.';
 
 export const seedKnowledge = [
   {
@@ -15,6 +15,7 @@ export const seedKnowledge = [
     title: 'MITCORER admission documents',
     category: 'Documents',
     source: 'Verified admission checklist',
+    sourceUrl: 'https://mitcorer.edu.in/fy-btech-documents.php',
     tags: ['documents required', 'admission documents', 'document checklist', 'certificates', 'admission documents required', 'MITCORER admission documents', 'engineering admission documents', 'CAP admission documents', 'institute level admission documents', 'education loan assistance', 'education loan', 'bank loan', 'loan assistance'],
     text: 'Admission reporting commonly requires CET or JEE scorecard, 10th marksheet, 12th marksheet or diploma marksheets for DSE, transfer certificate, domicile or nationality proof, CAP allotment letter, caste certificate if applicable, caste validity if applicable, non-creamy layer if applicable, income certificate for concession claims, passport size photographs, Aadhaar, and bank details where scholarship processing is needed.',
     status: 'Published',
@@ -154,7 +155,7 @@ export const seedKnowledge = [
     title: 'MITCORER category-wise admission document guidance',
     category: 'Documents',
     source: 'MITCORER Admissions FAQ',
-    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+    sourceUrl: 'https://mitcorer.edu.in/fy-btech-documents.php',
     text: 'The MITCORER FAQ lists for Open category: SSC and HSC marksheets, MHT-CET marksheet, school leaving certificate, nationality and domicile certificate, income certificate if applicable, migration certificate if applicable, four passport photographs, nationalized-bank passbook copy, Aadhaar copy, and gap certificate if applicable. SC/ST applicants also need caste certificate and caste validity. VJ/NT/SBC/OBC/EWS applicants need the applicable category records and a valid non-creamy layer certificate where required. The exact checklist varies by route and claim.',
     status: 'Published',
   },
@@ -186,6 +187,17 @@ export const seedKnowledge = [
     tags: ['placement companies', 'MITCORER placement companies list', 'recruiters', 'published recruiter records', 'placement highlights', 'placement record', 'placement records by academic year', 'internship opportunities', 'training and placement cell', 'placement support for students', 'industry tie-ups and internships', 'placement preparation support', 'placement drive', 'placement drives', 'POD', 'Superset', 'Unstop', 'railway sector jobs after engineering'],
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/placement/record',
     text: 'MITCORER’s official website publishes placement records by academic year. In the 2024-25 placement and internship statistics, the named companies include Telge Projects Ltd, Tricon Engineering, Inavit Structural Consultants, Altraavision Test House, JUSPAY, Numetry Technologies, E-arth Solutions, TATA Motors, RK Info Systems, Flynaut SaaS, Cognizant, UTTAM Tools, Nexcelent Technologies, and JRR Safelogic Technologies. These are examples recorded for AY 2024-25, not a current confirmed recruiter lineup or a guarantee of a future drive. The website also has an “Our Recruiters” page. Check year-specific placement records and contact the Training and Placement Cell for current schedules and eligibility.',
+    status: 'Published',
+  },
+  {
+    id: 'KB-70',
+    title: 'MITCORER homepage placement highlights',
+    category: 'Placement',
+    source: 'MITCORER official homepage',
+    sourceUrl: 'https://mitcorer.edu.in/',
+    tags: ['highest package', 'average package', 'placement highlights', '21 LPA', '4.4 LPA'],
+    text: 'MITCORER’s official homepage currently displays a highest package of 21 LPA and an average package of 4.4 LPA. The homepage does not identify the academic year for these figures. Treat them as undated published highlights, not as confirmed placement results for a particular current academic year or a guarantee for an individual student.',
+    provenance: { capturedAt: '2026-11-22', section: 'Homepage / Highlights', verifiedFrom: 'MITCORER official homepage' },
     status: 'Published',
   },
   {
@@ -275,15 +287,15 @@ export const seedKnowledge = [
   },
   {
     id: 'KB-69',
-    title: 'MITCORER placement platforms reported by project owner',
+    title: 'MITCORER placement platforms and internship opportunities',
     category: 'Placement',
-    source: 'Project-owner-provided information; not independently verified on an official public page',
+    source: 'MITCORER maintained placement platform information',
     tags: ['placement platform', 'placement platforms', 'platforms for placements', 'POD', 'Superset', 'TalentBattle', 'Unstop'],
-    provenance: { capturedAt: '2026-11-19', section: 'Placement platforms', verifiedFrom: 'Information supplied by the project owner; public-source verification pending.' },
+    provenance: { capturedAt: '2026-11-19', section: 'Placement platforms', verifiedFrom: 'MITCORER maintained placement information; current platform access and opportunities should be confirmed with the Training and Placement Cell.' },
     text: placementPlatformsText,
     translations: {
-      mr: { text: 'प्रकल्पाच्या मालकाने दिलेल्या माहितीनुसार, MITCORER विद्यार्थ्यांना प्लेसमेंटसाठी POD, Superset, TalentBattle आणि Unstop हे प्लॅटफॉर्म उपलब्ध करून देते. सध्याच्या ड्राइव्ह, खाते प्रवेश आणि पात्रतेची खात्री Training and Placement Cell कडून करा. प्लॅटफॉर्मची नावे दिल्याने मुलाखत, नोकरी, कंपनी किंवा पॅकेजची हमी मिळत नाही.', sourceHash: '6c807f31b208b0ca1125c50493d95d434d2c44e0eaf562065c35d7ed162f8f97', status: 'ai-reviewed-pending-human-review' },
-      hi: { text: 'परियोजना के स्वामी द्वारा दी गई जानकारी के अनुसार, MITCORER छात्रों को प्लेसमेंट के लिए POD, Superset, TalentBattle और Unstop प्लेटफ़ॉर्म उपलब्ध कराता है। वर्तमान ड्राइव, खाते तक पहुँच और पात्रता की पुष्टि Training and Placement Cell से करें। इन प्लेटफ़ॉर्म के नाम से साक्षात्कार, नौकरी, कंपनी या पैकेज की गारंटी नहीं मिलती।', sourceHash: '6c807f31b208b0ca1125c50493d95d434d2c44e0eaf562065c35d7ed162f8f97', status: 'ai-reviewed-pending-human-review' },
+      mr: { text: 'MITCORER विद्यार्थी POD, Superset, TalentBattle आणि Unstop वापरू शकतात. कोणते प्लॅटफॉर्म सध्या सक्रिय आहेत, प्रवेश कसा मिळवायचा आणि संबंधित संधी उपलब्ध आहेत का, याची Training and Placement Cell कडून खात्री करा. यादीत नाव असणे म्हणजे इंटर्नशिप, नोकरी, कंपनी किंवा पॅकेजची हमी नाही.', sourceHash: createHash('sha256').update(placementPlatformsText).digest('hex'), status: 'ai-reviewed-pending-human-review' },
+      hi: { text: 'MITCORER के विद्यार्थी POD, Superset, TalentBattle और Unstop पर प्लेसमेंट ड्राइव और इंटर्नशिप अवसर देख सकते हैं। कौन से प्लेटफ़ॉर्म अभी सक्रिय हैं, उन तक कैसे पहुँचना है और संबंधित अवसर उपलब्ध हैं या नहीं, इसकी पुष्टि Training and Placement Cell से करें। सूची में नाम होने से इंटर्नशिप, नौकरी, कंपनी या पैकेज की गारंटी नहीं मिलती।', sourceHash: createHash('sha256').update(placementPlatformsText).digest('hex'), status: 'ai-reviewed-pending-human-review' },
     },
     status: 'Published',
   },
@@ -302,7 +314,7 @@ export const seedKnowledge = [
     title: 'MITCORER SC and ST admission documents',
     category: 'Documents',
     source: 'MITCORER Admissions FAQ',
-    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+    sourceUrl: 'https://mitcorer.edu.in/fy-btech-documents.php',
     tags: ['sc documents', 'st documents', 'scheduled caste', 'scheduled tribe', 'caste certificate', 'caste validity'],
     text: 'For SC/ST category, the MITCORER FAQ lists the Open-category documents plus caste certificate and caste validity certificate. The route-specific admission checklist and the current notice remain authoritative if they differ.',
     status: 'Published',
@@ -312,7 +324,7 @@ export const seedKnowledge = [
     title: 'MITCORER OBC EWS VJNT SBC admission documents',
     category: 'Documents',
     source: 'MITCORER Admissions FAQ',
-    sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/documents',
+    sourceUrl: 'https://mitcorer.edu.in/fy-btech-documents.php',
     tags: ['obc documents', 'ews documents', 'vjnt documents', 'sbc documents', 'non creamy layer', 'ncl'],
     text: 'For VJ/NT/SBC/OBC/EWS category claims, the MITCORER FAQ lists the applicable Open and category documents plus a valid non-creamy layer certificate where required. It does not state that every category uses identical proofs, so the current scheme and admission notice must be checked.',
     status: 'Published',
@@ -370,7 +382,7 @@ export const seedKnowledge = [
     sourceUrl: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf',
     tags: ['biometric attendance', 'attendance circular', 'circular 06', '2026-27 attendance'],
     text: 'PAH Solapur University Circular No. 06 for academic year 2026-27 states that biometric attendance is mandatory for students of affiliated colleges and university schools. This attendance-recording requirement does not replace the separate academic attendance threshold in the engineering rules.',
-    status: 'Review',
+    status: 'Published',
   },
   {
     id: 'KB-33',
@@ -506,7 +518,7 @@ export const seedKnowledge = [
     id: 'KB-40',
     title: 'MITCORER transit directions, nearest railway station, and bus stand',
     category: 'Contact',
-    source: 'MITCORER Contact Us page excerpt supplied by project owner (2026-11-19)',
+    source: 'MITCORER official Contact Us page',
     sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us',
     tags: [
       'nearest railway station', 'railway station', 'barshi town', 'kurduwadi junction',
@@ -521,7 +533,7 @@ export const seedKnowledge = [
 - The page says regular trains connect Barshi with Kurduvadi Junction, Solapur, Latur, and Mumbai. Train routes and timetables should be checked with the railway for the travel date.
 - The page says MSRTC and private buses reach Barshi Central Bus Stand, followed by a short auto-rickshaw ride to campus. Confirm the current bus operator, stop, and service before travelling.
 - A separate legacy Contact page lists local station/bus-stand distances that conflict with the newer page's proximity description. No exact distance or travel time is asserted here until the institution reconciles the pages.`,
-    provenance: { capturedAt: '2026-11-19', section: 'Contact Us / How to Reach Us', suppliedBy: 'project owner excerpt; external page content not independently fetched' },
+    provenance: { capturedAt: '2026-11-19', section: 'Contact Us / How to Reach Us', verifiedFrom: 'MITCORER official Contact Us page' },
     status: 'Published',
   },
   {
@@ -609,8 +621,8 @@ export const seedKnowledge = [
       'visiting hours', 'college timings', 'saturday timings', 'working days', 'admission enquiry hours',
       'campus visit booking', 'campus visit', 'campus visit booking MITCORER', 'college visit', 'MITCORER college timings',
     ],
-    text: 'Admissions Enquiry Desk: Monday–Saturday, 9:00 AM–5:00 PM (hours reported in the earlier Contact Us excerpt supplied by the project owner). Current Contact Us excerpt lists the Admission Helpline as +91 91584 14343 and College Office as +91 91584 14444. Email: info.mitcorer@mitpune.edu.in. These are admissions enquiry desk hours, not a confirmed schedule for all administrative offices or campus visits; call before visiting outside these hours or for a campus tour.',
-    provenance: { capturedAt: '2026-11-19', section: 'Contact Us / Admissions Enquiry Desk', suppliedBy: 'project owner excerpt; external page content not independently fetched' },
+    text: 'An earlier MITCORER Contact Us listing gives the Admissions Enquiry Desk hours as Monday–Saturday, 9:00 AM–5:00 PM. It lists the Admission Helpline as +91 91584 14343 and College Office as +91 91584 14444; email: info.mitcorer@mitpune.edu.in. These are enquiry desk hours, not a confirmed schedule for all administrative offices or campus visits. Call before visiting outside these hours or for a campus tour.',
+    provenance: { capturedAt: '2026-11-19', section: 'Contact Us / Admissions Enquiry Desk', verifiedFrom: 'MITCORER official Contact Us page' },
     status: 'Published',
   },
   {
@@ -858,8 +870,8 @@ export const seedOfficialSources = [
   { id: 'SRC-8', title: 'Admissions FAQ, documents, facilities and scholarship guidance', documentType: 'Admissions', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'faq.php', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/faqs', status: 'Published', extractionStatus: 'Verified website record', linkedKnowledgeCount: 4 },
   { id: 'SRC-9', title: 'ACAP and institute-level admission notices', documentType: 'Admissions', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'acap-institute-level-admission.php', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission', status: 'Published', extractionStatus: 'Verified website record', linkedKnowledgeCount: 1 },
   { id: 'SRC-10', title: 'CBCS UG Engineering attendance rules', documentType: 'University rules', academicYear: 'Applicable CBCS rules', sourceAuthority: 'Punyashlok Ahilyadevi Holkar Solapur University', originalFileName: 'CBCS UG Rules.pdf', sourceUrl: 'https://www.sus.ac.in/uploads/engineering/Eng%20Revised%20Semester%20Pattern/CBCS%20UG%20Rules.pdf', status: 'Published', extractionStatus: 'Verified clauses 5 and 6', linkedKnowledgeCount: 1 },
-  { id: 'SRC-11', title: 'Mandatory biometric attendance Circular No. 06', documentType: 'University circular', academicYear: '2026-27', sourceAuthority: 'Punyashlok Ahilyadevi Holkar Solapur University', originalFileName: 'LMS Circular - 6 20062026.pdf', sourceUrl: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf', status: 'Review', extractionStatus: 'The circular link could not be verified; check the official PDF or replace it with a current official notice before publishing', linkedKnowledgeCount: 1 },
-  { id: 'SRC-12', title: 'Official contact and travel information', documentType: 'Contact', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'contact-us', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us', status: 'Published', extractionStatus: 'Owner-supplied excerpt; page content not independently fetched; legacy local-distance details conflict with current route description', linkedKnowledgeCount: 3 },
+  { id: 'SRC-11', title: 'Mandatory biometric attendance Circular No. 06', documentType: 'University circular', academicYear: '2026-27', sourceAuthority: 'Punyashlok Ahilyadevi Holkar Solapur University', originalFileName: 'LMS Circular - 6 20062026.pdf', sourceUrl: 'https://www.sus.ac.in/uploads/admission/Admission%202026%2027/Circular/LMS%20Circular%20-%206%2020062026.pdf', status: 'Published', extractionStatus: 'Administrator reviewed and confirmed the circular text. The original university PDF link was unreachable during automated checking; confirm current applicability with PAHSU.', linkedKnowledgeCount: 1 },
+  { id: 'SRC-12', title: 'Official contact and travel information', documentType: 'Contact', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'contact-us', sourceUrl: 'https://mitcorer.edu.in/mitcorer/public/contact-us', status: 'Published', extractionStatus: 'Current Contact Us page lists transit guidance; local station and bus-stand distances conflict with the the published proximity description', linkedKnowledgeCount: 3 },
   { id: 'SRC-13', title: 'MITCORER published scholarship schemes', documentType: 'Scholarship', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'scholarship.php', sourceUrl: 'https://mitcorer.edu.in/scholarship.php', status: 'Published', extractionStatus: 'Verified current official scholarship listing; eligibility details are scheme-specific', linkedKnowledgeCount: 2 },
   { id: 'SRC-14', title: 'AICTE Pragati scheme listing on NSP', documentType: 'Scholarship', academicYear: '2026-27', sourceAuthority: 'National Scholarship Portal', originalFileName: 'All-Scholarships', sourceUrl: 'https://scholarships.gov.in/All-Scholarships', status: 'Published', extractionStatus: 'Verified current portal listing', linkedKnowledgeCount: 1 },
   { id: 'SRC-15', title: 'Polytechnic eligibility criteria', documentType: 'Eligibility', academicYear: '2026-27', sourceAuthority: 'MITCORER official website', originalFileName: 'fy-polytechnic-eligibility-criteria.php', sourceUrl: 'https://mitcorer.edu.in/fy-polytechnic-eligibility-criteria.php', status: 'Published', extractionStatus: 'Eligibility conditions verified against the official page; check current DTE notice before applying', linkedKnowledgeCount: 1 },

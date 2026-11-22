@@ -121,18 +121,7 @@ export const api = {
   updateFeedbackStatus: (token, id, updates) => request(`/api/feedback/${id}/status`, { token, method: 'PATCH', body: updates }),
   getAdmissionWorkspace: (token) => request('/api/admission-workspace', { token }),
   updateAdmissionWorkspace: (token, section, value) => request('/api/admission-workspace', { token, method: 'PATCH', body: { section, value } }),
-  getDocuments: (token) => request('/api/documents', { token }),
-  createDocument: (token, body) => request('/api/documents', { token, method: 'POST', body }),
-  uploadDocument: (token, body, file) => {
-    const formData = new FormData();
-    Object.entries(body).forEach(([key, value]) => formData.append(key, value));
-    formData.append('file', file);
-    return upload('/api/documents/upload', { token, formData });
-  },
-  submitDocuments: (token) => request('/api/documents/submit', { token, method: 'POST' }),
-  updateDocumentStatus: (token, id, status, reviewNote = '') => request(`/api/documents/${id}/status`, { token, method: 'PATCH', body: { status, reviewNote } }),
-  deleteDocument: (token, id) => request(`/api/documents/${id}`, { token, method: 'DELETE' }),
-  openDocument: (token, id) => openProtectedFile(`/api/documents/${id}/file`, token),
+  getApplicantWorkspaces: (token) => request('/api/admin/applicant-workspaces', { token }),
   getContent: (token) => request('/api/content', { token }),
   createContent: (token, body) => request('/api/content', { token, method: 'POST', body }),
   updateContent: (token, id, body) => request(`/api/content/${id}`, { token, method: 'PATCH', body }),
@@ -148,7 +137,7 @@ export const api = {
     return upload('/api/official-sources/upload', { token, formData });
   },
   getOfficialSourceExtractedText: (token, id) => request(`/api/official-sources/${id}/extracted-text`, { token }),
-  publishOfficialSource: (token, id, verifiedText, resolveConflicts = false) => request(`/api/official-sources/${id}/publish`, { token, method: 'PATCH', body: { verifiedText, resolveConflicts } }),
+  publishOfficialSource: (token, id, verifiedText, resolveConflicts, expectedRevision) => request(`/api/official-sources/${id}/publish`, { token, method: 'PATCH', body: { verifiedText, resolveConflicts, expectedRevision } }),
   extractStructuredOfficialSource: (token, id) => request(`/api/official-sources/${id}/extract-structured`, { token, method: 'POST' }),
   openOfficialSource: (token, id) => openProtectedFile(`/api/official-sources/${id}/file`, token),
   getReports: (token) => request('/api/reports', { token }),

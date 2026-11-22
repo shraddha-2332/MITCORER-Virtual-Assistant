@@ -328,27 +328,34 @@ test('ambiguous public references ask for clarification even after an earlier ex
 
 test('public document clarification carries the original question and route into the answer', async () => {
   await withServer(async (base) => {
-    const first = await request(base, '/api/public-assistant/ask', { method: 'POST',
-      body: JSON.stringify({ question: 'What documents should an applicant prepare?' }) });
-    assert.equal(first.payload.data.clarification, true);
-    const continued = await request(base, '/api/public-assistant/ask', { method: 'POST',
-      headers: { Cookie: first.response.headers.get('set-cookie')?.split(';')[0] },
-      body: JSON.stringify({ question: 'for first year', conversationId: first.payload.data.conversationId }) });
-    assert.equal(continued.response.status, 200);
-    assert.equal(continued.payload.data.conversationId, first.payload.data.conversationId);
-    assert.deepEqual(continued.payload.data.evidence.map(item => item.id), ['KB-1']);
-    assert.match(continued.payload.data.answer, /CET or JEE scorecard/);
-    assert.doesNotMatch(continued.payload.data.answer, /I could not find/);
+    for (const scenario of [
+      { reply: 'for First Year B.Tech', expected: /For First Year B\.Tech/, url: 'https://mitcorer.edu.in/fy-btech-documents.php', not: /choice code|sanctioned intake/i },
+      { reply: 'for Direct Second Year B.Tech', expected: /For Direct Second Year B\.Tech/, url: 'https://mitcorer.edu.in/d-sy-btech-documents-required.php', not: /choice code|sanctioned intake/i },
+      { reply: 'for Polytechnic', expected: /Post-SSC Polytechnic/, url: 'https://mitcorer.edu.in/fy-polytechnic-documents.php', not: /B\.Tech/ },
+    ]) {
+      const first = await request(base, '/api/public-assistant/ask', { method: 'POST',
+        body: JSON.stringify({ question: 'What documents should an applicant prepare?' }) });
+      assert.equal(first.payload.data.clarification, true);
+      const continued = await request(base, '/api/public-assistant/ask', { method: 'POST',
+        headers: { Cookie: first.response.headers.get('set-cookie')?.split(';')[0] },
+        body: JSON.stringify({ question: scenario.reply, conversationId: first.payload.data.conversationId }) });
+      assert.equal(continued.response.status, 200, scenario.reply);
+      assert.equal(continued.payload.data.conversationId, first.payload.data.conversationId);
+      assert.deepEqual(continued.payload.data.evidence.map(item => item.id), ['KB-1']);
+      assert.match(continued.payload.data.answer, scenario.expected, scenario.reply);
+      assert.doesNotMatch(continued.payload.data.answer, scenario.not, scenario.reply);
+      assert.ok(continued.payload.data.officialLinks.some(link => link.url === scenario.url), scenario.reply);
+    }
   });
 });
 
-test('anonymous document-status reply points to the authenticated applicant portal without exposing document data', async () => {
+test('anonymous document-status reply points to the guest checklist without exposing document data', async () => {
   await withServer(async (base) => {
     const result = await request(base, '/api/public-assistant/ask', { method: 'POST',
       body: JSON.stringify({ question: 'I uploaded a document; what is its review status?' }) });
     assert.equal(result.response.status, 200);
     assert.equal(result.payload.data.actionView, 'applicantPortal');
-    assert.match(result.payload.data.answer, /sign in or create an account/i);
+    assert.match(result.payload.data.answer, /contact MITCORER/i);
     assert.match(result.payload.data.answer, /Do not upload private records in this public chat/i);
     assert.ok(result.payload.data.officialLinks.some(link => link.url === 'https://mitcorer.edu.in/mitcorer/public/contact-us'));
     assert.deepEqual(result.payload.data.evidence, []);
@@ -724,6 +731,10 @@ test('public facility topics link to the matching MITCORER pages', async () => {
       assert.match(payload.data.answer, answerPattern, question);
       assert.equal(payload.data.sourceUrl, payload.data.evidence[0]?.sourceUrl || '', question);
       assert.ok(payload.data.sourceLinks.some((link) => link.url === payload.data.sourceUrl), question);
+      if (question.includes('hostel and mess')) {
+        assert.match(payload.data.answer, /mess and canteen/i);
+        assert.doesNotMatch(payload.data.answer, /railway model room|computer labs|workshops|parking|gym/i);
+      }
     }
   });
 });
@@ -796,7 +807,7 @@ test('assistant returns route-specific official admission links and saves them i
     const headers = { Authorization: `Bearer ${token}` };
     const cases = [
       ['What is the B.Tech CAP deadline?', 'https://fe2026.mahacet.org/StaticPages/HomePage'],
-      ['What is the DSE admission schedule?', 'https://dse2026.mahacet.org.in/'],
+      ['What is the DSE admission schedule?', 'https://dse2026.mahacet.org.in/dse_26/home'],
       ['What is the Polytechnic admission deadline?', 'https://poly26.dtemaharashtra.gov.in/poly_26/home'],
       ['Show the ACAP vacancy notice.', 'https://mitcorer.edu.in/mitcorer/public/admissions/acap-admission'],
     ];
@@ -830,7 +841,7 @@ test('assistant answers engineering attendance from verified university rules wi
   });
 });
 
-test('assistant withholds biometric requirement while its university circular remains in source review', async () => {
+test('assistant answers the administrator-confirmed biometric circular from its published record', async () => {
   await withServer(async (base) => {
     const result = await request(base, '/api/public-assistant/ask', {
       method: 'POST',
@@ -838,8 +849,10 @@ test('assistant withholds biometric requirement while its university circular re
     });
     assert.equal(result.response.status, 200);
     const assistant = result.payload.data;
-    assert.equal(assistant.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
-    assert.match(assistant.answer, /can.t confirm.*circular could not be verified/i);
+    assert.equal(assistant.outcomeStatus, 'ANSWERED');
+    assert.deepEqual(assistant.evidence.map(record => record.id), ['KB-32']);
+    assert.match(assistant.answer, /biometric attendance is mandatory/i);
+    assert.ok(assistant.officialLinks.some(link => /LMS%20Circular/i.test(link.url)));
   });
 });
 
@@ -919,6 +932,17 @@ test('applicant cannot access staff reports', async () => {
     });
     assert.equal(response.status, 403);
     assert.equal(payload.error.code, 'FORBIDDEN');
+
+    await request(base, '/api/admission-workspace', {
+      method: 'PATCH', headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ section: 'cap', value: { route: 'btech-fy', channel: 'cap', stage: 'Allotment checked' } }),
+    });
+    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const report = await request(base, '/api/reports', { headers: { Authorization: `Bearer ${staffToken}` } });
+    assert.equal(report.response.status, 200);
+    assert.equal(report.payload.data.savedAdmissionChecklists, 1);
+    assert.equal('documentReviews' in report.payload.data, false);
+    assert.equal('documentReadinessPercent' in report.payload.data, false);
   });
 });
 
@@ -933,10 +957,22 @@ test('admission workspace persists per user and is unavailable to staff', async 
       body: JSON.stringify({ section: 'programs', value: { preferences: [{ choiceCode: '0690124210', name: 'Computer Science and Engineering' }] } }),
     });
     assert.equal(saved.response.status, 200);
+    const cap = {
+      route: 'btech-fy', channel: 'cap', stage: 'Allotment checked',
+      checkedDocuments: ['10th marksheet'],
+    };
+    const checklist = await request(base, '/api/admission-workspace', {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${applicantToken}` },
+      body: JSON.stringify({ section: 'cap', value: cap }),
+    });
+    assert.equal(checklist.response.status, 200);
     const applicantWorkspace = await request(base, '/api/admission-workspace', { headers: { Authorization: `Bearer ${applicantToken}` } });
     assert.equal(applicantWorkspace.payload.data.programs.preferences[0].choiceCode, '0690124210');
+    assert.deepEqual(applicantWorkspace.payload.data.cap, cap);
     const parentWorkspace = await request(base, '/api/admission-workspace', { headers: { Authorization: `Bearer ${parentToken}` } });
     assert.deepEqual(parentWorkspace.payload.data.programs.preferences, []);
+    assert.deepEqual(parentWorkspace.payload.data.cap, {});
     assert.equal((await request(base, '/api/admission-workspace', { headers: { Authorization: `Bearer ${staffToken}` } })).response.status, 403);
   });
 });
@@ -1332,6 +1368,81 @@ test('assistant does not attach unrelated evidence to an unsupported question', 
   });
 });
 
+test('scholarship guide returns category-specific schemes and optional girls’ schemes', async () => {
+  await withServer(async (base) => {
+    const cases = [
+      ['the SC category', false, /government of india post-matric scholarship/i],
+      ['the ST category', false, /tribal development/i],
+      ['the OBC category', true, /OBC girls pursuing professional courses/i],
+      ['the VJNT / SBC category', false, /separate post-matric scholarship and tuition\/examination fee schemes/i],
+      ['the Open / EBC category', true, /Rajarshi Chhatrapati Shahu Maharaj/i],
+      ['an unspecified category', true, /Browse by department/i],
+    ];
+    for (const [profile, girls, expected] of cases) {
+      const question = `Which scholarship schemes should a student in ${profile} check at MITCORER${girls ? ', including schemes for girls' : ''}?`;
+      const { response, payload } = await request(base, '/api/public-assistant/ask', {
+        method: 'POST', body: JSON.stringify({ question }),
+      });
+      assert.equal(response.status, 200, question);
+      assert.match(payload.data.answer, expected, question);
+      assert.match(payload.data.answer, /do not confirm eligibility|Category and gender do not confirm eligibility/i, question);
+      assert.equal(/AICTE Pragati/.test(payload.data.answer), girls, question);
+      assert.ok(payload.data.officialLinks.some(link => link.url === 'https://mahadbt.maharashtra.gov.in/'), question);
+    }
+  });
+});
+
+test('placements shortcut answers both support and dated highlights', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'What placement support and published placement highlights does MITCORER offer?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.match(payload.data.answer, /Training and Placement Cell/i);
+    assert.match(payload.data.answer, /AY 2024-25.*Telge Projects Ltd/i);
+    assert.deepEqual(payload.data.evidence.map(record => record.id), ['KB-24', 'KB-16']);
+  });
+});
+
+test('public chat answers route documents and post-offer steps directly', async () => {
+  await withServer(async (base) => {
+    const cases = [
+      ['What documents are required for First Year B.Tech admission?', /12th marksheets.*CET or JEE/i, /fe2026\.mahacet/],
+      ['What documents are required for Direct Second Year B.Tech admission?', /marksheets.*Diploma or B\.Sc/i, /dse2026\.mahacet/],
+      ['What documents are required for Polytechnic admission?', /SSC.*marksheet.*leaving certificate/i, /poly26\.dtemaharashtra/],
+      ['I got a MITCORER seat through ACAP. What do I do now?', /report in person.*original documents/i, /acap-admission/],
+      ['I accepted my CAP seat and paid the fee. What is remaining for MITCORER admission?', /institute reporting/i, /fy-btech-documents/],
+      ['I accepted my CAP seat and paid the fee. What is remaining?', /institute reporting/i, /fy-btech-documents/],
+      ['I got MITCORER in CAP for Direct Second Year B.Tech. What do I do now?', /seat-acceptance/i, /dse2026\.mahacet/],
+    ];
+    for (const [question, answerPattern, linkPattern] of cases) {
+      const { response, payload } = await request(base, '/api/public-assistant/ask', {
+        method: 'POST', body: JSON.stringify({ question }),
+      });
+      assert.equal(response.status, 200, question);
+      assert.match(payload.data.answer, answerPattern, question);
+      assert.ok(payload.data.officialLinks.some(link => linkPattern.test(link.url)), question);
+      assert.doesNotMatch(payload.data.answer, /choice codes?|which fee do you mean/i, question);
+      if (question.includes('Polytechnic')) assert.doesNotMatch(payload.data.answer, /CET or JEE/i);
+      if (question.includes('paid the fee')) assert.doesNotMatch(payload.data.answer, /approved fee payment|seat acceptance or freeze/i);
+    }
+  });
+});
+
+test('guest can ask about their MITCORER CAP allotment and open the checklist', async () => {
+  await withServer(async (base) => {
+    const { response, payload } = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'I got MITCORER in CAP. What do I do now?' }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(payload.data.actionView, 'applicantPortal');
+    assert.match(payload.data.answer, /seat.acceptance/i);
+    assert.match(payload.data.answer, /report to MITCORER/i);
+  });
+});
+
 test('assistant answers final admission-step questions with a reporting checklist', async () => {
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
@@ -1342,7 +1453,7 @@ test('assistant answers final admission-step questions with a reporting checklis
     });
     assert.equal(response.status, 200);
     assert.equal(payload.data.evidence[0]?.id, 'KB-1');
-    assert.equal(payload.data.actionView, 'documents');
+    assert.equal(payload.data.actionView, 'applicantPortal');
     assert.match(payload.data.answer, /allotment or institute-level merit\/vacancy confirmation/i);
     assert.match(payload.data.answer, /10th marksheet/i);
     assert.match(payload.data.answer, /approved fee payment/i);
@@ -1354,20 +1465,20 @@ test('assistant identifies only the remaining admission workflow stages stated b
   await withServer(async (base) => {
     const token = await login(base, 'applicant@example.com');
     const cases = [
-      ['I received my CAP allotment. What should I do next for admission?', /seat acceptance or freeze\/betterment/i],
-      ['I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. I need the final admission checklist.', /all main workflow stages appear complete/i],
-      ['My category is Open. I received allotment, accepted the seat, uploaded documents, and paid the fee. What is remaining?', /institute reporting/i],
-      ['My category is Open. I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. What is remaining?', /all main workflow stages appear complete/i],
+      ['I received my CAP allotment. What should I do next for admission?', /seat-acceptance action and payment/i, 'KB-29'],
+      ['I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. I need the final admission checklist.', /all main workflow stages appear complete/i, 'KB-1'],
+      ['My category is Open. I received allotment, accepted the seat, uploaded documents, and paid the fee. What is remaining?', /institute reporting/i, 'KB-1'],
+      ['My category is Open. I received allotment, accepted the seat, uploaded documents, paid the fee, and completed reporting. What is remaining?', /all main workflow stages appear complete/i, 'KB-1'],
     ];
-    for (const [question, expectedText] of cases) {
+    for (const [question, expectedText, expectedRecordId] of cases) {
       const { response, payload } = await request(base, '/api/assistant/ask', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: JSON.stringify({ question }),
       });
       assert.equal(response.status, 200, question);
-      assert.equal(payload.data.evidence[0]?.id, 'KB-1', question);
-      assert.equal(payload.data.actionView, 'documents', question);
+      assert.equal(payload.data.evidence[0]?.id, expectedRecordId, question);
+      assert.equal(payload.data.actionView, 'applicantPortal', question);
       assert.match(payload.data.answer, expectedText, question);
     }
   });

@@ -9,6 +9,7 @@ services:
       CORS_ORIGIN: http://127.0.0.1:8080,http://localhost:8080
       TOKEN_SECRET: ${TOKEN_SECRET:?Set TOKEN_SECRET before running Docker Compose}
       DATABASE_FILE: /app/data/mitra.sqlite
+      UPLOAD_DIR: /app/uploads
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
       GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}

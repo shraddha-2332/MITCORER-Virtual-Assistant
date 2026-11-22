@@ -29,7 +29,7 @@ Administrator knowledge creation/editing: `POST /api/knowledge`, `PATCH /api/kno
 
 - `POST /api/assistant/ask`
 - `GET /api/assistant/attachments`
-- `POST /api/assistant/attachments/upload`
+- `POST /api/assistant/attachments/upload` (staff and administrators)
 - `GET /api/assistant/attachments/:id/file`
 
 Body:
@@ -54,16 +54,13 @@ The assistant returns deterministic answers from verified records. Gemini can ge
 
 Applicants/parents see their own records. Staff/admin see all records.
 
-## Documents
+## Admission checklist
 
-- `GET /api/documents`
-- `POST /api/documents`
-- `POST /api/documents/upload`
-- `PATCH /api/documents/:id/status`
-- `DELETE /api/documents/:id`
-- `GET /api/documents/:id/file`
+- `GET /api/admission-workspace` reads the applicant or parent account?s saved workspace.
+- `PATCH /api/admission-workspace` saves checklist progress in the `cap` section.
+- `GET /api/admin/applicant-workspaces` is available to staff and administrators.
 
-Real upload supports PDF, JPG, and PNG. Staff/admin can update review status.
+The checklist stores self-reported progress. Applicant document upload and review routes have been retired.
 
 ## Content And Knowledge
 
@@ -82,7 +79,7 @@ Real upload supports PDF, JPG, and PNG. Staff/admin can update review status.
 
 Knowledge records are used by backend retrieval when answering assistant questions. Staff/admin can list official sources; only college admins can upload, inspect extracted text, or publish it. Official-source upload supports PDF, DOCX, XLSX, CSV, TXT, JPG, and PNG. TXT/CSV content is extracted automatically; Docker deployments also extract text from PDFs. DOCX, XLSX, image-based PDFs, and images require reviewed text to be supplied manually.
 
-An upload stays in `Review` until a college admin calls `PATCH /api/official-sources/:id/publish` with reviewed `verifiedText`. Publishing replaces any prior retrieval chunks for that source and records an audit event. Unpublished source text is never used to answer applicants.
+An upload without reviewed text stays in `Review`. A college admin can publish reviewed text with `PATCH /api/official-sources/:id/publish`. The admin form sends the `expectedRevision` returned by `GET /api/official-sources/:id/extracted-text`. A stale revision returns 409. Publishing replaces the source's earlier retrieval chunks and records an audit event. Public answers only use published knowledge.
 
 Assistant attachments support PDF, JPG, and PNG. They are stored as support files for the owner and staff/admin review; MITRA does not claim to extract or interpret their visual content unless that capability is explicitly deployed.
 
@@ -98,3 +95,5 @@ Public/authenticated answers expose supporting published records in `data.eviden
 - `GET /api/audit-logs`
 
 Staff/admin only.
+
+The reports summary includes open visitor requests, unresolved requests, the top inquiry topic, and saved admission checklist count. Applicant document-review and readiness metrics are not part of the current workflow.

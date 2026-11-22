@@ -54,14 +54,26 @@ try {
   page.on('pageerror', error => browserErrors.push(error.message));
   publicPage.on('pageerror', error => browserErrors.push(error.message));
   await page.goto(origin);
-  assert.equal(await page.getByRole('button', { name: 'Maintainer sign in' }).count(), 0);
-  // Public login UI is intentionally deferred. Authenticate the existing API fixture;
-  // browser cookies then restore the protected workspace through the normal refresh flow.
-  const rejected = await page.request.post(`${origin}/api/auth/login`, { data: { email: 'admin@mitcorer.edu.in', password: 'wrong-fixture-password' } });
+  await page.getByRole('button', { name: 'Open MIT Barshi admission assistant' }).click();
+  await page.getByTitle('Administrator Portal', { exact: true }).click();
+  await page.getByLabel('Admin Email').fill('admin@mitcorer.edu.in');
+  await page.getByLabel('Password', { exact: true }).fill('wrong-fixture-password');
+  await page.route('**/api/auth/login', route => route.abort());
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await page.getByRole('alert').getByText('Could not reach MITRA.', { exact: false }).waitFor();
+  await page.unroute('**/api/auth/login');
+  const rejectedResponse = page.waitForResponse(response => response.url().endsWith('/api/auth/login'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const rejected = await rejectedResponse;
   assert.equal(rejected.status(), 401);
-  const login = await page.request.post(`${origin}/api/auth/login`, { data: { email: 'admin@mitcorer.edu.in', password: 'mitra' } });
+  await page.getByRole('alert').getByText('Invalid credentials. Check email and password.').waitFor();
+  await page.getByLabel('Password', { exact: true }).fill('mitra');
+  const loginResponse = page.waitForResponse(response => response.url().endsWith('/api/auth/login'));
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const login = await loginResponse;
   assert.equal(login.status(), 200);
   const token = (await login.json()).data.token;
+  await page.getByRole('navigation', { name: 'Admin workspace' }).waitFor();
   await page.reload();
   const operations = page.getByRole('region', { name: 'AI quality monitor' });
   await operations.waitFor();
@@ -173,6 +185,40 @@ try {
   await editor.getByLabel('Publication status').selectOption('Retired');
   await save('KB-2');
   assert.deepEqual((await ask('What are the first-year Open category fees?')).evidence, []);
+
+  const noticeQuestion = 'What does RIVER-NOTICE123 say?';
+  const pendingNotice = await ask(noticeQuestion);
+  assert.doesNotMatch(pendingNotice.answer, /blue verification slip/i);
+  assert.ok(pendingNotice.evidence.every(record => record.provenance?.documentId !== 'SRC-BROWSER-VERIFICATION'));
+  await page.getByRole('button', { name: /Official sources/i }).click();
+  const sourceRow = page.getByRole('row').filter({ hasText: 'Browser source verification fixture' });
+  await sourceRow.getByRole('button', { name: 'Review text' }).click();
+  const reviewedText = page.getByLabel('Verified text for retrieval');
+  assert.match(await reviewedText.inputValue(), /blue verification slip/i);
+
+  const sourcePublishPattern = '**/api/official-sources/SRC-BROWSER-VERIFICATION/publish';
+  await page.route(sourcePublishPattern, route => {
+    const body = route.request().postDataJSON();
+    assert.equal(body.expectedRevision, 2);
+    return route.continue({ postData: JSON.stringify({ ...body, expectedRevision: 1 }) });
+  });
+  const publishResponse = () => page.waitForResponse(response => response.url().endsWith('/SRC-BROWSER-VERIFICATION/publish'));
+  const stalePublish = publishResponse();
+  await page.getByRole('button', { name: 'Publish verified knowledge' }).click();
+  assert.equal((await stalePublish).status(), 409);
+  await page.getByText('This source changed. Reload it before publishing.', { exact: true }).waitFor();
+  assert.match(await reviewedText.inputValue(), /blue verification slip/i);
+  await page.unroute(sourcePublishPattern);
+
+  const publish = publishResponse();
+  await page.getByRole('button', { name: 'Publish verified knowledge' }).click();
+  assert.equal((await publish).status(), 200);
+  await sourceRow.getByText('Published', { exact: true }).waitFor();
+  const publishedNotice = await ask(noticeQuestion);
+  assert.match(publishedNotice.answer, /blue verification slip/i);
+  assert.ok(publishedNotice.evidence.some(record => record.provenance?.documentId === 'SRC-BROWSER-VERIFICATION'
+    && record.verification?.status === 'recorded'));
+
   const unauthorized = await publicPage.request.patch(`${origin}/api/knowledge/KB-2`, { data: { expectedRevision: 0, title: 'Unauthorized' } });
   assert.equal(unauthorized.status(), 401);
   const staffLogin = await publicPage.request.post(`${origin}/api/auth/login`, { data: { email: 'staff@mitcorer.edu.in', password: 'mitra' } });
@@ -180,7 +226,7 @@ try {
   const forbidden = await publicPage.request.patch(`${origin}/api/knowledge/KB-2`, { headers: { Authorization: `Bearer ${staffToken}` }, data: { expectedRevision: 0, title: 'Unauthorized' } });
   assert.equal(forbidden.status(), 403);
   assert.deepEqual(browserErrors, []);
-  console.log('PASS: API fixture login and browser restoration, failed save preservation, structured edit, real revision conflict, translation review/staleness, separate-process persistence, retirement and server authorization. Public login UI deferred.');
+  console.log('PASS: admin sign-in, knowledge verification, revision conflicts, persistence, authorization, and source review through publication into public chat.');
 } finally {
   await browser?.close();
   await vite?.close();
