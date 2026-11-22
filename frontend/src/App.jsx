@@ -1172,6 +1172,11 @@ function ApplicantWorkspaceReview({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(''), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
   const reload = async () => {
     const result = await api.getApplicantWorkspaces(token);
     setItems((result.items || []).filter(hasSavedAdmissionChecklist));

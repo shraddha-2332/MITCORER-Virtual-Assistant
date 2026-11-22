@@ -274,7 +274,9 @@ try {
   assert.equal(await staffNav.getByRole('button', { name: 'Document review', exact: true }).count(), 0);
 
   await staffPage.getByRole('button', { name: 'Refresh progress', exact: true }).click();
-  await staffPage.getByRole('status').getByText('Progress refreshed.', { exact: true }).waitFor();
+  const refreshNotice = staffPage.getByRole('status').getByText('Progress refreshed.', { exact: true });
+  await refreshNotice.waitFor();
+  await refreshNotice.waitFor({ state: 'hidden', timeout: 7000 });
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   for (const width of [320, 768, 1440]) {
     await staffPage.setViewportSize({ width, height: 900 });
