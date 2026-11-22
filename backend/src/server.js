@@ -844,7 +844,7 @@ function buildRouteDocumentAnswer(question) {
       : 'For First Year B.Tech, prepare your 10th and 12th marksheets, your CET or JEE scorecard as applicable, your school leaving certificate, and the nationality or domicile proof required for your candidature. Keep the allotment letter for CAP reporting if applicable.';
     const sourceUrl = diploma ? 'https://mitcorer.edu.in/fy-polytechnic-documents.php'
     : dse ? MITCORER_DSE_DOCUMENTS_URL : MITCORER_FIRST_YEAR_DOCUMENTS_URL;
-    const routeLinks = diploma || dse ? [] : getOfficialAdmissionLinks(`${question} CAP`);
+    const routeLinks = diploma || dse ? getOfficialAdmissionLinks(question) : getOfficialAdmissionLinks(`${question} CAP`);
     const dteDocumentsLink = diploma || dse
       ? [{ label: 'Current Maharashtra DTE admission information brochure', url: 'https://poly26.dtemaharashtra.gov.in/poly_26/assets/pdf/Diploma%20Admission%20Information%20Brochure%202026-27.pdf' }]
       : [];

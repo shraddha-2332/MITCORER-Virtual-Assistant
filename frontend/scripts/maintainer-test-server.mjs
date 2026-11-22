@@ -1,4 +1,6 @@
 // Only the browser-test harness launches this process, with its own temporary DATABASE_FILE.
+import { randomBytes } from 'node:crypto';
+import { hashPassword } from '../../backend/src/auth.js';
 import { config } from '../../backend/src/config.js';
 import { createServer } from '../../backend/src/server.js';
 import { closeDb, getDb, saveDb } from '../../backend/src/store.js';
@@ -7,6 +9,18 @@ if (!process.send || !process.env.MITRA_MAINTAINER_TEST) throw new Error('Launch
 config.geminiApiKey = '';
 config.groqApiKey = '';
 const db = getDb();
+const credentials = {
+  adminEmail: 'admin@example.test',
+  staffEmail: 'staff@example.test',
+  password: randomBytes(32).toString('base64url'),
+};
+for (const [role, email] of [['admin', credentials.adminEmail], ['staff', credentials.staffEmail]]) {
+  const user = db.users.find(item => item.role === role);
+  if (!user) throw new Error(`Missing ${role} browser-test account.`);
+  user.email = email;
+  user.passwordHash = hashPassword(credentials.password);
+}
+saveDb();
 if (!db.officialSources.some(source => source.id === 'SRC-BROWSER-VERIFICATION')) {
   db.officialSources.unshift({
     id: 'SRC-BROWSER-VERIFICATION',
@@ -22,7 +36,7 @@ if (!db.officialSources.some(source => source.id === 'SRC-BROWSER-VERIFICATION')
   saveDb();
 }
 const server = createServer();
-server.listen(config.port, '127.0.0.1', () => process.send({ port: server.address().port }));
+server.listen(config.port, '127.0.0.1', () => process.send({ port: server.address().port, credentials }));
 process.on('message', message => {
   if (message !== 'shutdown') return;
   server.close(() => { closeDb(); process.disconnect(); });

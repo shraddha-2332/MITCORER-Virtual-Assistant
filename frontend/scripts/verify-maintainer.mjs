@@ -13,6 +13,7 @@ let child;
 let browser;
 let vite;
 let backendPort = 0;
+let testCredentials;
 function removeTemporaryData() {
   if (path.dirname(directory) !== path.resolve(os.tmpdir()) || !path.basename(directory).startsWith('mitra-maintainer-browser-')) throw new Error('Unsafe cleanup path');
   fs.rmSync(directory, { recursive: true, force: true });
@@ -27,7 +28,7 @@ async function startBackend() {
     const timeout = setTimeout(() => reject(new Error('Test backend did not start')), 10_000);
     child.once('error', error => { clearTimeout(timeout); reject(error); });
     child.once('exit', code => { clearTimeout(timeout); reject(new Error(`Test backend exited before readiness: ${code}`)); });
-    child.once('message', message => { clearTimeout(timeout); backendPort = message.port; resolve(); });
+    child.once('message', message => { clearTimeout(timeout); backendPort = message.port; testCredentials = message.credentials; resolve(); });
   });
 }
 async function stopBackend() {
@@ -56,7 +57,7 @@ try {
   await page.goto(origin);
   await page.getByRole('button', { name: 'Open MIT Barshi admission assistant' }).click();
   await page.getByTitle('Administrator Portal', { exact: true }).click();
-  await page.getByLabel('Admin Email').fill('admin@mitcorer.edu.in');
+  await page.getByLabel('Admin Email').fill(testCredentials.adminEmail);
   await page.getByLabel('Password', { exact: true }).fill('wrong-fixture-password');
   await page.route('**/api/auth/login', route => route.abort());
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -67,7 +68,7 @@ try {
   const rejected = await rejectedResponse;
   assert.equal(rejected.status(), 401);
   await page.getByRole('alert').getByText('Invalid credentials. Check email and password.').waitFor();
-  await page.getByLabel('Password', { exact: true }).fill('mitra');
+  await page.getByLabel('Password', { exact: true }).fill(testCredentials.password);
   const loginResponse = page.waitForResponse(response => response.url().endsWith('/api/auth/login'));
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   const login = await loginResponse;
@@ -221,7 +222,7 @@ try {
 
   const unauthorized = await publicPage.request.patch(`${origin}/api/knowledge/KB-2`, { data: { expectedRevision: 0, title: 'Unauthorized' } });
   assert.equal(unauthorized.status(), 401);
-  const staffLogin = await publicPage.request.post(`${origin}/api/auth/login`, { data: { email: 'staff@mitcorer.edu.in', password: 'mitra' } });
+  const staffLogin = await publicPage.request.post(`${origin}/api/auth/login`, { data: { email: testCredentials.staffEmail, password: testCredentials.password } });
   const staffToken = (await staffLogin.json()).data.token;
   const forbidden = await publicPage.request.patch(`${origin}/api/knowledge/KB-2`, { headers: { Authorization: `Bearer ${staffToken}` }, data: { expectedRevision: 0, title: 'Unauthorized' } });
   assert.equal(forbidden.status(), 403);
