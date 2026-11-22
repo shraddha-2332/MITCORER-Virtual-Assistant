@@ -23,8 +23,10 @@ const INJECTION_PATTERNS = [
   /\b(?:what\s+is|what's|show|reveal|print|repeat)\s+(?:in|inside|contained\s+in)\s+(?:your\s+)?(?:system|developer)\s+prompts?\b/i,
 ];
 
+const INSTITUTIONAL_ROLE_CLAIM = /\b(?:i\s+am|i['’]m)\s+(?:(?:the|an?)\s+)?(?:principal|vice[-\s]+principal|director|trustee|chancellor|dean|registrar|admin(?:istrator)?|h\.?\s*o\.?\s*d\.?|(?:department|admissions?)\s+(?:head|officer)|head\s+of\s+(?:the\s+)?(?:department|admissions?)|management)\b/i;
+
 const ROLEPLAY_PATTERNS = [
-  /\b(?:i am|i'm)\s+(?:the\s+)?(?:principal|director|trustee|chancellor|management)\b/i,
+  INSTITUTIONAL_ROLE_CLAIM,
   /\b(?:pretend|act\s+as\s+if|roleplay\s+as)\s+(?:you\s+are\s+)?(?:the\s+)?(?:principal|director|trustee|chancellor|admission\s+head|management)\b/i,
   /\b(?:you\s+are\s+now|now\s+act\s+as)\s+(?:the\s+)?(?:principal|director|admission\s+officer)\b/i,
   /\b(?:give\s+me\s+100%|grant\s+me\s+free|waive\s+all)\s+(?:fees?|scholarship|admission)\b/i,
@@ -82,21 +84,19 @@ export function inspectPromptSafety(text) {
   }
 
   // 2. Roleplay / Impersonation Attempts
-  for (const pattern of ROLEPLAY_PATTERNS) {
-    if (pattern.test(clean)) {
-      return {
-        safe: false,
-        flag: SAFETY_FLAG.ROLEPLAY_HIJACK,
-        response: {
-          source: 'Institutional Authority Policy',
-          answer: 'All fee concessions, scholarships, and seat allotments at MITCORER are governed strictly by State CET Cell norms and published management regulations. No individual role or chatbot prompt can grant unauthorized waivers or alter admission rules.',
-          officialLinks: [],
-          model: 'institutional-guardrail-filter',
-          outcomeStatus: 'ANSWERED',
-          next: 'Check the official scholarship section or contact the administrative admissions desk.',
-        },
-      };
-    }
+  if (ROLEPLAY_PATTERNS.some(pattern => pattern.test(clean))) {
+    return {
+      safe: false,
+      flag: SAFETY_FLAG.ROLEPLAY_HIJACK,
+      response: {
+        source: 'Institutional Authority Policy',
+        answer: 'All fee concessions, scholarships, and seat allotments at MITCORER are governed strictly by State CET Cell norms and published management regulations. No individual role or chatbot prompt can grant unauthorized waivers or alter admission rules.',
+        officialLinks: [],
+        model: 'institutional-guardrail-filter',
+        outcomeStatus: 'ANSWERED',
+        next: 'Check the official scholarship section or contact the administrative admissions desk.',
+      },
+    };
   }
 
   // 3. Promissory Admission Guarantees

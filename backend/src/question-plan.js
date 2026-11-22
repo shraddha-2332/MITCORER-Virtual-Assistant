@@ -12,7 +12,8 @@ function facet(text) {
   if (/\b(?:document|certificate)\b/.test(text)) return 'documents';
   if (/\b(?:admission|cap|acap)\b/.test(text) && /\b(?:work|process|procedure|steps|apply)\b/.test(text) && !/\b(?:fee|document|certificate)\b/.test(text)) return 'admissions';
   if (/\b(?:office hours?|office timings?|working hours?|college timings?)\b/.test(text)) return 'officeHours';
-  if (/\b(?:address|contact details?|phone|telephone|email|college location)\b/.test(text)) return 'contact';
+  if (/\b(?:address|contact details?|phone|telephone|email|college location|campus location)\b/.test(text)
+    || /^(?:(?:share|show|give)(?: me)?\s+)?(?:the\s+)?location[?. ]*$/.test(text)) return 'contact';
   if (/\b(?:route|routes|stops?|distance|how far|travel from|bus from)\b/.test(text)) return 'transport';
   if (/seat matrix/.test(text)) return 'seatMatrix';
   if (/\b(?:fee\w*|payment\w*|amount|semester|charges?|cost\w*|deposit)\b/.test(text)) return /\b(?:hostel|mess)\b/.test(text) ? 'accommodationFees' : 'academicFees';
@@ -83,7 +84,8 @@ export function buildCompoundAnswer(question, normalized, records) {
   if (/admission|allotment|reporting|\bcap\b/.test(normalized) && /remaining|pending|checklist|last step|final step|what.*next/.test(normalized)) return null;
   if (/\b(?:faculty|faculties|teacher|teachers|professor|professors|teaching staff)\b/i.test(normalized) && !/\b(?:fee|fees|cost|hostel|mess|cutoff|cut-off|scholarship)\b/i.test(normalized)) return null;
   if (/mou|corporate readiness|railway signaling|railway track|railway technology|railway diploma|railway modules/.test(normalized)) return null;
-  let parts = clauses(normalized).filter(part => !/^(?:(?:for|in|ay|academic year)\s+)*(?:20\d{2}[-–/]\d{2,4})[?. ]*$/i.test(part));
+  const request = normalized.replace(/^i (?:want|plan|would like) to visit (?:the college|the campus|mitcorer)[.!]\s+(?=(?:share|show|give)(?: me)?\s+(?:the\s+)?(?:location|address|contact details?)\b)/i, '');
+  let parts = clauses(request).filter(part => !/^(?:(?:for|in|ay|academic year)\s+)*(?:20\d{2}[-–/]\d{2,4})[?. ]*$/i.test(part));
   if (/\bscholarship\b/.test(normalized) && parts.length === 2 && /^(?:where|how)(?: (?:can|do|should) i)?(?: to)? apply[?. ]*$/.test(parts[1])) return null;
   // A branch comparison is one attribute applied independently to each entity.
   const compared = understandQuery(normalized).branch.positive;

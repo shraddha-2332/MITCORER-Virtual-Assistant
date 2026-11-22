@@ -13,6 +13,9 @@ if (mode === '--verify' && backupPath) {
 } else if (mode) throw new Error('Usage: no arguments, --verify DIRECTORY, or --restore DIRECTORY NEW_TARGET');
 else {
   const output = path.join(root, 'backups', `mitra-${new Date().toISOString().replace(/[:.]/g, '-')}`);
-  createBackup({ databaseFile: config.databaseFile, assetRoot: root, uploadDirectory: config.uploadDirectory, outputDirectory: output });
+  createBackup({
+    databaseFile: config.databaseFile, assetRoot: root, uploadDirectory: config.uploadDirectory,
+    officialSourceDirectory: config.officialSourceDirectory, outputDirectory: output,
+  });
   console.log(`Verified backup created at ${output}`);
 }

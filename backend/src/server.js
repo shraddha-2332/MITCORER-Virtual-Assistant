@@ -16,6 +16,7 @@ import { buildClarificationAnswer, buildCompoundAnswer, buildContextualPassage }
 import { publicEvidence } from './evidence.js';
 import { buildFacultyDirectoryAnswer } from './faculty-directory.js';
 import { findDocumentReference, normalizeQuery, matchesIntent, understandQuery, isEmploymentQuery } from './query-understanding.js';
+import { omitExcludedFeeServices } from './query-scope.js';
 import { asksForAllPrograms } from './query-scope.js';
 import { resolveSourceUrl, sourceRecord, uniqueSourceLinks } from './source-links.js';
 import { availability, usableKnowledge, validateProvenance, validateSupersession, confirmSourceReview, splitPassage } from './provenance.js';
@@ -23,13 +24,13 @@ import { createRefreshToken, createToken, getBearerToken, hashPassword, hashToke
 import { badRequest, forbidden, HttpError, notFound, tooManyRequests, unauthorized } from './errors.js';
 import { getDb, loadDb, saveDb, checkStorageReady } from './store.js';
 import { generateId, jsonResponse, nowIso, pick, requireString } from './utils.js';
-import { verifyGeneratedAnswer, classifyAnswerOutcome, verifySlotGrounding } from './grounding.js';
+import { classifyAnswerOutcome, verifySlotGrounding } from './grounding.js';
 import { computeConceptScore, getSemanticVectorScores, removeKnowledgeVector, syncKnowledgeVectorIndex } from './semantic.js';
 import { semanticResponseCache } from './semantic-cache.js';
 import { inspectPromptSafety } from './safety-guard.js';
 import { slotAwareRerank } from './rag-enhancer.js';
 import { verifySpeculativeFigures } from './speculative-verifier.js';
-import { documentCorpusStats, isDocumentSearchQuery, searchDocumentCorpus } from './document-corpus.js';
+import { documentCorpusStats, isDocumentSearchQuery, isExamTimetableQuery, searchDocumentCorpus } from './document-corpus.js';
 import { runEvidenceGapNavigator } from './evidence-navigator.js';
 import { EVIDENCE_UNTRUSTED_INSTRUCTION, serializeEvidenceForPrompt } from './grounded-prompt.js';
 import { buildOfficialNavigationAnswer } from './official-navigation.js';
@@ -64,7 +65,7 @@ const assistantTraceContext = new AsyncLocalStorage();
 const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const legacyUploadDir = path.resolve(backendRoot, 'uploads');
 const uploadDir = config.uploadDirectory;
-const officialSourceDir = path.join(backendRoot, 'official-sources');
+const officialSourceDir = config.officialSourceDirectory;
 const allowedMimeTypes = new Set(['application/pdf', 'image/jpeg', 'image/png']);
 const allowedOfficialMimeTypes = new Set([
   ...allowedMimeTypes,
@@ -2984,9 +2985,9 @@ MITCORER is an MIT Group college with a unique focus on railway engineering alon
 async function generateVerifiedDraft(question, routedAnswer, evidence, context) {
   const deadline = Date.now() + 15000;
   for await (const draft of generateWithProviders(question, routedAnswer, evidence, deadline)) {
-    const factual = verifyGeneratedAnswer(draft.text, evidence);
-    if (!factual.verified) {
-      console.info(JSON.stringify({ event: 'llm_draft_validation', traceId: assistantTraceContext.getStore()?.traceId, provider: String(draft.model || '').startsWith('groq:') ? 'groq' : 'gemini', status: factual.status }));
+    const slots = verifySlotGrounding(draft.text, context, evidence);
+    if (!slots.verified) {
+      console.info(JSON.stringify({ event: 'llm_draft_validation', traceId: assistantTraceContext.getStore()?.traceId, provider: String(draft.model || '').startsWith('groq:') ? 'groq' : 'gemini', status: slots.status }));
       continue;
     }
     const figures = verifySpeculativeFigures(draft.text, evidence);
@@ -2994,9 +2995,7 @@ async function generateVerifiedDraft(question, routedAnswer, evidence, context) 
       console.info(JSON.stringify({ event: 'llm_draft_validation', traceId: assistantTraceContext.getStore()?.traceId, provider: String(draft.model || '').startsWith('groq:') ? 'groq' : 'gemini', status: figures.status }));
       continue;
     }
-    const slots = verifySlotGrounding(draft.text, context, evidence);
-    if (slots.verified) return draft;
-    console.info(JSON.stringify({ event: 'llm_draft_validation', traceId: assistantTraceContext.getStore()?.traceId, provider: String(draft.model || '').startsWith('groq:') ? 'groq' : 'gemini', status: slots.status }));
+    return draft;
   }
   return null;
 }
@@ -3210,15 +3209,42 @@ function buildExactReferencePassage(question, records) {
   };
 }
 
+function requestedUnverifiedDetail(question) {
+  if (/\b(?:hostels?|dorm(?:s|itory|itories)?|student accommodation)\b/.test(question)
+    && /\b(?:wheelchairs?|accessible|accessibility|step[- ]free|ramps?|elevators?|lifts?)\b/.test(question)) {
+    return 'I could not verify the hostel accessibility features you asked about. Contact the college to confirm the current facilities for the hostel you plan to use.';
+  }
+  if (/\b(?:hostels?|dormitory|student accommodation)\b/.test(question)
+    && /\b(?:deposit|caution money)\b/.test(question)
+    && /\b(?:when|deadline|how (?:can|do|to)|procedure|documents?)\b/.test(question)
+    && /\b(?:refund\w*|return\w*|back)\b/.test(question)) {
+    return 'I could not verify the hostel deposit refund timing or procedure. Ask the hostel office which steps and documents apply to your deposit.';
+  }
+  if (/\b(?:who (?:teaches|is teaching|will (?:be teaching|teach)|taught|handles|takes)\b|(?:who is|name of) (?:the|my|our) .{0,55}(?:teacher|instructor|lecturer|professor)\b|(?:teacher|instructor|lecturer|professor) (?:assigned to|for my|for our)\b)/.test(question)) {
+    return 'I could not verify the teaching assignment you asked about. Check the current class timetable or ask the department to confirm the instructor for your division and semester.';
+  }
+  if (/\b(?:hod|head of (?:the )?department|faculty|professor|teacher|lecturer|staff)\b/.test(question)
+    && /\b(?:personal|private|home|whats\s*app|cellphone|cell number)\b/.test(question)
+    && /\b(?:phone|mobile|cellphone|number|e-?mail|whats\s*app|contact|address)\b/.test(question)) {
+    return 'I cannot provide a private staff contact. Use the official college contact page to reach the department office.';
+  }
+  if (/\battendance\b/.test(question)
+    && /\b(?:tomorrow|today|yesterday|next (?:class|lecture|monday|tuesday|wednesday|thursday|friday|saturday)|my (?:own )?attendance|attendance (?:for me|record|percentage|status)|marked (?:me )?(?:present|absent))\b/.test(question)
+    && !/\b(?:university rules?|minimum required|minimum requirement|attendance policy)\b/.test(question)) {
+    return 'I cannot verify attendance for a specific day or access your attendance record. Check the current class timetable, your student portal, or the department office.';
+  }
+  return null;
+}
+
 async function answerAdmissionQuestionCore(body, user) {
   if (typeof body?.question !== 'string' || !body.question.trim() || body.question.trim().length > 1000) {
     throw badRequest('Enter a question of up to 1000 characters.');
   }
-  const question = body.question.trim();
-  const safetyCheck = inspectPromptSafety(question);
+  const originalQuestion = body.question.trim();
+  const safetyCheck = inspectPromptSafety(originalQuestion);
   if (!safetyCheck.safe && safetyCheck.response) {
     audit('assistant.asked', 'assistant', generateId('ASK'), user, safetyCheck.response.source);
-    const lang = selectLanguage(question, body.language);
+    const lang = selectLanguage(originalQuestion, body.language);
     if (lang === 'mr' || lang === 'hi') {
       const mr = lang === 'mr';
       const localizedAnswer = safetyCheck.flag === 'PROMISSORY_GUARANTEE'
@@ -3236,14 +3262,17 @@ async function answerAdmissionQuestionCore(body, user) {
     }
     return safetyCheck.response;
   }
+  const question = omitExcludedFeeServices(originalQuestion);
   const context = extractConversationContext(question, body.context && typeof body.context === 'object' && !Array.isArray(body.context) ? body.context : {});
   const queryScope = understandQuery(question);
-  const language = selectLanguage(question, body.language);
+  const language = selectLanguage(originalQuestion, body.language);
   const normalized = normalizeIntentText(question);
   const asksPersonalPragatiApproval = /\bpragati\b/.test(normalized)
     && /\b(?:will i(?: personally)? (?:be approved|qualify|get|receive)|am i (?:eligible|approved)|approve my application)\b/i.test(question);
-  const vacancyRequestedNow = /\b(?:current|currently|now|available|remaining|this year|this academic year)\b.{0,55}\b(?:seat\s+)?(?:vacanc(?:y|ies)|vacant|unfilled)\b|\b(?:vacanc(?:y|ies)|vacant|unfilled)\b.{0,55}\b(?:current|currently|now|available|remaining|this year|this academic year)\b/i.test(normalized)
-    && (queryScope.branch.positive.length > 0 || /\b(?:engineering|b\.?tech|course|branch)\b/i.test(normalized))
+  const vacancyRequestedNow = (/\b(?:current|currently|now|available|remaining|this year|this academic year)\b.{0,55}\b(?:seat\s+)?(?:vacanc(?:y|ies)|vacant|unfilled)\b|\b(?:vacanc(?:y|ies)|vacant|unfilled)\b.{0,55}\b(?:current|currently|now|available|remaining|this year|this academic year)\b/i.test(normalized)
+    || /\b(?:seats? (?:still )?(?:left|remaining|open now)|(?:remaining|vacant|unfilled) seats?|seats? (?:are )?still available)\b/.test(normalized))
+    && (queryScope.branch.positive.length > 0 || /\b(?:engineering|b\.?tech|course|branch|admission|cap)\b/i.test(normalized))
+    && !/\b(?:approved|sanctioned|intake|capacity|historical|seat matrix)\b/.test(normalized)
     && !/\b(?:faculty|staff|teacher|professor|job|recruitment|hiring)\b/i.test(question);
   const asksExactTermStart = /\b(?:semester|term)\b/i.test(question)
     && /\b(?:start date|exact date|when (?:does|will|do)|what date)\b|तारीख|तारखेला|दिनांक/iu.test(`${question} ${normalized}`)
@@ -3288,6 +3317,38 @@ async function answerAdmissionQuestionCore(body, user) {
     return { source: 'No verified record', evidence: [], outcomeStatus: 'UNSUPPORTED_TOPIC', answer: safeAnswer,
       requestedLanguage: language, responseLanguage: language, localizationStatus: language === 'en' ? 'original' : 'template',
       languageReviewStatus: language === 'en' ? 'not-required' : 'speaker-review-pending', model: 'deterministic-rag-fallback' };
+  }
+
+  const timetableNavigation = isExamTimetableQuery(lowerQuestion)
+    && buildOfficialNavigationAnswer(question);
+  if (timetableNavigation) {
+    return localizeResponse(timetableNavigation, language, normalized, [], academicFeeSelection, parseLegacyFactText);
+  }
+
+  const unavailableDetail = requestedUnverifiedDetail(lowerQuestion);
+  if (unavailableDetail) {
+    return localizeResponse({
+      source: 'No verified record', answer: unavailableDetail, evidence: [],
+      officialLinks: [{ label: 'MITCORER Contact Us', url: 'https://mitcorer.edu.in/mitcorer/public/contact-us' }],
+      outcomeStatus: 'INSUFFICIENT_EVIDENCE', model: 'deterministic-rag-fallback',
+    }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
+  }
+
+  const hostelDeposit = /\b(?:hostels?|dorm(?:itory)?|student accommodation)\b/.test(normalized)
+    && /\b(?:deposits?|caution money)\b/.test(normalized)
+    && !/\b(?:when|how to|refund(?:ed|ing)?|deadline|apply|procedure)\b/.test(normalized);
+  const branchSeatCount = /\bseats?\b/.test(normalized) && queryScope.branch.positive.length > 0
+    && queryScope.admissionRoute === 'firstYear'
+    && !/\b(?:vacant|vacanc(?:y|ies)|availability|available|left|remaining|still|today|now|book|reserve|matrix|reservation|category|quota|cutoff|chance|eligib\w*|historical|tfws|ews)\b/.test(normalized);
+  if ((hostelDeposit || branchSeatCount) && !/\b(?:and|also)\b.{0,30}\b(?:documents?|scholarships?|placements?|academic fees|tuition)\b/.test(normalized)) {
+    const scopedQuestion = hostelDeposit ? `${normalized} hostel fee deposit` : `${normalized} sanctioned intake`;
+    const maintained = buildMaintainedAnswer(question, scopedQuestion, getDb().knowledge);
+    if (maintained) {
+      const evidence = maintained.evidence.map(record => publicEvidence(record, Date.now()));
+      return localizeResponse({ ...maintained, evidence, model: 'deterministic-rag-fallback',
+        outcomeStatus: evidence.length && !maintained.conflict ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE',
+      }, language, scopedQuestion, evidence, academicFeeSelection, parseLegacyFactText);
+    }
   }
 
   const facultyAnswer = buildFacultyDirectoryAnswer(question, getDb().officialSources || []);
@@ -3347,6 +3408,26 @@ async function answerAdmissionQuestionCore(body, user) {
         evidence, outcomeStatus: 'ANSWERED', model: 'deterministic-rag-fallback' }, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
     }
   }
+  if (/\b(?:placement|campus interviews?)\b/.test(normalized)
+    && /\b(?:skills?|prepare|preparing|preparation)\b/.test(normalized)
+    && !/\b(?:companies|recruiters|packages?|salaries|mous?)\b/.test(normalized)) {
+    const record = getDb().knowledge.find(item => item.id === 'KB-43' && usableKnowledge(item));
+    const preparation = record?.text?.split('\n').filter(line =>
+      /^- (?:Corporate Readiness Program|Professional Grooming)\b/i.test(line)) || [];
+    const evidence = preparation.length ? [publicEvidence(sourceRecord(record), Date.now())] : [];
+    const response = {
+      source: evidence.length ? record.source : 'No verified record',
+      answer: evidence.length
+        ? `MITCORER’s maintained placement guidance lists these areas to practise:\n\n${preparation.join('\n')}\n\nAsk the Training and Placement Cell about current training and role-specific requirements.`
+        : 'I could not verify current placement preparation guidance. Ask the Training and Placement Cell which skills and assessments to prepare for.',
+      evidence,
+      actionView: 'placements',
+      actionLabel: 'View placement support',
+      outcomeStatus: evidence.length ? 'ANSWERED' : 'INSUFFICIENT_EVIDENCE',
+      model: 'deterministic-rag-fallback',
+    };
+    return localizeResponse(response, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
+  }
   const placementOverview = buildPlacementOverview(normalized, getDb().knowledge);
   if (placementOverview) {
     const evidence = placementOverview.evidence.map(record => publicEvidence(sourceRecord(record), Date.now()));
@@ -3381,10 +3462,10 @@ async function answerAdmissionQuestionCore(body, user) {
   if (vacancyRequestedNow) {
     const response = {
       source: 'Current seat vacancy information',
-      answer: 'For AY 2026-27, the Maharashtra CET Cell portal marks the First Year Engineering admission process closed. MITCORER’s ACAP page links the **First Year Engineering Vacancies after CAP-IV 2026-27** notice; check the Computer Science row there for that round’s published vacancy. That historical round list does not establish that a seat is still open now. Contact admissions for any current update.',
+      answer: 'I cannot verify live seat vacancies. Check the latest MITCORER admission notice for your programme, admission route, academic year and round. A published round list can change after allotment. Contact the admissions office to confirm whether a seat is still open.',
       evidence: [], officialLinks: [
-        { label: 'MITCORER ACAP vacancy notices 2026-27', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
-        { label: 'Maharashtra CET Cell First Year Engineering portal', url: 'https://fe2026.mahacet.org/StaticPages/HomePage' },
+        { label: 'MITCORER ACAP vacancy notices', url: 'https://mitcorer.edu.in/acap-institute-level-admission.php' },
+        { label: 'Maharashtra State CET Cell', url: 'https://cetcell.mahacet.org/' },
       ], model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
     };
     return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
@@ -4208,7 +4289,7 @@ function getOfficialSourceFile(id, user) {
   if (!record) throw notFound('Official source not found.');
   if (!record.storedFileName) throw notFound('The original file is not stored locally for this source.');
   const filePath = path.resolve(officialSourceDir, record.storedFileName);
-  if (!filePath.startsWith(officialSourceDir) || !fs.existsSync(filePath)) throw notFound('Official source file is unavailable.');
+  if (!filePath.startsWith(`${officialSourceDir}${path.sep}`) || !fs.existsSync(filePath)) throw notFound('Official source file is unavailable.');
   assertStoredFileReadable(filePath, record.mimeType);
   audit('official_source.file_opened', 'official_source', record.id, user, record.title);
   return { __file: true, filePath, mimeType: record.mimeType || 'application/octet-stream', fileName: record.originalFileName };

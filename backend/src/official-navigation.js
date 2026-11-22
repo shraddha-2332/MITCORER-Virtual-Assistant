@@ -35,7 +35,7 @@ const links = {
 
 function hasFindIntent(q) {
   return /\b(where|how|find|locate|link|url|website|webpage|page|section|workflow|navigate|download|access|get|apply|submit|check)\b/i.test(q)
-    || /\b(syllabus|timetable|time table|question papers?|results?|revaluation|photocopy|scholarships?|placement records?|admission documents?)\b/i.test(q);
+    || /\b(syllabus|time[ -]?table|exam(?:ination)? schedule|exam(?:ination)? dates?|question papers?|results?|revaluation|photocopy|scholarships?|placement records?|admission documents?)\b/i.test(q);
 }
 
 function hasDirectNavigationIntent(q) {
@@ -76,7 +76,7 @@ export function buildOfficialNavigationAnswer(question) {
       ]);
   }
 
-  if (/\b(timetable|time table|exam schedule|exam date)\b/i.test(q) && asksUniversity) {
+  if (/\b(time[ -]?table|exam(?:ination)? schedule|exam(?:ination)? dates?)\b/i.test(q) && asksUniversity) {
     return response('PAHSU examination timetable navigation',
       'Open PAHSU → Examination → Time Table. Find the current examination session/year, then open the Engineering/B.Tech timetable matching your semester. Check the notice date and session before relying on a PDF.',
       [{ label: 'PAHSU Examination Time Table', url: links.timetable }]);

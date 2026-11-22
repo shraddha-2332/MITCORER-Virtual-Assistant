@@ -6,20 +6,20 @@ services:
     rootDir: backend
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/health
-    disk:
-      name: mitra-data
-      mountPath: /app/data
-      sizeGB: 1
+    healthCheckPath: /api/ready
     envVars:
       - key: NODE_ENV
         value: production
       - key: NODE_VERSION
         value: 22.23.1
       - key: DATABASE_FILE
-        value: /app/data/mitra.sqlite
+        value: ./data/mitra.sqlite
       - key: UPLOAD_DIR
-        value: /app/data/uploads
+        value: ./uploads
+      - key: OFFICIAL_SOURCE_DIR
+        value: ./official-sources
+      - key: DOCUMENT_INDEX_FILE
+        value: ./data/website-corpus/document-index.sqlite
       - key: TOKEN_SECRET
         generateValue: true
       - key: ADMIN_EMAIL

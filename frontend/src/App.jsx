@@ -43,11 +43,13 @@ function App() {
   const [knowledge, setKnowledge] = useState([]);
   const [officialSources, setOfficialSources] = useState([]);
   const [knowledgeInitialTab, setKnowledgeInitialTab] = useState('records');
+  const [knowledgeInitialSearch, setKnowledgeInitialSearch] = useState('');
   const [reviewInitialTab, setReviewInitialTab] = useState('inquiries');
   const [appError, setAppError] = useState('');
 
-  const navigateTo = (nextView) => {
+  const navigateTo = (nextView, recordId = '') => {
     if (!nextView || nextView === view) return;
+    if (nextView === 'knowledge') setKnowledgeInitialSearch(recordId);
     setViewHistory((items) => [...items, view].slice(-20));
     setView(nextView);
   };
@@ -234,8 +236,8 @@ function App() {
         {navOpen && <button className="mobileScrim" type="button" aria-label="Close navigation" onClick={() => setNavOpen(false)}><X size={18} /></button>}
         <section className="workspaceBody">
           {appError && <div className="errorBanner">{appError}</div>}
-          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
-          {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
+          {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenKnowledgeRecord={(id) => { setKnowledgeInitialTab('records'); navigateTo('knowledge', id); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
+          {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} initialSearch={knowledgeInitialSearch} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
           {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
           {view === 'applicant-workspaces' && <ApplicantWorkspaceReview token={token} />}
         </section>
@@ -1002,7 +1004,7 @@ function linkOfficialContact(text) {
   return parts.length ? parts : value;
 }
 
-function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenInquiries, onOpenFeedback }) {
+function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources, onOpenKnowledge, onOpenKnowledgeRecord, onOpenInquiries, onOpenFeedback }) {
   const [reviewCounts, setReviewCounts] = useState({ inquiries: null, feedback: null, unhelpfulFeedback: 0, pendingInquiries: 0, applicants: null, inquiryError: '', feedbackError: '', applicantError: '' });
   const [loading, setLoading] = useState(true);
 
@@ -1036,6 +1038,19 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
 
   const publishedKnowledge = knowledge.filter(item => item.status === 'Published').length;
   const reviewKnowledge = knowledge.filter(item => item.status === 'Review');
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const expiryAlerts = knowledge.flatMap(item => {
+    const { validFrom, validUntil, supersededBy } = item.provenance || {};
+    if (item.status !== 'Published' || supersededBy || !validUntil) return [];
+    const end = Date.parse(`${validUntil}T23:59:59.999Z`);
+    const start = validFrom ? Date.parse(`${validFrom}T00:00:00.000Z`) : now;
+    if (!Number.isFinite(end) || !(start <= now) || end > now + 14 * 86_400_000) return [];
+    return [{ item, validUntil, end }];
+  }).sort((a, b) => a.end - b.end);
   const needsReview = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase())).length;
   const pendingSources = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase()));
   const unreachableSources = pendingSources.filter(item => item.syncMeta?.healthStatus === 'unreachable').length;
@@ -1062,8 +1077,9 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
           {reviewCounts.pendingInquiries > 0 && <div><span className="statusDot" /><span><strong>{reviewCounts.pendingInquiries} visitor request{reviewCounts.pendingInquiries === 1 ? '' : 's'} open</strong><small>Check the inbox for requests that still need a reply.</small></span></div>}
           {reviewCounts.unhelpfulFeedback > 0 && <div><span className="statusDot" style={{ background: '#dc2626' }} /><span><strong>{reviewCounts.unhelpfulFeedback} answer rating issue{reviewCounts.unhelpfulFeedback === 1 ? '' : 's'}</strong><small>Investigate visitor feedback marked unhelpful.</small></span></div>}
           {reviewKnowledge.slice(0, 2).map(item => <div key={item.id}><span className="statusDot" style={{ background: '#d97706' }} /><span><strong>{item.title}</strong><small>Knowledge record needs source review.</small></span></div>)}
+          {expiryAlerts.map(({ item, validUntil, end }) => <div key={item.id}><span className="statusDot" /><span><strong>{item.title}</strong><small>{end < now ? 'Expired' : 'Expires soon'} · Valid until {validUntil} (UTC)</small><button className="inlineAction" type="button" onClick={() => onOpenKnowledgeRecord(item.id)}>Open {item.id} <ArrowRight size={15} /></button></span></div>)}
           {pendingSources.slice(0, 2).map(item => <div key={item.id}><span className="statusDot" /><span><strong>{item.title}</strong><small>{item.syncMeta?.lastError || item.extractionStatus || item.status || 'Source change needs review'}</small></span></div>)}
-          {!reviewCounts.inquiryError && !reviewCounts.feedbackError && !reviewCounts.applicantError && reviewCounts.inquiries !== null && reviewCounts.feedback !== null && !reviewCounts.pendingInquiries && !reviewCounts.unhelpfulFeedback && !reviewKnowledge.length && !pendingSources.length && <div className="adminAllClear"><CheckCircle2 size={20} /><span><strong>No queued work is currently flagged</strong><small>New submissions and source changes will appear here when they need action.</small></span></div>}
+          {!reviewCounts.inquiryError && !reviewCounts.feedbackError && !reviewCounts.applicantError && reviewCounts.inquiries !== null && reviewCounts.feedback !== null && !reviewCounts.pendingInquiries && !reviewCounts.unhelpfulFeedback && !reviewKnowledge.length && !pendingSources.length && !expiryAlerts.length && <div className="adminAllClear"><CheckCircle2 size={20} /><span><strong>No queued work is currently flagged</strong><small>New submissions and source changes will appear here when they need action.</small></span></div>}
         </div>
         <div className="adminAttentionActions">
           {reviewCounts.pendingInquiries > 0 && <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}>Open visitor inbox ({reviewCounts.pendingInquiries}) <ArrowRight size={15} /></button>}
@@ -1079,7 +1095,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
           <button type="button" onClick={onOpenKnowledge}><FileText size={18} /><span><strong>Knowledge Base</strong><small>Edit, verify and retire answer records</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={onOpenSources}><RefreshCw size={18} /><span><strong>Source Verification</strong><small>Review official sources and changes</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={18} /><span><strong>Review inbox</strong><small>Visitor requests and answer feedback</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Saved admission checklists</strong><small>{reviewCounts.applicants === null ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
+          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Saved admission checklists</strong><small>{reviewCounts.applicantError ? 'Checklists unavailable' : loading ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
           <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><Cpu size={18} /><span><strong>AI quality and analytics</strong><small>Inspect answer outcomes and unresolved patterns</small></span><ArrowRight size={15} /></button>
           {user.role === 'admin' && <button type="button" onClick={() => scrollToSection('assistant-unanswered-review')}><ThumbsDown size={18} /><span><strong>Unanswered questions</strong><small>Triage unresolved assistant outcomes</small></span><ArrowRight size={15} /></button>}
         </div>
@@ -1164,7 +1180,7 @@ function ApplicantWorkspaceReview({ token }) {
       const checked = Array.isArray(item.cap?.checkedDocuments) ? item.cap.checkedDocuments : [];
       const prepared = documentLabels.filter(name => checked.includes(name));
       return <article className="applicantAdminCard" key={item.ownerEmail}>
-        <header><div><h2>{item.ownerName || 'Applicant'}</h2><span>{item.ownerEmail} ? {item.ownerRole === 'parent' ? 'Parent / guardian account' : 'Applicant account'}</span></div></header>
+        <header><div><h2>{item.ownerName || 'Applicant'}</h2><span>{item.ownerEmail && <>{item.ownerEmail} {'\u00b7'} </>}{item.ownerRole === 'parent' ? 'Parent / guardian account' : 'Applicant account'}</span></div></header>
         <div className="applicantAdminDetails">
           <section><h3>Admission progress</h3><dl>
             <div><dt>Route</dt><dd>{admissionRoutes[route]?.label || 'Not selected'}</dd></div>
@@ -1187,6 +1203,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
   const [selected, setSelected] = useState(null);
   const selectedRef = useRef(null);
   const [tab, setTab] = useState(initialTab);
+  const [unresolvedOnly, setUnresolvedOnly] = useState(false);
   const [status, setStatus] = useState('Needs reply');
   const [assignedTo, setAssignedTo] = useState('');
   const [staffNote, setStaffNote] = useState('');
@@ -1232,7 +1249,10 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
     ...inquiries.map(item => ({ ...item, type: 'inquiry' })),
     ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer', status: item.status || (item.helpful ? 'Appreciated' : 'Needs review') })),
   ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-  const visibleRows = allRows.filter(item => tab === 'inquiries' ? item.type === 'inquiry' : item.type === 'feedback');
+  const visibleRows = allRows.filter(item => tab === 'inquiries'
+    ? item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved')
+    : item.type === 'feedback');
+  const selectedIsVisible = visibleRows.some(item => item.type === selected?.type && item.id === selected?.id);
   const choose = (item) => {
     selectedRef.current = item;
     setSelected(item);
@@ -1283,13 +1303,14 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       <div className="reviewInboxTabs">
         <button type="button" className={tab === 'inquiries' ? 'active' : ''} onClick={() => setTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
         <button type="button" className={tab === 'feedback' ? 'active' : ''} onClick={() => setTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
+        {tab === 'inquiries' && <button type="button" aria-pressed={unresolvedOnly} className={unresolvedOnly ? 'active' : ''} onClick={() => setUnresolvedOnly(value => !value)}>Unresolved only</button>}
         <button className="inlineAction secondary" type="button" disabled={loading} onClick={() => { setLoading(true); setRefreshCount(count => count + 1); }}><RefreshCw size={15} /> Refresh</button>
       </div>
     </div>
     {error && <div className="errorBanner">{error}</div>}
     {notice && <div className="decisionResult positive"><strong>{notice}</strong></div>}
-    {loading ? <div className="panelBlock">Loading review inbox?</div> : visibleRows.length === 0 ? (
-      <div className="panelBlock">No {tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.</div>
+    {loading ? <div className="panelBlock">Loading review inbox…</div> : visibleRows.length === 0 ? (
+      <div className="panelBlock">{tab === 'inquiries' && unresolvedOnly ? 'No unresolved visitor requests.' : `No ${tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.`}</div>
     ) : <section className="inquiryWorkspace">
       <div className="inquiryList" aria-label={tab === 'inquiries' ? 'Visitor requests' : 'Answer feedback'}>
         {visibleRows.map(item => <button key={`${item.type}-${item.id}`} type="button" className={selected?.id === item.id ? 'active' : ''} onClick={() => choose(item)}>
@@ -1300,7 +1321,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
           <p>{item.question || 'No question text recorded'}</p>
         </button>)}
       </div>
-      {selected && <article className="inquiryDetail">
+      {selectedIsVisible && <article className="inquiryDetail">
         <header><div><span className="eyebrow">{selected.type === 'feedback' ? 'Answer feedback' : selected.routingQueue || 'MITCORER Staff Triage'}</span><h2>{selected.name || (selected.helpful ? 'Helpful answer' : 'Unhelpful answer')}</h2></div><span className={`pill ${selected.status === 'Resolved' || selected.status === 'Appreciated' || selected.status === 'Acknowledged' ? 'published' : selected.status === 'Needs review' || selected.status === 'Needs reply' || selected.status === 'Investigating' ? 'review' : ''}`}>{selected.status || (selected.type === 'feedback' ? (selected.helpful ? 'Appreciated' : 'Needs review') : selected.priority || 'Normal')}</span></header>
         <dl>
           <div><dt>Received</dt><dd>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : 'Unknown'}</dd></div>
@@ -1369,7 +1390,7 @@ function Header({ user, setNavOpen, canGoBack, onBack }) {
   );
 }
 
-function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onExtractStructuredSource }) {
+function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', initialSearch = '', items, sources, onCreate, onUpdate, onDelete, onUploadSource, onOpenSource, onReviewSource, onPublishSource, onExtractStructuredSource }) {
   const [cdmExtracting, setCdmExtracting] = useState(false);
   const [cdmNotice, setCdmNotice] = useState('');
   const managedUsage = { 'KB-2': 'Public academic fee answers use this record.', 'KB-3': 'Public hostel and mess fee answers use this record.', 'KB-10': 'Public B.Tech intake answers use this record.', 'KB-6': 'Historical seat matrix answers use this record.' };
@@ -1387,7 +1408,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   const [review, setReview] = useState(null);
   const [publishingSource, setPublishingSource] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [recordSearch, setRecordSearch] = useState('');
+  const [recordSearch, setRecordSearch] = useState(initialSearch);
   const [recordCategory, setRecordCategory] = useState('All categories');
   const [recordStatus, setRecordStatus] = useState('All statuses');
   const [showRecordForm, setShowRecordForm] = useState(false);
@@ -1397,7 +1418,7 @@ function KnowledgeManager({ canDeleteKnowledge = false, initialTab = 'records', 
   const filteredRecords = items
     .filter((item) => recordCategory === 'All categories' || item.category === recordCategory)
     .filter((item) => recordStatus === 'All statuses' || item.status === recordStatus)
-    .filter((item) => !recordSearch.trim() || [item.title, item.category, item.source, item.text].some((value) => String(value || '').toLowerCase().includes(recordSearch.trim().toLowerCase())))
+    .filter((item) => !recordSearch.trim() || item.id.toLowerCase() === recordSearch.trim().toLowerCase() || [item.title, item.category, item.source, item.text].some((value) => String(value || '').toLowerCase().includes(recordSearch.trim().toLowerCase())))
     .sort((a, b) => `${a.category}:${a.title}`.localeCompare(`${b.category}:${b.title}`));
   const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
   const statuses = [...new Set(items.map((item) => item.status).filter(Boolean))].sort((a, b) => a.localeCompare(b));

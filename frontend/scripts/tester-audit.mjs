@@ -55,6 +55,9 @@ try {
 
   const consoleErrors = [];
   const pageErrors = [];
+  page.on('requestfailed', request => {
+    log(`Request failed: ${request.method()} ${request.url()} (${request.failure()?.errorText})`);
+  });
   page.on('console', msg => {
     if (msg.type() === 'error') consoleErrors.push(msg.text());
   });
@@ -63,6 +66,14 @@ try {
   // 1. App Launch & Widget Toggle Test
   log('Test 1: App launch and widget open/close toggle');
   await page.goto(origin);
+  const interLoaded = await page.evaluate(async () => {
+    const faces = await document.fonts.load('600 14px Inter', 'Admission');
+    const fontRequests = performance.getEntriesByType('resource').filter(entry => /\.woff2(?:\?|$)/.test(entry.name));
+    return faces.some(face => face.family === 'Inter' && face.status === 'loaded')
+      && fontRequests.some(entry => entry.name.includes('inter-latin-wght-normal.woff2'))
+      && fontRequests.every(entry => new URL(entry.name).origin === location.origin);
+  });
+  assert.ok(interLoaded, 'Inter must load from the same origin as the app');
   const openBtn = page.getByRole('button', { name: 'Open MIT Barshi admission assistant' });
   assert.ok(await openBtn.isVisible(), 'Launcher button must be visible');
   await openBtn.click();
@@ -304,3 +315,4 @@ findings.bugs.forEach((b, i) => console.log(`  ${i+1}. [BUG] ${b}`));
 console.log(`IMPROVEMENTS IDENTIFIED: ${findings.improvements.length}`);
 findings.improvements.forEach((imp, i) => console.log(`  ${i+1}. [IMPROVEMENT] ${imp}`));
 console.log('====================================================\n');
+if (findings.failed) process.exitCode = 1;

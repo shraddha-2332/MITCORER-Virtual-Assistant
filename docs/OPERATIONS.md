@@ -16,7 +16,18 @@ The supplied site is `https://mitra-the-virtual-assistant.vercel.app/`; observed
 
 Set exact CORS origins appropriate to the deployment. Keep `TRUST_PROXY=false` when client-supplied forwarding headers are not guaranteed to be replaced by a trusted edge. With `TRUST_PROXY=true`, the backend uses forwarded addresses for rate limiting. Nginx overwrites the forwarding address and the Compose backend is not exposed directly. Render's edge/header behavior needs environment-specific verification before enabling trust there; with trust off, callers behind a shared edge can share a limiter key.
 
-The Render manifest mounts `/app/data` and stores SQLite at `/app/data/mitra.sqlite`; applicant and assistant uploads now use `/app/data/uploads` through `UPLOAD_DIR`, so both are intended to live on that mounted disk. Confirm the disk is actually attached in the provider account before relying on durable storage. Older files may still be in the legacy `backend/uploads` directory; reads check that directory as a fallback, but copy and verify any files that must survive before the old instance is replaced. Do not change paid service tiers or migrate/delete data without a separate reviewed deployment action.
+The Render Blueprint uses the free plan with an ephemeral filesystem. Use the hosted service for public questions backed by the bundled seed and for disposable demos. Keep the maintained database, uploaded notices, and corpus on a local machine or in Docker volumes you control. Render can discard runtime-created SQLite records, accounts, conversations, uploads, and published edits on a restart, redeploy, or spin-down. Export anything you need from the existing service before making deployment changes. [Render free-service limits](https://render.com/docs/free)
+
+### Provision the document index
+
+The default index is `backend/data/website-corpus/document-index.sqlite` locally and `/app/data/website-corpus/document-index.sqlite` in Docker. The free Render deployment uses bundled knowledge and official-navigation links without the optional local index. Obtain the approved index from the corpus builder or preserve the current index before replacing a local instance. The Docker image ships application source only. With a fresh Compose volume, seed the index after starting the backend and before using document search:
+
+```powershell
+docker compose exec -T backend mkdir -p /app/data/website-corpus
+docker compose cp ./backend/data/website-corpus/document-index.sqlite backend:/app/data/website-corpus/document-index.sqlite
+```
+
+Verify `GET /api/document-corpus` as staff or admin and confirm `available` is true with nonzero document and chunk counts on the deployment where the index was provisioned. Restart the backend after replacing an already loaded index. Keep a recoverable copy of the index or rebuild it from the approved corpus.
 
 ## Credentials on an existing database
 
@@ -53,13 +64,13 @@ npm.cmd run backup -- --verify BACKUP_DIRECTORY
 npm.cmd run backup -- --restore BACKUP_DIRECTORY NEW_TARGET_DIRECTORY
 ```
 
-The database snapshot uses SQLite `VACUUM INTO`, including committed WAL data. Asset copies have checksums; verification checks those hashes and SQLite integrity/application shape. Quiesce upload and source-maintenance writes for database-to-file consistency. Applicant and assistant upload files use `UPLOAD_DIR` (default `backend/uploads`); original official-source files use `backend/official-sources`. Back up both configured storage directories together with the database. A PDF upload must contain a complete header, cross-reference target and EOF marker; older test fixtures that contain only `%PDF-` text are invalid and must be replaced with real files. Do not delete stored files solely by extension: compare them with database records first. A failed backup without a verified manifest is not an accepted snapshot. Backups include sensitive application data: restrict access, encrypt/offsite-copy as appropriate and define retention. Secrets in `.env` are not copied.
+The database snapshot uses SQLite `VACUUM INTO`, including committed WAL data. Asset copies have checksums; verification checks those hashes and SQLite integrity/application shape. Quiesce upload and source-maintenance writes for database-to-file consistency. The backup includes files from `UPLOAD_DIR` and `OFFICIAL_SOURCE_DIR`, which default to `backend/uploads` and `backend/official-sources`. Preserve the document index separately. A PDF upload must contain a complete header, cross-reference target and EOF marker; older test fixtures that contain only `%PDF-` text are invalid and must be replaced with real files. Do not delete stored files solely by extension: compare them with database records first. A failed backup without a verified manifest is not an accepted snapshot. Backups include sensitive application data: restrict access, encrypt/offsite-copy as appropriate and define retention. Secrets in `.env` are not copied.
 
 Restore only into a new directory; existing data is never overwritten by this tool. Inspect the restored copy, stop the service, review target paths, keep the current snapshot, then deliberately change the runtime storage location. The automated drill uses an isolated target; no running database was replaced. Schedule periodic backup/restore drills and monitor their completion in the actual deployment.
 
 ## Validation commands
 
-Backend: `npm.cmd run check`, `npm.cmd test`, `npm.cmd run evaluate`, `npm.cmd run evaluate:public -- --strict`, `npm.cmd run evaluate:verifiers`, `npm.cmd run evaluate:retrieval`, and `npm.cmd run evaluate:load`. The last command is an in-memory local smoke with raised test limits, not a production load result. Verifier `-- --strict` evaluates both checkers and still fails because the token-only baseline deliberately misses invalid probes.
+Backend: `npm.cmd run check`, `npm.cmd test`, `npm.cmd run evaluate`, `npm.cmd run evaluate:public -- --strict`, `npm.cmd run evaluate:verifiers -- --strict`, `npm.cmd run evaluate:retrieval`, and `npm.cmd run evaluate:load`. The load command runs against an in-memory local test instance. The verifier command reports both checkers and fails on decision errors from the slot-aware verifier used in production. The token-only baseline shows which errors a token match can miss.
 
 Frontend: `npm.cmd ci`, `npm.cmd test`, `npm.cmd run lint`, `npm.cmd run build`, `npm.cmd audit`, `npm.cmd run test:public-session-browser`, `npm.cmd run test:language-browser`, and `npm.cmd run test:maintainer-browser`. The complete answer journey requires first running `backend/scripts/audit-answer-sources.js`, then `npm.cmd run test:all-answers-browser`. Installed Chrome or Edge is required locally. Review packets generated by language tests go to ignored `frontend/tmp/language-review`; existing reviewer files are preserved.
 

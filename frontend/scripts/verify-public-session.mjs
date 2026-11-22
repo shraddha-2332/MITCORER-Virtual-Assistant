@@ -163,6 +163,20 @@ try {
   await checklist.locator('input[type="checkbox"]:checked').waitFor();
   assert.equal(await checklist.getByLabel('Latest step completed').inputValue(), 'Allotment checked');
 
+  const expiryFixtures = [
+    { id: 'KB-TEST-EXPIRED', title: 'Expired browser test record', days: -2, label: 'Expired' },
+    { id: 'KB-TEST-EXPIRING', title: 'Expiring browser test record', days: 3, label: 'Expires soon' },
+    { id: 'KB-TEST-LATER', title: 'Future expiry browser test record', days: 30 },
+  ].map(({ days, ...fixture }) => ({
+    ...fixture, validUntil: new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10),
+  }));
+  for (const { id, title, validUntil } of expiryFixtures) {
+    getDb().knowledge.push({
+      id, title, category: 'General', source: 'Browser test fixture', text: title,
+      status: 'Published', provenance: { validUntil },
+    });
+  }
+  saveDb();
   const staff = await browser.newContext();
   const staffLogin = await staff.request.post(`${origin}/api/auth/login`, {
     data: { email: staffEmail, password: staffPassword },
@@ -172,6 +186,16 @@ try {
   staffPage.on('pageerror', error => errors.push(error.message));
   await staffPage.goto(origin);
   const staffNav = staffPage.getByRole('navigation', { name: 'Admin workspace' });
+  for (const { id, title, validUntil, label } of expiryFixtures.filter(item => item.label)) {
+    const alert = staffPage.locator('.adminPendingList > div').filter({ hasText: title });
+    await alert.getByText(`${label} · Valid until ${validUntil} (UTC)`, { exact: true }).waitFor();
+    await alert.getByRole('button', { name: `Open ${id}`, exact: true }).click();
+    const records = staffPage.locator('.knowledgeRecordRow');
+    await records.getByRole('heading', { name: title, exact: true }).waitFor();
+    assert.equal(await records.count(), 1);
+    await staffNav.getByRole('button', { name: 'Overview', exact: true }).click();
+  }
+  assert.equal(await staffPage.locator('.adminPendingList').getByText(expiryFixtures[2].title, { exact: true }).count(), 0);
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
   await staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: inquiryQuestion }).click();
   await staffPage.locator('.inquiryDetail').getByText(inquiryId, { exact: true }).waitFor();
@@ -181,6 +205,17 @@ try {
   await staffPage.getByRole('button', { name: 'Save request', exact: true }).click();
   assert.equal((await savedRequest).status(), 200);
   assert.equal(getDb().inquiries.find(item => item.id === inquiryId).status, 'In progress');
+  const requestRow = staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: inquiryQuestion });
+  const unresolvedFilter = staffPage.getByRole('button', { name: 'Unresolved only' });
+  await unresolvedFilter.click();
+  await requestRow.waitFor();
+  await staffPage.getByLabel('Queue status').selectOption('Resolved');
+  await staffPage.getByLabel('Internal note').fill('Referred the request to the admissions desk.');
+  await staffPage.getByRole('button', { name: 'Save request', exact: true }).click();
+  await requestRow.waitFor({ state: 'hidden' });
+  assert.equal(getDb().inquiries.find(item => item.id === inquiryId).status, 'Resolved');
+  await unresolvedFilter.click();
+  await requestRow.waitFor();
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
   await staffPage.getByRole('button', { name: /Answer feedback/ }).click();
   await staffPage.getByRole('button', { name: 'Refresh' }).click();
@@ -195,12 +230,13 @@ try {
 
   await staffNav.getByRole('button', { name: 'Saved admission checklists', exact: true }).click();
   const savedChecklist = staffPage.locator('.applicantAdminCard').filter({ hasText: applicantEmail });
+  await savedChecklist.getByText(`${applicantEmail} · Applicant account`, { exact: true }).waitFor();
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   await savedChecklist.getByText('10th marksheet', { exact: true }).waitFor();
   assert.equal(await staffNav.getByRole('button', { name: 'Document review', exact: true }).count(), 0);
 
   assert.deepEqual(errors, []);
-  console.log('PASS: browser session isolation and reset, CAP and reporting guidance, checklist save and reload, and staff inbox and checklist workflows.');
+  console.log('PASS: browser session isolation and reset, CAP and reporting guidance, checklist save and reload, staff inbox and checklist workflows, and dashboard expiry alerts with Knowledge Base navigation.');
 } finally {
   await browser?.close();
   await vite?.close();

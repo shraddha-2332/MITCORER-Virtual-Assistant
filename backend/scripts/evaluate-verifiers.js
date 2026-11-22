@@ -45,4 +45,6 @@ for (const [name, bytes] of [['corpus.json', corpusBytes], ['cases.json', casesB
 }
 fs.writeFileSync(path.join(folder, 'report.json'), json(report));
 console.log(json({ caseCount: cases.length, corpusSize: corpus.length, inputFingerprint, summary, report: path.relative(root, path.join(folder, 'report.json')) }));
-if (process.argv.includes('--strict') && Object.values(summary).some(result => result.fp || result.fn)) process.exitCode = 1;
+// Production applies the slot verifier, which includes the token check.
+// The token-only comparison stays visible as a diagnostic baseline.
+if (process.argv.includes('--strict') && (summary.slot.fp || summary.slot.fn)) process.exitCode = 1;

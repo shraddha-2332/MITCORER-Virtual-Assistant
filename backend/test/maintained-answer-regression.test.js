@@ -10,6 +10,7 @@ import { answerAdmissionQuestion, resetRuntimeStateForTests } from '../src/serve
 import { createPublicSession } from '../src/public-session.js';
 import { askPublicWithHistory } from '../src/conversations.js';
 import { selectLanguage } from '../src/language.js';
+import { documentCorpusStats, searchDocumentCorpus } from '../src/document-corpus.js';
 
 async function fixture(run) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mitra-phase-a-'));
@@ -19,6 +20,95 @@ async function fixture(run) {
   try { await run((question, language = 'en') => answerAdmissionQuestion({ question, language }, null)); }
   finally { closeDb(); fs.rmSync(dir, { recursive: true, force: true }); }
 }
+
+test('fee exclusions, placement preparation, and visit requests keep the requested scope', () => fixture(async ask => {
+  for (const question of [
+    "Tell me the fees for CSE, but don't include hostel and transportation charges.",
+    'What are first-year Open CSE tuition fees excluding hostel and transport?',
+    'What are first-year Open CSE tuition fees without accommodation charges?',
+  ]) {
+    const response = await ask(question);
+    assert.ok(['ANSWERED', 'NEEDS_CLARIFICATION'].includes(response.outcomeStatus), question);
+    assert.ok(response.evidence.every(record => record.id === 'KB-2'), question);
+    assert.doesNotMatch(response.answer, /Hostel fees:|Bus and transport:|40,000/, question);
+    if (question.includes('first-year')) assert.match(response.answer, /1,05,000/, question);
+  }
+  const inclusive = await ask('What are first year Open academic fees and hostel fees?');
+  assert.match(inclusive.answer, /40,000/);
+  for (const question of ['What skills should I learn for campus placements?', 'How should I prepare for campus placements?']) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'ANSWERED');
+    assert.deepEqual(response.evidence.map(record => record.id), ['KB-43']);
+    assert.match(response.answer, /quantitative aptitude/i);
+    assert.match(response.answer, /mock interviews/i);
+  }
+  for (const question of ['I want to visit the college. Share the location and contact details.', 'Share the location and contact details.']) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'ANSWERED', question);
+    assert.ok(response.evidence.some(record => record.id === 'KB-17'), question);
+    assert.match(response.answer, /Barshi/i);
+    assert.match(response.answer, /helpline/i);
+    assert.doesNotMatch(response.answer, /Other requested information/);
+  }
+}));
+
+test('student questions use the requested fact, official destination or an explicit evidence limit', () => fixture(async ask => {
+  if (process.env.MITRA_EXPECT_DOCUMENT_INDEX) {
+    assert.equal(documentCorpusStats().available, process.env.MITRA_EXPECT_DOCUMENT_INDEX === 'present');
+  }
+  const timetable = await ask('Where do I find the PAHSU exam timetable?');
+  assert.equal(timetable.outcomeStatus, 'ANSWERED');
+  assert.match(timetable.answer, /Examination.+Time Table/);
+  assert.equal(timetable.officialLinks[0].url, 'https://www.sus.ac.in/examination/Time-Table');
+  assert.deepEqual(timetable.evidence, []);
+  for (const question of ['Link me to the Solapur University examination schedule', 'PAHSU B.Tech exam time-table PDF']) {
+    const response = await ask(question);
+    assert.equal(response.officialLinks[0].url, 'https://www.sus.ac.in/examination/Time-Table', question);
+    assert.deepEqual(response.evidence, [], question);
+  }
+  assert.deepEqual(searchDocumentCorpus('PAHSU March 2024 exam timetable'), []);
+
+  const seats = await ask('What are the first year Civil Engineering seats?');
+  assert.equal(seats.outcomeStatus, 'ANSWERED');
+  assert.equal(seats.evidence[0].id, 'KB-10');
+  assert.match(seats.answer, /Civil Engineering.*sanctioned intake 60/);
+  assert.match(seats.answer, /does not confirm current vacancies/);
+  const openSeats = await ask('Are there current seat vacancies for Civil Engineering?');
+  assert.equal(openSeats.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.match(openSeats.answer, /cannot verify live seat vacancies/);
+  assert.doesNotMatch(openSeats.answer, /Computer Science/);
+  const remaining = await ask('Are there any Mechanical Engineering seats left?');
+  assert.equal(remaining.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.match(remaining.answer, /cannot verify live seat vacancies/);
+
+  const deposit = await ask('How much is hostel including deposit?');
+  assert.equal(deposit.outcomeStatus, 'ANSWERED');
+  assert.equal(deposit.evidence[0].id, 'KB-3');
+  assert.match(deposit.answer, /refundable hostel deposit of .*5,000.*hostel total of .*40,000/);
+  const costs = await ask('How much are dormitory caution money and mess fees?');
+  assert.equal(costs.evidence[0].id, 'KB-3');
+  assert.match(costs.answer, /5,000/);
+  assert.match(costs.answer, /42,000/);
+
+  for (const [question, expected] of [
+    ['Is there wheelchair access in the hostel?', /could not verify the hostel accessibility/],
+    ['Is there a wheelchair ramp at the girls hostel?', /could not verify the hostel accessibility/],
+    ['Is the dormitory step-free and does it have a lift?', /could not verify the hostel accessibility/],
+    ['When will I get my hostel deposit back?', /could not verify the hostel deposit refund/],
+    ['Who teaches first year mathematics?', /could not verify the teaching assignment/],
+    ['Who will be teaching engineering maths next semester?', /could not verify the teaching assignment/],
+    ['Give me the HOD personal mobile number.', /cannot provide a private staff contact/],
+    ['Can I get the professor’s WhatsApp?', /cannot provide a private staff contact/],
+    ['What is tomorrow attendance?', /cannot verify attendance for a specific day/],
+    ['Check my attendance percentage', /cannot verify attendance for a specific day/],
+  ]) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE', question);
+    assert.match(response.answer, expected, question);
+    assert.deepEqual(response.evidence, [], question);
+    assert.ok(response.officialLinks.some(link => link.url.includes('/contact-us')), question);
+  }
+}));
 
 test('maintained profile edits override literals and retirement prevents reuse', () => fixture(async ask => {
   getDb().knowledge.find(r => r.id === 'KB-38').text = 'Computer Science and Engineering: Head of Department is Dr. Audit Fixture.';

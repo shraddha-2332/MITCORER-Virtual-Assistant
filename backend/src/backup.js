@@ -23,15 +23,21 @@ function files(root, prefix = '') {
     return entry.isDirectory() ? files(root, relative) : [relative];
   });
 }
-export function createBackup({ databaseFile, assetRoot, uploadDirectory = path.join(assetRoot, 'uploads'), outputDirectory }) {
+export function createBackup({
+  databaseFile, assetRoot, uploadDirectory = path.join(assetRoot, 'uploads'),
+  officialSourceDirectory = safePath(assetRoot, 'official-sources'), outputDirectory,
+}) {
   if (!fs.existsSync(databaseFile)) throw new Error('Database does not exist');
   if (fs.existsSync(outputDirectory)) throw new Error('Backup destination already exists');
   fs.mkdirSync(path.join(outputDirectory, 'data'), { recursive: true });
   const source = new DatabaseSync(databaseFile, { readOnly: true });
   try { source.prepare('VACUUM INTO ?').run(path.join(outputDirectory, 'data/mitra.sqlite')); }
   finally { source.close(); }
-  for (const [name, from] of [['uploads', path.resolve(uploadDirectory)], ['official-sources', safePath(assetRoot, 'official-sources')]]) {
-    if (fs.existsSync(from)) { files(from); fs.cpSync(from, path.join(outputDirectory, name), { recursive: true }); }
+  for (const [name, from] of [['uploads', uploadDirectory], ['official-sources', officialSourceDirectory]]) {
+    if (!fs.existsSync(from)) continue;
+    if (fs.lstatSync(from).isSymbolicLink()) throw new Error('Backup symlinks are forbidden');
+    files(from);
+    fs.cpSync(from, path.join(outputDirectory, name), { recursive: true });
   }
   const entries = files(outputDirectory).sort().map(name => ({ path: name, bytes: fs.statSync(safePath(outputDirectory, name)).size, sha256: digest(safePath(outputDirectory, name)) }));
   const manifest = { version: 1, createdAt: new Date().toISOString(), consistency: 'SQLite-consistent database snapshot. Quiesce uploads/source maintenance for cross-file consistency.', files: entries };

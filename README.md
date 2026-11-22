@@ -77,7 +77,7 @@ The public widget holds visible messages and a conversation ID in React state. T
 
 Fee follow-ups preserve the original wording and explicit route/year qualifiers. Missing fields can be added from context; ambiguous category/gender questions still request clarification. Fee responses do not append independent hardcoded profile amounts. Recognized critical factual topics bypass optional advisory generation.
 
-Run `npm.cmd run evaluate:verifiers` from `backend` for reproducible synthetic verifier diagnostics. These explicitly report missed invalid answers; `-- --strict` exits nonzero on decision errors. They do not measure live model or independent answer accuracy.
+Run `npm.cmd run evaluate:verifiers -- --strict` from `backend` for synthetic diagnostics. Strict mode fails on decision errors from the slot-aware verifier used by the assistant. The report also includes the token-only comparison. Live model quality and independent accuracy require separate evaluations.
 
 ## Local Setup
 

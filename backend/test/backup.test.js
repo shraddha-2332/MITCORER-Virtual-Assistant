@@ -15,13 +15,17 @@ test('backup includes committed WAL data and restores assets without overwriting
     fs.mkdirSync(path.join(directory, 'uploads'));
     fs.writeFileSync(path.join(directory, 'uploads/example.txt'), 'fixture asset');
     const backup = path.join(directory, 'snapshot');
-    createBackup({ databaseFile: sourceFile, assetRoot: directory, outputDirectory: backup });
+    const officialSourceDirectory = path.join(directory, 'persistent-sources');
+    fs.mkdirSync(officialSourceDirectory);
+    fs.writeFileSync(path.join(officialSourceDirectory, 'notice.txt'), 'official notice fixture');
+    createBackup({ databaseFile: sourceFile, assetRoot: directory, officialSourceDirectory, outputDirectory: backup });
     const target = path.join(directory, 'restored');
     restoreBackup(backup, target);
     const restored = new DatabaseSync(path.join(target, 'data/mitra.sqlite'), { readOnly: true });
     try { assert.equal(JSON.parse(restored.prepare("SELECT data FROM collections WHERE name='app'").get().data).knowledge[0].id, 'RESTORE-PROBE'); }
     finally { restored.close(); }
     assert.equal(fs.readFileSync(path.join(target, 'uploads/example.txt'), 'utf8'), 'fixture asset');
+    assert.equal(fs.readFileSync(path.join(target, 'official-sources/notice.txt'), 'utf8'), 'official notice fixture');
     assert.throws(() => restoreBackup(backup, target), /new directory/);
     const manifestPath = path.join(backup, 'manifest.json');
     const original = fs.readFileSync(manifestPath, 'utf8');

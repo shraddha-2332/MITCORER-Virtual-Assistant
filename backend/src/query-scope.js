@@ -25,6 +25,17 @@ export const branchPatterns = {
 };
 export const servicePatterns = { hostel: /\bhostel\b/g, mess: /\bmess\b/g, transport: /\bbus\b|\btransport\b/g, library: /\blibrary\b|\bjournal\b/g };
 
+const feeService = '(?:hostel|accommodation|mess|bus|transport(?:ation)?)(?:\\s+(?:fees?|charges?|costs?|deposit))?';
+const excludedFeeServices = new RegExp(
+  `[, ]+(?:but\\s+)?(?:do not include|don['’]t include|without|excluding|exclude|except)\\s+(?:the\\s+)?${feeService}\\b(?:\\s*(?:,\\s*(?:and\\s+)?|\\band\\s+|\\bor\\s+)${feeService}\\b)*`,
+  'gi',
+);
+
+export function omitExcludedFeeServices(question) {
+  return question.replace(excludedFeeServices, (clause, offset) =>
+    /\b(?:fees?|tuition|charges?|costs?)\b/i.test(question.slice(0, offset)) ? '' : clause);
+}
+
 export function fieldValues(text, patterns) {
   const positive = new Set(), excluded = new Set(), mentions = [], excludedMentions = [];
   for (const [value, pattern] of Object.entries(patterns)) for (const match of text.matchAll(pattern)) {

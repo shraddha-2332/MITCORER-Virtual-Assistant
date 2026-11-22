@@ -1,18 +1,14 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { fileURLToPath } from 'node:url';
+import { config } from './config.js';
 
-const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const corpusDir = path.resolve(backendRoot, 'data/website-corpus');
-const indexPath = path.join(corpusDir, 'document-index.sqlite');
 let indexDb;
 
 function openIndex() {
   if (indexDb) return indexDb;
-  if (!fs.existsSync(indexPath)) return null;
+  if (!fs.existsSync(config.documentIndexFile)) return null;
   try {
-    indexDb = new DatabaseSync(indexPath, { readOnly: true });
+    indexDb = new DatabaseSync(config.documentIndexFile, { readOnly: true });
     return indexDb;
   } catch {
     return null;
@@ -23,8 +19,15 @@ export function isDocumentSearchQuery(question) {
   const value = String(question || '');
   if (/\b(?:bus|transport|village|route|fare|stop)\b/i.test(value)
     && /\b(?:timetable|schedule|timing|fare|route|stop|from my village)\b/i.test(value)) return false;
-  return /\b(?:pdf|brochure|prospectus|syllabus|question\s*papers?|\bpaper\b|previous\s+(?:year|years|exam)\s+papers?|past\s+papers?|academic\s+calendar|departmental\s+calendar|timetable|mandatory\s+disclosure|placement\s+policy|internship\s+(?:policy|record)|mou|memorandum|annual\s+report|research\s+papers?|patents?|semester\s+schedule)\b/i.test(value)
+  return isExamTimetableQuery(value)
+    || /\b(?:pdf|brochure|prospectus|syllabus|question\s*papers?|\bpaper\b|previous\s+(?:year|years|exam)\s+papers?|past\s+papers?|academic\s+calendar|departmental\s+calendar|timetable|mandatory\s+disclosure|placement\s+policy|internship\s+(?:policy|record)|mou|memorandum|annual\s+report|research\s+papers?|patents?|semester\s+schedule)\b/i.test(value)
     || /\bsemester\s*(?:i|ii|1|2|first|second)\b/i.test(value) && /\b(?:exact\s+date|what\s+date|start(?:s|ing)?\s+date|when\s+(?:does|will).{0,35}start)\b/i.test(value);
+}
+
+export function isExamTimetableQuery(question) {
+  return /\b(?:exam(?:ination)?s?|pahsu|solapur university|sus\.ac\.in)\b/i.test(question)
+    && /\b(?:time[ -]?table|schedule|exam(?:ination)? dates?)\b/i.test(question)
+    && !/\b(?:bus|transport|question papers?|past papers?)\b/i.test(question);
 }
 
 export function searchDocumentCorpus(question, limit = 5) {
@@ -63,6 +66,9 @@ export function searchDocumentCorpus(question, limit = 5) {
       || (branch === 'mechanical' && /mechanical|\bmech\b/.test(title))
     );
     const requiresSyllabusTitle = /\bsyllabus\b/i.test(normalizedQuestion);
+    const requiresTimetable = isExamTimetableQuery(normalizedQuestion);
+    const sessionYear = normalizedQuestion.match(/\b20\d{2}\b/)?.[0];
+    const sessionMonth = normalizedQuestion.match(/\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b/)?.[0];
     const scored = rows.map((row) => {
       const title = row.title.normalize('NFKC').toLocaleLowerCase();
       const text = row.content.normalize('NFKC').toLocaleLowerCase();
@@ -88,6 +94,10 @@ export function searchDocumentCorpus(question, limit = 5) {
       const title = item.row.title.normalize('NFKC').toLocaleLowerCase();
       if (branch && !matchesBranchTitle(title)) return false;
       if (requiresSyllabusTitle && !/\bsyllabus\b/i.test(title)) return false;
+      if (requiresTimetable && (!sessionYear || !title.includes(sessionYear)
+        || (sessionMonth && !title.includes(sessionMonth))
+        || !/\b(?:time[ -]?table|exam(?:ination)? schedule)\b/.test(title)
+        || /\b(?:question|past) papers?\b/.test(title))) return false;
       if (semester && !new RegExp(`(?:sem(?:ester)?[ _.-]*${semester === 1 ? '(?:1|i)' : '(?:2|ii)'})`, 'i').test(title)) return false;
       if (requestedYear && !(title.includes(requestedYear[1]) && title.includes(requestedYear[2].slice(-2)))) return false;
       if (!branch && /\b(?:cse|ece|entc|civil|mechanical)\b/.test(title)) item.specificity -= 35;
