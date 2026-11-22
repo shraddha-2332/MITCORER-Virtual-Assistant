@@ -21,7 +21,7 @@ async function fixture(run) {
     return { status: response.status, ...(await response.json()) };
   };
   try {
-    const login = await call('/api/auth/login', { email: 'admin@mitcorer.edu.in', password: 'mitra' });
+    const login = await call('/api/auth/login', { email: 'admin@example.test', password: 'local-fixture-password' });
     await run(call, login.data.token);
   } finally {
     await new Promise(resolve => server.close(resolve)); closeDb();

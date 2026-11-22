@@ -127,7 +127,7 @@ test('POST /api/official-sources/sync is paused and cannot change records', asyn
     const applicantLogin = await request(base, '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'applicant@example.com', password: 'mitra' }),
+      body: JSON.stringify({ email: 'applicant@example.com', password: 'local-fixture-password' }),
     });
     const applicantToken = applicantLogin.payload.data.token;
     const forbidden = await request(base, '/api/official-sources/sync', {
@@ -139,7 +139,7 @@ test('POST /api/official-sources/sync is paused and cannot change records', asyn
     const adminLogin = await request(base, '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@mitcorer.edu.in', password: 'mitra' }),
+      body: JSON.stringify({ email: 'admin@example.test', password: 'local-fixture-password' }),
     });
     const adminToken = adminLogin.payload.data.token;
     const sourcesBefore = getDb().officialSources.length;
@@ -307,7 +307,7 @@ test('API refuses to republish answers from a source still marked unreachable', 
     });
     const login = await request(base, '/api/auth/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'admin@mitcorer.edu.in', password: 'mitra' }),
+      body: JSON.stringify({ email: 'admin@example.test', password: 'local-fixture-password' }),
     });
     const token = login.payload.data.token;
     const publish = await request(base, '/api/official-sources/SRC-UNREACHABLE/publish', {

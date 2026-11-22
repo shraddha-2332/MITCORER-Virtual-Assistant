@@ -62,12 +62,12 @@ test('operations API enforces anonymous/applicant/staff/admin permissions and re
     return { status: response.status, payload: await response.json() };
   };
   const login = async email => {
-    const result = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: 'mitra' }) });
+    const result = await fetch(base + '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: 'local-fixture-password' }) });
     return (await result.json()).data.token;
   };
   try {
     assert.equal((await request('/api/assistant/operations')).status, 401);
-    const applicant = await login('applicant@example.com'), staff = await login('staff@mitcorer.edu.in'), admin = await login('admin@mitcorer.edu.in');
+    const applicant = await login('applicant@example.com'), staff = await login('staff@example.test'), admin = await login('admin@example.test');
     assert.equal((await request('/api/assistant/operations', applicant)).status, 403);
     await answerAdmissionQuestion({ question: 'What is the weather in Barshi?' }, null);
     assert.equal((await request('/api/assistant/operations', staff)).payload.data.diagnostics.events, undefined);

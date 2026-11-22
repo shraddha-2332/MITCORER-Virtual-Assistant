@@ -6,7 +6,7 @@ import { config } from './config.js';
 import facultyProfileCaptures from './faculty-profile-captures.json' with { type: 'json' };
 import { knowledgeTranslations } from './knowledge-translations.js';
 
-const passwordHash = hashPassword('mitra', 'mitra-seed-salt');
+const passwordHash = hashPassword('local-fixture-password', 'mitra-seed-salt');
 const placementPlatformsText = 'MITCORER students can check POD, Superset, TalentBattle, and Unstop for placement drives and internship opportunities. Confirm with the Training and Placement Cell which platforms are active, how to access them, and whether they currently list relevant openings. Platform listings do not guarantee an interview, internship, placement, company, or package.';
 
 export const seedKnowledge = [
@@ -896,8 +896,8 @@ export function createSeedData() {
   const defaultUsers = [
     { id: 'USR-APP', name: 'Applicant', email: 'applicant@example.com', role: 'applicant', passwordHash, createdAt },
     { id: 'USR-PAR', name: 'Parent', email: 'parent@example.com', role: 'parent', passwordHash, createdAt },
-    { id: 'USR-STF', name: 'Shobhana Raichurkar', email: 'staff@mitcorer.edu.in', role: 'staff', passwordHash, createdAt },
-    { id: 'USR-ADM', name: 'Dean', email: 'admin@mitcorer.edu.in', role: 'admin', passwordHash, createdAt },
+    { id: 'USR-STF', name: 'Test Staff', email: 'staff@example.test', role: 'staff', passwordHash, createdAt },
+    { id: 'USR-ADM', name: 'Test Administrator', email: 'admin@example.test', role: 'admin', passwordHash, createdAt },
   ];
   const productionUsers = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD ? [
     {

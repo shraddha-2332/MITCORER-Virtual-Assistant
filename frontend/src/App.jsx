@@ -250,7 +250,7 @@ function PublicAssistantWidget({ signedIn, token, onLogout, onAdminLogin, onAppl
       return typeof window !== 'undefined' && (new URLSearchParams(window.location.search).has('admin') || window.location.hash === '#admin');
     } catch { return false; }
   });
-  const [adminEmail, setAdminEmail] = useState('admin@mitcorer.edu.in');
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [adminLoggingIn, setAdminLoggingIn] = useState(false);
   const [adminLoginError, setAdminLoginError] = useState('');

@@ -9,8 +9,8 @@ import { hashPassword, verifyPassword, createToken, verifyToken } from '../src/a
 
 const token = 'a'.repeat(64);
 test('retired CampusGuard demo password alias is rejected', () => {
-  const seedHash = hashPassword('mitra', 'mitra-seed-salt');
-  assert.equal(verifyPassword('mitra', seedHash), true);
+  const seedHash = hashPassword('local-fixture-password', 'mitra-seed-salt');
+  assert.equal(verifyPassword('local-fixture-password', seedHash), true);
   assert.equal(verifyPassword('campusguard', seedHash), false);
 });
 beforeEach(() => { config.databaseFile = ':memory:'; config.geminiApiKey = ''; config.trustProxy = false; resetDbForTests(); resetRuntimeStateForTests(); });
@@ -107,11 +107,11 @@ test('new accounts require a valid email and long passphrase, with signup thrott
 });
 
 test('production rejects known demo password hashes and malformed signed token suffixes', () => {
-  const demo = hashPassword('mitra', 'mitra-seed-salt');
+  const demo = hashPassword('local-fixture-password', 'mitra-seed-salt');
   const env = config.nodeEnv;
   try {
     config.nodeEnv = 'production';
-    assert.equal(verifyPassword('mitra', demo), false);
+    assert.equal(verifyPassword('local-fixture-password', demo), false);
     const unique = hashPassword('a-unique-admin-passphrase');
     assert.equal(verifyPassword('a-unique-admin-passphrase', unique), true);
   } finally { config.nodeEnv = env; }

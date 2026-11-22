@@ -29,7 +29,7 @@ async function request(base, path, options = {}) {
   return { response, payload };
 }
 
-async function login(base, email, password = 'mitra') {
+async function login(base, email, password = 'local-fixture-password') {
   const { payload } = await request(base, '/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -72,7 +72,7 @@ test('retired applicant document routes reject applicants and staff without chan
     ['DELETE', '/api/documents/DOC-LEGACY'],
   ];
   await withServer(async (base) => {
-    for (const email of ['applicant@example.com', 'staff@mitcorer.edu.in']) {
+    for (const email of ['applicant@example.com', 'staff@example.test']) {
       const token = await login(base, email);
       for (const [method, route] of routes) {
         const { response } = await request(base, route, {
@@ -89,7 +89,7 @@ test('retired applicant document routes reject applicants and staff without chan
 test('assistant attachments accept staff uploads and reject applicant uploads', async () => {
   await withServer(async (base) => {
     const applicantToken = await login(base, 'applicant@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const staffToken = await login(base, 'staff@example.test');
     const formData = new FormData();
     formData.append('note', 'Please check this notice.');
     formData.append('file', new Blob([validPdfFixture()], { type: 'application/pdf' }), 'notice.pdf');
@@ -108,7 +108,7 @@ test('assistant attachments accept staff uploads and reject applicant uploads', 
 
 test('rejects a file whose declared MIME type does not match its contents', async () => {
   await withServer(async (base) => {
-    const token = await login(base, 'staff@mitcorer.edu.in');
+    const token = await login(base, 'staff@example.test');
     const formData = new FormData();
     formData.append('file', new Blob(['not a PDF'], { type: 'application/pdf' }), '10th-marksheet.pdf');
     const response = await fetch(`${base}/api/assistant/attachments/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });

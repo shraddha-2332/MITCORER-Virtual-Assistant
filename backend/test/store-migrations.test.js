@@ -233,10 +233,10 @@ for (const nodeEnv of ['development', 'production']) {
       sqlite.close();
 
       config.nodeEnv = nodeEnv;
-      process.env.ADMIN_EMAIL = 'admin@mitcorer.edu.in';
+      process.env.ADMIN_EMAIL = 'admin@example.test';
       process.env.ADMIN_PASSWORD = 'TestPass@2026!Secure';
       const migrated = loadDb();
-      const admin = migrated.users.find(item => item.email === 'admin@mitcorer.edu.in');
+      const admin = migrated.users.find(item => item.email === 'admin@example.test');
       assert.equal(verifyPassword(process.env.ADMIN_PASSWORD, admin.passwordHash), true);
       assert.equal(migrated.refreshTokens.find(item => item.id === 'RT-ADMIN-TEST').revoked, true);
     } finally {

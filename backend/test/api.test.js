@@ -33,7 +33,7 @@ async function request(base, path, options = {}) {
   return { response, payload };
 }
 
-async function login(base, email, password = 'mitra') {
+async function login(base, email, password = 'local-fixture-password') {
   const { payload } = await request(base, '/api/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
@@ -95,8 +95,8 @@ test('assistant rejects invalid questions with structured 400 errors on both end
 
 test('knowledge edits require admin privileges and reject invalid requests without changes', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
-    for (const email of ['applicant@example.com', 'parent@example.com', 'staff@mitcorer.edu.in', null]) {
+    const admin = await login(base, 'admin@example.test');
+    for (const email of ['applicant@example.com', 'parent@example.com', 'staff@example.test', null]) {
       const token = email ? await login(base, email) : null;
       const result = await request(base, '/api/knowledge/KB-2', { method: 'PATCH',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -116,7 +116,7 @@ test('knowledge edits require admin privileges and reject invalid requests witho
 
 test('admin changes update public factual answers, persist on disk reload and reject stale revisions', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const library = await request(base, '/api/knowledge', { headers });
     const record = library.payload.data.items.find((item) => item.id === 'KB-2');
@@ -143,7 +143,7 @@ test('admin changes update public factual answers, persist on disk reload and re
 
 test('retirement suppresses managed fees, hostel, intake and historical figures rather than using hardcoded fallbacks', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     for (const [id, question] of [['KB-2', 'First year Open fee'], ['KB-3', 'Hostel and mess fees'], ['KB-10', 'Current CSE intake and choice code'], ['KB-6', 'Historical seat matrix']]) {
       const retired = await request(base, `/api/knowledge/${id}`, { method: 'PATCH', headers: { Authorization: `Bearer ${admin}` }, body: JSON.stringify({ expectedRevision: 0, status: 'Retired' }) });
       assert.equal(retired.response.status, 200);
@@ -158,7 +158,7 @@ test('retirement suppresses managed fees, hostel, intake and historical figures 
 
 test('programme intake updates and annual fee year checks use the maintained canonical record', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const list = await request(base, '/api/knowledge', { headers });
     const record = list.payload.data.items.find((item) => item.id === 'KB-10');
@@ -177,7 +177,7 @@ test('programme intake updates and annual fee year checks use the maintained can
 
 test('knowledge creation defaults to review and supports revisioned plain-text edits', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const created = await request(base, '/api/knowledge', { method: 'POST', headers, body: JSON.stringify({ title: 'New notice', category: 'Admissions', source: 'College circular', text: 'Reviewed notice text' }) });
     assert.equal(created.response.status, 200);
@@ -194,8 +194,8 @@ test('knowledge creation defaults to review and supports revisioned plain-text e
 
 test('knowledge deletion is admin-only, revision-checked, audited, and limited to archived unlinked records', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
-    const staff = await login(base, 'staff@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
+    const staff = await login(base, 'staff@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const created = await request(base, '/api/knowledge', { method: 'POST', headers,
       body: JSON.stringify({ title: 'Temporary notice', category: 'Admissions', source: 'Admin review', text: 'Temporary verified text.' }) });
@@ -248,7 +248,7 @@ test('existing plain-text fee records can be edited and explicitly converted wit
   delete record.facts;
   resetDbForTests(seed);
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const plain = await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers,
       body: JSON.stringify({ expectedRevision: 0, text: 'For AY 2026-27, reviewed first year Open fee is INR 12,345.', verifySource: true }) });
@@ -269,7 +269,7 @@ test('existing plain-text fee records can be edited and explicitly converted wit
 
 test('hostel totals and academic years are computed from edited fields', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const edited = await request(base, '/api/knowledge/KB-3', { method: 'PATCH', headers: { Authorization: `Bearer ${admin}` },
       body: JSON.stringify({ expectedRevision: 0, facts: { kind: 'accommodationFees', academicYear: '2027-28', hostel: 21000, refundableDeposit: 1000, messAnnual: 12000 }, verifySource: true }) });
     assert.equal(edited.response.status, 200);
@@ -303,7 +303,7 @@ test('public compound answers cover each supported topic and return usable citat
 
 test('compound answers keep unsupported parts explicit and never revive retired records', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     await request(base, '/api/knowledge/KB-2', { method: 'PATCH', headers: { Authorization: `Bearer ${admin}` }, body: JSON.stringify({ expectedRevision: 0, status: 'Retired' }) });
     const result = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'List first year B.Tech courses and the academic fee for 2026-27.' }) });
     assert.deepEqual(result.payload.data.sections.map((item) => item.status), ['supported', 'unsupported']);
@@ -431,13 +431,13 @@ test('native-script compound questions preserve references and clarify bare pron
 
 test('admin-reviewed passage translations become unavailable after their English source changes', async () => {
   await withServer(async (base) => {
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const headers = { Authorization: `Bearer ${admin}` };
     const text = 'The library has digital resources. Confirm borrowing rules and timings with the library.';
     const mr = 'ग्रंथालयात डिजिटल साधने उपलब्ध आहेत. पुस्तके घेण्याचे नियम व वेळा ग्रंथालयाकडून निश्चित करा.';
     const edited = await request(base, '/api/knowledge/KB-20', { method: 'PATCH', headers, body: JSON.stringify({ expectedRevision: 0, text, translations: { mr }, verifySource: true }) });
     assert.equal(edited.response.status, 200);
-    assert.equal(edited.payload.data.translations.mr.reviewedBy, 'admin@mitcorer.edu.in');
+    assert.equal(edited.payload.data.translations.mr.reviewedBy, 'admin@example.test');
     closeDb();
     const translated = await request(base, '/api/public-assistant/ask', { method: 'POST', body: JSON.stringify({ question: 'ग्रंथालयाची माहिती सांगा.', language: 'mr' }) });
     assert.equal(translated.payload.data.answer, mr);
@@ -860,11 +860,11 @@ test('history is private to each account, including staff and admin, and require
   await withServer(async (base) => {
     const signup = await request(base, '/api/auth/signup', { method: 'POST', body: JSON.stringify({ name: 'Second applicant', email: 'second-applicant@example.com', password: 'isolated-test-passphrase', role: 'applicant' }) });
     assert.equal(signup.response.status, 200);
-    const accounts = ['applicant@example.com', 'second-applicant@example.com', 'parent@example.com', 'staff@mitcorer.edu.in', 'admin@mitcorer.edu.in'];
+    const accounts = ['applicant@example.com', 'second-applicant@example.com', 'parent@example.com', 'staff@example.test', 'admin@example.test'];
     const tokens = [];
     const ids = [];
     for (const email of accounts) {
-      const token = await login(base, email, email === 'second-applicant@example.com' ? 'isolated-test-passphrase' : 'mitra');
+      const token = await login(base, email, email === 'second-applicant@example.com' ? 'isolated-test-passphrase' : 'local-fixture-password');
       tokens.push(token);
       const created = await request(base, '/api/conversations/ask', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ question: 'bus facility?', ownerId: 'USR-ADM' }) });
       assert.equal(created.response.status, 200);
@@ -897,7 +897,7 @@ test('malformed access tokens receive an authentication error instead of a serve
 test('inquiry lifecycle returns assigned staff replies only to the owning applicant', async () => {
   await withServer(async (base) => {
     const applicantToken = await login(base, 'applicant@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const staffToken = await login(base, 'staff@example.test');
     const parentToken = await login(base, 'parent@example.com');
     const created = await request(base, '/api/inquiries', {
       method: 'POST',
@@ -937,7 +937,7 @@ test('applicant cannot access staff reports', async () => {
       method: 'PATCH', headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ section: 'cap', value: { route: 'btech-fy', channel: 'cap', stage: 'Allotment checked' } }),
     });
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const staffToken = await login(base, 'staff@example.test');
     const report = await request(base, '/api/reports', { headers: { Authorization: `Bearer ${staffToken}` } });
     assert.equal(report.response.status, 200);
     assert.equal(report.payload.data.savedAdmissionChecklists, 1);
@@ -950,7 +950,7 @@ test('admission workspace persists per user and is unavailable to staff', async 
   await withServer(async (base) => {
     const applicantToken = await login(base, 'applicant@example.com');
     const parentToken = await login(base, 'parent@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const staffToken = await login(base, 'staff@example.test');
     const saved = await request(base, '/api/admission-workspace', {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${applicantToken}` },
@@ -988,7 +988,7 @@ test('content records require an authenticated user', async () => {
 test('staff can read audit logs after workflow actions', async () => {
   await withServer(async (base) => {
     const applicantToken = await login(base, 'applicant@example.com');
-    const staffToken = await login(base, 'staff@mitcorer.edu.in');
+    const staffToken = await login(base, 'staff@example.test');
     await request(base, '/api/inquiries', {
       method: 'POST',
       headers: { Authorization: `Bearer ${applicantToken}` },
@@ -1505,7 +1505,7 @@ test('assistant routes real Marathi and Hindi seat-matrix and deadline questions
 
 test('college admin can upload and list an official knowledge source', async () => {
   await withServer(async (base) => {
-    const token = await login(base, 'admin@mitcorer.edu.in');
+    const token = await login(base, 'admin@example.test');
     const formData = new FormData();
     formData.append('title', 'CAP Round I cutoff sample');
     formData.append('documentType', 'Cutoff');
@@ -1535,7 +1535,7 @@ test('college admin can upload and list an official knowledge source', async () 
 
 test('admin-reviewed extracted source text becomes published retrieval knowledge', async () => {
   await withServer(async (base) => {
-    const adminToken = await login(base, 'admin@mitcorer.edu.in');
+    const adminToken = await login(base, 'admin@example.test');
     const formData = new FormData();
     formData.append('title', 'MITRA source ingestion test notice');
     formData.append('documentType', 'Admissions');
@@ -1607,7 +1607,7 @@ test('refresh token rotates session and logout revokes it', async () => {
   await withServer(async (base) => {
     const loginResponse = await request(base, '/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: 'applicant@example.com', password: 'mitra' }),
+      body: JSON.stringify({ email: 'applicant@example.com', password: 'local-fixture-password' }),
     });
     assert.equal(loginResponse.payload.data.refreshToken, undefined);
     const refreshCookie = loginResponse.response.headers.get('set-cookie');
@@ -1960,7 +1960,7 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalateResult.payload.data.routing.notificationSent, false);
 
     // 3. Verify inquiry is saved in store with High priority and Needs reply status
-    const admin = await login(base, 'admin@mitcorer.edu.in');
+    const admin = await login(base, 'admin@example.test');
     const inquiriesList = await request(base, '/api/inquiries', {
       headers: { Authorization: `Bearer ${admin}` },
     });

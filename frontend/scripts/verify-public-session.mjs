@@ -1,15 +1,26 @@
 import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 import { createServer as createViteServer } from 'vite';
 import { config } from '../../backend/src/config.js';
+import { hashPassword } from '../../backend/src/auth.js';
 import { createServer, resetRuntimeStateForTests } from '../../backend/src/server.js';
-import { resetDbForTests, getDb, closeDb } from '../../backend/src/store.js';
+import { resetDbForTests, getDb, saveDb, closeDb } from '../../backend/src/store.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 config.databaseFile = ':memory:';
 config.geminiApiKey = '';
 resetDbForTests();
+const applicantEmail = `applicant-${randomBytes(8).toString('hex')}@example.test`;
+const applicantPassword = randomBytes(24).toString('base64url');
+const staffEmail = `staff-${randomBytes(8).toString('hex')}@example.test`;
+const staffPassword = randomBytes(24).toString('base64url');
+const applicantFixture = getDb().users.find(user => user.role === 'applicant');
+const staffFixture = getDb().users.find(user => user.role === 'staff');
+Object.assign(applicantFixture, { email: applicantEmail, passwordHash: hashPassword(applicantPassword) });
+Object.assign(staffFixture, { email: staffEmail, passwordHash: hashPassword(staffPassword) });
+saveDb();
 const backend = createServer();
 let browser, vite;
 try {
@@ -139,8 +150,8 @@ try {
   await checklist.getByRole('checkbox', { name: '10th marksheet' }).check();
   await checklist.getByRole('button', { name: 'Save my checklist' }).click();
   const signIn = page.getByRole('dialog', { name: 'Sign in to save your checklist' });
-  await signIn.getByLabel('Email').fill('applicant@example.com');
-  await signIn.getByLabel('Password').fill('mitra');
+  await signIn.getByLabel('Email').fill(applicantEmail);
+  await signIn.getByLabel('Password').fill(applicantPassword);
   await signIn.getByRole('button', { name: 'Sign in', exact: true }).click();
   await checklist.waitFor();
   assert.equal(await checklist.getByRole('checkbox', { name: '10th marksheet' }).isChecked(), true);
@@ -154,7 +165,7 @@ try {
 
   const staff = await browser.newContext();
   const staffLogin = await staff.request.post(`${origin}/api/auth/login`, {
-    data: { email: 'staff@mitcorer.edu.in', password: 'mitra' },
+    data: { email: staffEmail, password: staffPassword },
   });
   assert.equal(staffLogin.status(), 200);
   const staffPage = await staff.newPage();
@@ -183,7 +194,7 @@ try {
   assert.equal(getDb().feedback.find(item => item.id === feedbackId).status, 'Resolved');
 
   await staffNav.getByRole('button', { name: 'Saved admission checklists', exact: true }).click();
-  const savedChecklist = staffPage.locator('.applicantAdminCard').filter({ hasText: 'applicant@example.com' });
+  const savedChecklist = staffPage.locator('.applicantAdminCard').filter({ hasText: applicantEmail });
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   await savedChecklist.getByText('10th marksheet', { exact: true }).waitFor();
   assert.equal(await staffNav.getByRole('button', { name: 'Document review', exact: true }).count(), 0);

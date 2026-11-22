@@ -96,7 +96,7 @@ async function main() {
   try {
     const login = await request(base, '/api/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email: 'applicant@example.com', password: 'mitra' }),
+      body: JSON.stringify({ email: 'applicant@example.com', password: 'local-fixture-password' }),
     });
     const token = login.payload.data.token;
     const failures = [];
