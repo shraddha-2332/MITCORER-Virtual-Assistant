@@ -254,11 +254,12 @@ test('reported admission, programme, syllabus, scholarship, transit, and placeme
     ];
     for (const [question, mustMatch, mustNotMatch] of cases) {
       const answer = await ask(question);
-      const expectedOutcome = question.includes('vacancy') ? 'INSUFFICIENT_EVIDENCE'
+      const expectedOutcome = /vacancy|bus routes and timings/.test(question) ? 'INSUFFICIENT_EVIDENCE'
         : question.includes('required documents as a checklist') ? 'NEEDS_CLARIFICATION' : 'ANSWERED';
       assert.equal(answer.outcomeStatus, expectedOutcome, `${question}: ${answer.outcomeStatus}`);
       assert.match(answer.answer, mustMatch, question);
       assert.doesNotMatch(answer.answer, mustNotMatch, question);
+      if (question.includes('bus routes and timings')) assert.equal(answer.escalation?.available, true);
     }
     const reservedFee = await ask('What fee applies to an eligible reserved category student?');
     assert.equal(reservedFee.outcomeStatus, 'NEEDS_CLARIFICATION');

@@ -16,7 +16,7 @@ config.geminiApiKey = '';
 resetDbForTests();
 const applicantEmail = `applicant-${randomBytes(8).toString('hex')}@example.test`;
 const applicantPassword = randomBytes(24).toString('base64url');
-const staffEmail = `staff-${randomBytes(8).toString('hex')}@example.test`;
+const staffEmail = 'niraj.adhye@mitcorer.edu.in';
 const staffPassword = randomBytes(24).toString('base64url');
 const applicantFixture = getDb().users.find(user => user.role === 'applicant');
 const staffFixture = getDb().users.find(user => user.role === 'staff');
@@ -135,6 +135,7 @@ try {
   const { inquiryId } = (await (await pendingInquiry).json()).data;
   await inquiry.getByText(inquiryId, { exact: false }).waitFor();
   assert.ok(getDb().inquiries.some(item => item.id === inquiryId && item.contact === 'visitor@example.test'));
+  assert.equal(getDb().inquiries.find(item => item.id === inquiryId).routingQueue, 'Admissions Cell');
 
   const openChecklistFromMainMenu = async () => {
     await quickReplies.getByRole('button', { name: 'More topics', exact: true }).click();
@@ -181,6 +182,16 @@ try {
   saveDb();
   recordAssistantUsage(understandQuery('Where can I find the exam timetable?'), 'INSUFFICIENT_EVIDENCE');
   const staff = await browser.newContext();
+  const accountsQuestion = 'Can I pay my fees in installments?';
+  const accountsEscalation = await stranger.request.post(`${origin}/api/public/escalate`, {
+    data: { contact: 'routing-check@example.test', question: accountsQuestion, topic: 'Admissions' },
+  });
+  assert.equal(accountsEscalation.status(), 200);
+  const { inquiryId: accountsId, routing } = (await accountsEscalation.json()).data;
+  assert.equal(routing.queue, 'Accounts Section');
+  assert.equal(routing.assigned, true);
+  assert.equal(routing.notificationSent, false);
+  assert.equal(getDb().inquiries.find(item => item.id === accountsId).assigneeId, staffFixture.id);
   const staffLogin = await staff.request.post(`${origin}/api/auth/login`, {
     data: { email: staffEmail, password: staffPassword },
   });
@@ -220,6 +231,12 @@ try {
   }
   assert.equal(await staffPage.locator('.adminPendingList').getByText(expiryFixtures[2].title, { exact: true }).count(), 0);
   await staffNav.getByRole('button', { name: 'Review inbox', exact: true }).click();
+  const myRequests = staffPage.getByRole('button', { name: /My requests/ });
+  await myRequests.click();
+  const routedRow = staffPage.locator('.inquiryList').getByRole('button', { name: new RegExp(accountsQuestion.replace('?', '\\?')) });
+  await routedRow.waitFor();
+  assert.equal(await staffPage.locator('.inquiryList').getByText(inquiryQuestion, { exact: true }).count(), 0);
+  await myRequests.click();
   await staffPage.locator('.inquiryList').getByRole('button').filter({ hasText: inquiryQuestion }).click();
   await staffPage.locator('.inquiryDetail').getByText(inquiryId, { exact: true }).waitFor();
   const activity = staffPage.getByRole('region', { name: 'Request activity' });
@@ -283,7 +300,7 @@ try {
   await savedChecklist.getByText('Allotment checked', { exact: true }).waitFor();
   for (const width of [320, 768, 1440]) {
     await staffPage.setViewportSize({ width, height: 900 });
-    for (const name of ['Overview', 'Knowledge Base', 'Analytics', 'Review inbox', 'Applicant Progress']) {
+    for (const name of ['Overview', 'Knowledge Base', 'Analytics', 'Offices', 'Review inbox', 'Applicant Progress']) {
       if (width <= 820) await staffPage.getByRole('button', { name: 'Open navigation' }).click();
       await staffNav.getByRole('button', { name, exact: true }).click();
       await staffPage.locator('.adminPageHeader').getByRole('heading', { name, exact: true }).waitFor();

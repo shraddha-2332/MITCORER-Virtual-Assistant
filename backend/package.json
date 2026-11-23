@@ -24,6 +24,7 @@
     "check": "node --check src/server.js",
     "backup": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning scripts/backup-data.js",
     "provision:admin": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning scripts/provision-admin.js",
+    "provision:office-staff": "node --env-file-if-exists=.env --no-warnings=ExperimentalWarning scripts/provision-office-staff.js",
     "sync:website": "node --no-warnings=ExperimentalWarning scripts/sync-website.js",
     "db:inspect": "node --no-warnings=ExperimentalWarning scripts/inspect-database.js"
   },

@@ -11,6 +11,7 @@ import { createSeedData, seedKnowledge, seedOfficialSources } from './seed.js';
 import { knowledgeTranslations } from './knowledge-translations.js';
 import { resolveSourceUrl, missingReferences } from './source-links.js';
 import { supportsMaintainedClaim } from './maintained-claim-support.js';
+import { routeUnassignedEscalations } from './office-routing.js';
 
 let db = null;
 let sqlite = null;
@@ -200,6 +201,7 @@ function normalizeDb(nextDb) {
     }),
     // Remove known development-only requests from earlier sample data. Preserve real visitor requests.
     inquiries: (nextDb.inquiries || []).filter((item) => !['INQ-2401', 'INQ-2402', 'INQ-2403'].includes(item.id)),
+    additionalOffices: Array.isArray(nextDb.additionalOffices) ? nextDb.additionalOffices : [],
     documents: (nextDb.documents || []).filter((item) => !['DOC-SEED-1', 'DOC-SEED-2'].includes(item.id)).map((item) =>
       item.status === 'Uploaded for review'
         ? {
@@ -1033,17 +1035,19 @@ export function loadDb() {
         source.linkedKnowledgeCount = Math.max(source.linkedKnowledgeCount || 0, 1);
         delete source.freshnessImpact;
       }
-      const obsoletePlaceholder = db.officialSources.find(item => item.id === 'SRC-UNREACHABLE'
-        && item.sourceUrl === 'https://mitcorer.edu.in/removed.php');
-      const placeholderLinked = obsoletePlaceholder && db.knowledge.some(item =>
-        item.sourceDocumentId === obsoletePlaceholder.id || item.provenance?.documentId === obsoletePlaceholder.id);
-      if (obsoletePlaceholder && !placeholderLinked) {
-        db.officialSources = db.officialSources.filter(item => item !== obsoletePlaceholder);
-      }
       db.migrations.push(OWNER_CONFIRMED_BIOMETRIC_MIGRATION);
       didMigrate = true;
     }
-    if (hadDemoInquiries || hadDemoDocuments || didMigrate) {
+    // A legacy fixture can be present even when the biometric migration is recorded.
+    const obsoletePlaceholder = db.officialSources.find(item => item.id === 'SRC-UNREACHABLE'
+      && item.sourceUrl === 'https://mitcorer.edu.in/removed.php');
+    const removedPlaceholder = Boolean(obsoletePlaceholder
+      && !obsoletePlaceholder.knowledgeIds?.length && !obsoletePlaceholder.linkedKnowledgeIds?.length
+      && !db.knowledge.some(item =>
+        item.sourceDocumentId === obsoletePlaceholder.id || item.provenance?.documentId === obsoletePlaceholder.id));
+    if (removedPlaceholder) db.officialSources = db.officialSources.filter(item => item !== obsoletePlaceholder);
+    const routingChanged = routeUnassignedEscalations(db);
+    if (hadDemoInquiries || hadDemoDocuments || didMigrate || removedPlaceholder || routingChanged) {
       saveDb();
     }
     return db;

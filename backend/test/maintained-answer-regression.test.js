@@ -70,6 +70,31 @@ test('everyday phrasing reaches the relevant answer or an explicit verification 
   }
 }));
 
+test('unverified programme, travel and room details stay separate from related published facts', () => fixture(async ask => {
+  for (const [question, expected] of [
+    ['Does MITCORER offer an aerospace engineering degree?', /could not verify that programme/i],
+    ['Is there a computer science PhD at MITCORER?', /could not verify that programme/i],
+    ['Is there a metro station next to the campus?', /could not verify.*metro/i],
+    ['Does MITCORER have an airport shuttle?', /could not verify.*airport/i],
+    ['Do hostel rooms have air conditioning?', /could not verify air conditioning/i],
+    ['Does MITCORER offer MCA?', /could not find an official answer/i],
+  ]) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'INSUFFICIENT_EVIDENCE', question);
+    assert.match(response.answer, expected, question);
+    assert.deepEqual(response.evidence, [], question);
+  }
+  for (const [question, id] of [
+    ['Does MITCORER offer Computer Science and Engineering?', 'KB-10'],
+    ['Do you have a hostel for girls?', 'KB-23'],
+    ['Does MITCORER have a bus facility?', 'KB-19'],
+  ]) {
+    const response = await ask(question);
+    assert.equal(response.outcomeStatus, 'ANSWERED', question);
+    assert.ok(response.evidence.some(record => record.id === id), question);
+  }
+}));
+
 test('developer review regressions preserve fee scope and personal outcome limits', () => fixture(async ask => {
   const fee = await ask('For 2026-27 DSE, what fee is listed for OBC girls?');
   assert.equal(fee.outcomeStatus, 'ANSWERED');

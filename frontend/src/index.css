@@ -1046,6 +1046,34 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .adminPage { max-width: 1240px; margin-inline: auto; gap: 16px; grid-template-columns: minmax(0, 1fr); }
 .adminPageHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: clamp(14px, 3vw, 22px); border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 .adminPageHeader > div { min-width: 0; }
+.officeTableWrap, .officeForm { padding: clamp(14px, 2vw, 22px); border-radius: 12px; }
+.officeTableWrap { min-width: 0; overflow-x: auto; }
+.officeTable { width: 100%; min-width: 540px; border-collapse: collapse; text-align: left; }
+.officeTable th, .officeTable td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.officeTable thead th { color: var(--muted); font-size: .75rem; letter-spacing: .045em; text-transform: uppercase; }
+.officeTable tbody th { font-weight: 650; }
+.officeTable tbody small { display: block; margin-top: 3px; color: var(--muted); }
+.officeTable .officeCount { text-align: center; font-variant-numeric: tabular-nums; }
+.officeRowActions, .officeFormActions { display: flex; align-items: center; gap: 8px; }
+.officeFormActions { margin-top: 14px; }
+.officeFormActions .inlineAction { margin-top: 0; }
+.officeRowActions .miniEditBtn, .officeFormActions .miniEditBtn { border: 1px solid #c9dfd7; background: #edf7f3; color: #146548; }
+.officeRowActions .miniEditBtn:hover:not(:disabled), .officeFormActions .miniEditBtn:hover:not(:disabled) { background: #deefe8; }
+.officeRowActions .officeDeleteButton { border-color: #eccdcd; background: #fff2f2; color: #9d2525; }
+.officeRowActions .officeDeleteButton:hover:not(:disabled) { background: #f9e2e2; }
+.officeDeleteDialog { width: min(440px, calc(100% - 32px)); padding: 22px; border: 1px solid var(--line); border-radius: 12px; color: var(--ink); }
+.officeDeleteDialog::backdrop { background: rgb(16 29 39 / 48%); }
+.officeDeleteDialog h3 { margin: 0; }
+.officeDeleteDialog p { line-height: 1.5; }
+.officeDeleteDialog .officeFormActions { justify-content: flex-end; }
+.officeDeleteConfirm { min-height: 36px; padding: 6px 12px; border-radius: 7px; background: #9d2525; color: #fff; font: inherit; cursor: pointer; }
+.officeDeleteConfirm:disabled { opacity: .6; cursor: wait; }
+.officeForm h3 { margin: 0 0 14px; }
+.officeFormFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.officeFormFields > * { display: grid; gap: 6px; min-width: 0; }
+.officeFormFields label { font-weight: 600; }
+.officeFormFields input, .officeFormFields select { width: 100%; min-width: 0; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; }
+@media (max-width: 600px) { .officeFormFields { grid-template-columns: 1fr; } }
 .adminPageHeader h2 { margin: 0; color: var(--ink); font-size: clamp(21px, 3vw, 26px); line-height: 1.2; }
 .adminPageHeader p { margin: 6px 0 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
 .adminRefreshButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 12px; border: 1px solid #b9d3cb; border-radius: 7px; background: #fff; color: var(--green); font-size: 13px; font-weight: 650; cursor: pointer; }
@@ -1082,8 +1110,6 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .adminAllClear span { display: grid; gap: 4px; }
 .adminAllClear strong { font-size: 12px; }
 .adminAllClear small { color: var(--muted); font-size: 11px; }
-.adminWorkspaceNote { display: flex; align-items: flex-start; gap: 9px; padding: 12px 14px; border: 1px solid #dce6eb; border-radius: 9px; background: #f6f9fb; color: #536779; font-size: 11px; line-height: 1.5; }
-.adminWorkspaceNote svg { flex: 0 0 auto; color: var(--blue); }
 .adminReferenceGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
 .adminReferenceGrid > button { padding: 20px; border: 1px solid var(--line); border-radius: 11px; background: #fff; text-align: left; box-shadow: 0 6px 20px rgba(24,38,55,.04); cursor: pointer; }
 .adminReferenceGrid > button:hover { border-color: #9bbeb0; transform: translateY(-1px); }
@@ -1373,7 +1399,7 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .assistantOperationsHead button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border-radius: 8px; background: var(--green); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
 .assistantOperationsHead button:disabled { opacity: .6; cursor: wait; }
 .analyticsPage { container-type: inline-size; }
-.analyticsPage .adminMetricGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.analyticsPage .adminMetricGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .assistantAnalyticsGrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; }
 .assistantAnalytics { min-width: 0; padding: clamp(14px, 2vw, 22px); box-shadow: none; border-radius: 12px; }
 .assistantAnalytics h3 { margin: 0; font-size: 1.125rem; line-height: 1.35; }
@@ -1396,7 +1422,10 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 .analyticsChartLegend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: .8125rem; color: var(--muted); }
 .analyticsChartLegend span { display: inline-flex; align-items: center; gap: 6px; }
 .analyticsChartLegend i { width: 10px; height: 10px; border-radius: 50%; }
-@container (max-width: 860px) { .assistantAnalyticsGrid { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 860px) {
+  .assistantAnalyticsGrid { grid-template-columns: minmax(0, 1fr); }
+  .analyticsPage .adminMetricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @container (max-width: 440px) {
   .analyticsPage .adminMetricGrid { grid-template-columns: minmax(0, 1fr); }
   .analyticsChartRow, .analyticsChartRow--topic { grid-template-columns: minmax(0, 1fr) auto; }
@@ -1404,6 +1433,9 @@ td select { min-height: 34px; border: 1px solid var(--line); border-radius: 8px;
 }
 .assistantOperations > p[role="alert"] { padding: 12px; border-radius: 8px; background: #fff5ee; color: #854d0e; }
 .assistantOperations .adminMetricGrid { margin-bottom: 18px; }
+.operationsTriage details { margin-top: 12px; }
+.operationsTriage summary { cursor: pointer; font-weight: 650; }
+.operationsTriage details .operationsTable { margin-top: 8px; }
 .assistantOperations h3 { margin: 22px 0 10px; font-size: 16px; }
 .assistantOperations .operationsTable { border: 1px solid var(--line); border-radius: 8px; }
 .assistantOperations .operationsTable table { width: 100%; border-collapse: collapse; font-size: 13px; }

@@ -6,6 +6,7 @@ const rootDir = path.resolve(__dirname, '..');
 const nodeEnv = process.env.NODE_ENV || 'development';
 const configuredTokenSecret = process.env.TOKEN_SECRET;
 const configuredCorsOrigins = process.env.CORS_ORIGIN || 'http://127.0.0.1:5173';
+const databaseFile = process.env.DATABASE_FILE || (process.env.NODE_TEST_CONTEXT ? ':memory:' : './data/mitra.sqlite');
 
 if (nodeEnv === 'production' && !configuredTokenSecret) {
   throw new Error('TOKEN_SECRET must be configured when NODE_ENV=production.');
@@ -19,7 +20,7 @@ export const config = {
   // A development fallback keeps the local academic demo runnable. Production must supply a secret.
   tokenSecret: configuredTokenSecret || 'mitra-development-only-secret',
   dataFile: path.resolve(rootDir, process.env.DATA_FILE || './data/db.json'),
-  databaseFile: path.resolve(rootDir, process.env.DATABASE_FILE || './data/mitra.sqlite'),
+  databaseFile: databaseFile === ':memory:' ? databaseFile : path.resolve(rootDir, databaseFile),
   uploadDirectory: path.resolve(rootDir, process.env.UPLOAD_DIR || './uploads'),
   officialSourceDirectory: path.resolve(rootDir, process.env.OFFICIAL_SOURCE_DIR || './official-sources'),
   documentIndexFile: path.resolve(rootDir, process.env.DOCUMENT_INDEX_FILE || './data/website-corpus/document-index.sqlite'),

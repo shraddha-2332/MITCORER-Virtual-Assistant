@@ -29,8 +29,6 @@ export function AssistantOperations({ token }) {
     {error && <p role="alert">{error}</p>}
     {data && <>
       <div className="adminMetricGrid">
-        <article><span>Available published records</span><strong>{data.knowledge.availability.available || 0}</strong><small>of {data.knowledge.total}; availability is not certification</small></article>
-        <article><span>Source review recorded</span><strong>{data.knowledge.sourceReview.recorded || 0}</strong><small>{data.knowledge.sourceReview['source-changed'] || 0} changed since review; {data.knowledge.sourceReview['not-recorded'] || 0} not recorded</small></article>
         <article><span>Unreachable sources</span><strong>{data.sourceHealth.unreachable || 0}</strong><small>{data.sourceHealth.unknown || 0} have unknown health</small></article>
         <article><span>Diagnostic items to triage</span><strong>{data.diagnostics.unresolved}</strong><small>Clarifications and refusals may be correct behavior</small></article>
       </div>
@@ -49,12 +47,25 @@ export function AssistantOperations({ token }) {
       </div>
       </div>
       <div id="assistant-unanswered-review" className="operationsTriage">
-      <h3>Unanswered outcome review</h3>
-      <p>Question text is intentionally not stored. Use outcome, evidence IDs, and timestamps to identify patterns; visitor-submitted feedback is available in Review Inbox.</p>
+      <h3>Evidence gaps and triage</h3>
+      {data.diagnostics.evidenceGaps && (data.diagnostics.evidenceGaps.length
+        ? <div className="operationsTable" role="region" tabIndex={0} aria-label="Recent evidence gaps">
+          <table><thead><tr><th scope="col">Question type</th><th scope="col">Reason</th><th scope="col">Evidence IDs</th><th scope="col">Count</th><th scope="col">Last seen</th></tr></thead>
+            <tbody>{data.diagnostics.evidenceGaps.map(gap => <tr key={`${gap.questionType}:${gap.reason}`}>
+              <td>{gap.questionType}</td><td>{gap.reason}</td><td>{gap.evidenceIds.join(', ') || 'None'}</td><td>{gap.count}</td>
+              <td>{new Date(gap.lastSeen).toLocaleString()}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        : <p>No evidence gaps recorded in this process window.</p>)}
+      {data.diagnostics.events && <details>
+      <summary>Individual diagnostic events</summary>
       {data.diagnostics.events ? data.diagnostics.events.length ? <div className="operationsTable" tabIndex={0} aria-label="Redacted diagnostic events"><table><thead><tr><th>Time</th><th>Outcome / language</th><th>Evidence IDs</th><th>Status</th></tr></thead><tbody>{data.diagnostics.events.map(event => <tr key={event.id}>
         <td>{new Date(event.at).toLocaleString()}</td><td>{event.outcome}<br />{event.language} · {event.localization} · {event.elapsedMs ?? '—'} ms</td><td>{event.evidenceIds.join(', ') || 'None'}</td>
         <td><label>Status<select aria-label={`Status for ${event.id}`} value={event.status} disabled={busy} onChange={e => triage(event.id, e.target.value)}>{['Open', 'Investigating', 'Resolved', 'Dismissed'].map(status => <option key={status}>{status}</option>)}</select></label></td>
-      </tr>)}</tbody></table></div> : <p>No diagnostic items in this process window.</p> : <p>Event details and triage require an administrator account.</p>}
+      </tr>)}</tbody></table></div> : <p>No diagnostic items in this process window.</p> : null}
+      </details>}
+      {!data.diagnostics.events && <p>Evidence gap details and triage are available to administrators.</p>}
       </div>
       <p>No visitor question text, answers or personal identifiers are collected by these diagnostics.</p>
     </>}

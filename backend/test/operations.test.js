@@ -25,16 +25,33 @@ test('health distinguishes published availability, changed reviews and unknown s
 test('diagnostics enforce allowlisted fields, bounded retention and triage without collecting private text', () => {
   clearAssistantEvents();
   const now = Date.now();
-  for (let index = 0; index < 510; index++) recordAssistantEvent({ outcomeStatus: 'INSUFFICIENT_EVIDENCE', question: 'secret@example.com', answer: 'private', token: 'secret', responseLanguage: 'hi', evidence: [{ id: 'KB-18' }, { id: 'secret@example.com' }] }, 20, now);
+  for (let index = 0; index < 510; index++) recordAssistantEvent({ outcomeStatus: 'INSUFFICIENT_EVIDENCE', question: 'secret@example.com', answer: 'private', token: 'secret', responseLanguage: 'hi', evidence: [{ id: 'KB-18' }, { id: 'secret@example.com' }] }, 20, now, 'admissions');
   const staff = assistantOperations({}, false, now);
   assert.equal(staff.diagnostics.total, 500); assert.equal(staff.diagnostics.events, undefined);
+  assert.equal(staff.diagnostics.evidenceGaps, undefined);
   const admin = assistantOperations({}, true, now);
   assert.equal(admin.diagnostics.events.length, 100);
+  assert.deepEqual(admin.diagnostics.evidenceGaps, [{
+    questionType: 'General admission questions', reason: 'Insufficient verified evidence',
+    count: 500, lastSeen: now, evidenceIds: ['KB-18'],
+  }]);
   assert.doesNotMatch(JSON.stringify(admin), /secret@example|private|token/);
   const event = admin.diagnostics.events[0];
   assert.equal(reviewAssistantEvent(event.id, 'Resolved').status, 'Resolved');
   assert.throws(() => reviewAssistantEvent(event.id, 'Publish'));
   assert.equal(assistantOperations({}, true, now + 86400001).diagnostics.total, 0);
+});
+
+test('evidence gap reasons remain distinct and clarification does not enter the gap totals', () => {
+  clearAssistantEvents();
+  const now = Date.now();
+  for (const outcomeStatus of ['NEEDS_CLARIFICATION', 'OUTDATED_EVIDENCE', 'CONFLICTING_EVIDENCE']) {
+    recordAssistantEvent({ outcomeStatus }, 10, now, 'fees@example.test');
+  }
+  const groups = assistantOperations({}, true, now).diagnostics.evidenceGaps;
+  assert.equal(groups.length, 2);
+  assert.ok(groups.every(group => group.questionType === 'Other questions' && group.count === 1));
+  assert.notEqual(groups[0].reason, groups[1].reason);
 });
 
 test('aggregate trends use four six-hour buckets from the redacted 24-hour event window', () => {

@@ -207,6 +207,19 @@ test('administrator-confirmed biometric text stays published and stale unreachab
     assert.match(restoredSource.extractionStatus, /administrator reviewed and confirmed/i);
     assert.equal(migrated.officialSources.some(item => item.id === 'SRC-UNREACHABLE'), false);
     assert.ok(migrated.migrations.includes('publish-owner-confirmed-biometric-record-v14'));
+
+    const unreachable = { status: 'Review', syncMeta: { healthStatus: 'unreachable' } };
+    migrated.officialSources.push(
+      { ...unreachable, id: 'SRC-UNREACHABLE', sourceUrl: 'https://mitcorer.edu.in/removed.php' },
+      { ...unreachable, id: 'SRC-REAL-UNREACHABLE', sourceUrl: 'https://mitcorer.edu.in/official-notice.php' },
+    );
+    closeDb();
+    const reopened = new DatabaseSync(databaseFile);
+    reopened.prepare("UPDATE collections SET data = ? WHERE name = 'app'").run(JSON.stringify(migrated));
+    reopened.close();
+    const cleaned = loadDb();
+    assert.equal(cleaned.officialSources.some(item => item.id === 'SRC-UNREACHABLE'), false);
+    assert.equal(cleaned.officialSources.find(item => item.id === 'SRC-REAL-UNREACHABLE').syncMeta.healthStatus, 'unreachable');
   } finally {
     closeDb();
     config.databaseFile = previousDatabaseFile;

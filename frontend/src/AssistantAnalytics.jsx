@@ -69,6 +69,7 @@ export function AssistantAnalytics({ token }) {
         <article><span>Questions processed</span><strong>{data.totals.total}</strong></article>
         <article><span>Fully answered</span><strong>{data.totals.answered}</strong></article>
         <article><span>Evidence gaps</span><strong>{data.totals.evidenceGap}</strong></article>
+        <article><span>Other outcomes</span><strong>{data.totals.other}</strong><small>Includes clarifications and partial answers</small></article>
       </section>
       <div className="assistantAnalyticsGrid">
         <section className="panelBlock assistantAnalytics">

@@ -18,7 +18,7 @@ const questionLabels = {
   library: 'What library facilities are available?',
 };
 
-function questionType({ normalized, topics, admissionRoute }) {
+export function questionType({ normalized, topics, admissionRoute }) {
   const specificTopic = topics.find(topic => ['academicFees', 'accommodationFees', 'seatMatrix', 'admissionQuota', 'institutionStatus'].includes(topic));
   if (specificTopic) return specificTopic;
   if (/^how much (?:is|does) (?:a |the )?hostel room\b/.test(normalized)) return 'accommodationFees';
@@ -35,11 +35,18 @@ function questionType({ normalized, topics, admissionRoute }) {
 }
 
 const dayKey = time => new Date(time).toISOString().slice(0, 10);
-const evidenceGaps = new Set(['INSUFFICIENT_EVIDENCE', 'CONFLICTING_EVIDENCE', 'OUTDATED_EVIDENCE']);
+const evidenceGapReasons = {
+  INSUFFICIENT_EVIDENCE: 'Insufficient verified evidence',
+  CONFLICTING_EVIDENCE: 'Conflicting evidence',
+  OUTDATED_EVIDENCE: 'Evidence expired or unavailable for this answer',
+};
 
-export function recordAssistantUsage(query, outcome, now = Date.now()) {
-  const bucket = outcome === 'ANSWERED' ? 'answered' : evidenceGaps.has(outcome) ? 'evidenceGap' : 'other';
-  incrementAssistantUsage(dayKey(now), questionType(query), bucket);
+export const questionTypeLabel = id => Object.hasOwn(questionLabels, id) ? questionLabels[id] : 'Other questions';
+export const evidenceGapReason = outcome => Object.hasOwn(evidenceGapReasons, outcome) ? evidenceGapReasons[outcome] : null;
+
+export function recordAssistantUsage(query, outcome, now = Date.now(), category = questionType(query)) {
+  const bucket = outcome === 'ANSWERED' ? 'answered' : evidenceGapReason(outcome) ? 'evidenceGap' : 'other';
+  incrementAssistantUsage(dayKey(now), category, bucket);
 }
 
 export function assistantUsageReport(now = Date.now()) {
@@ -48,7 +55,7 @@ export function assistantUsageReport(now = Date.now()) {
   const totals = { total: 0, answered: 0, evidenceGap: 0, other: 0 };
   const byQuestion = new Map();
   for (const { questionType, outcome, count } of getAssistantUsageCounts(firstDay, lastDay)) {
-    const label = Object.hasOwn(questionLabels, questionType) ? questionLabels[questionType] : 'Other questions';
+    const label = questionTypeLabel(questionType);
     const group = byQuestion.get(questionType) || { id: questionType, label, total: 0, answered: 0, evidenceGap: 0, other: 0 };
     group[outcome] += count;
     group.total += count;

@@ -28,7 +28,6 @@ import { classifyAnswerOutcome, verifySlotGrounding } from './grounding.js';
 import { computeConceptScore, getSemanticVectorScores, removeKnowledgeVector, syncKnowledgeVectorIndex } from './semantic.js';
 import { semanticResponseCache } from './semantic-cache.js';
 import { inspectPromptSafety } from './safety-guard.js';
-import { slotAwareRerank } from './rag-enhancer.js';
 import { verifySpeculativeFigures } from './speculative-verifier.js';
 import { documentCorpusStats, isDocumentSearchQuery, isExamTimetableQuery, searchDocumentCorpus } from './document-corpus.js';
 import { runEvidenceGapNavigator } from './evidence-navigator.js';
@@ -38,7 +37,8 @@ import { maintainedProfile, maintainedContacts } from './maintained-profile.js';
 import { reviewBoundaryResponse } from './review-boundaries.js';
 import { refinedAnswer } from './answer-refinements.js';
 import { assistantOperations, recordAssistantEvent, reviewAssistantEvent, clearAssistantEvents } from './assistant-observability.js';
-import { assistantUsageReport, recordAssistantUsage } from './assistant-analytics.js';
+import { assistantUsageReport, questionType, recordAssistantUsage } from './assistant-analytics.js';
+import { applyEscalationRouting, offices, routeUnassignedEscalations, sharedQueue, staffRoutingDirectory } from './office-routing.js';
 
 const publicRoutes = new Set([
   'GET /api/health',
@@ -482,7 +482,6 @@ export function createPublicEscalatedInquiry(body) {
     name,
     role: 'applicant',
     topic,
-    routingQueue: 'MITCORER Staff Triage',
     priority: 'High',
     status: 'Needs reply',
     city: typeof body?.city === 'string' && body.city.trim() ? body.city.trim().slice(0, 80) : 'Not provided',
@@ -492,7 +491,6 @@ export function createPublicEscalatedInquiry(body) {
     consentRecordedAt: now,
     question,
     ownerEmail: contact.includes('@') ? contact : 'public-escalation@mitcorer.edu.in',
-    assignedTo: '',
     messages: [
       {
         id: generateId('MSG'),
@@ -505,15 +503,16 @@ export function createPublicEscalatedInquiry(body) {
     createdAt: now,
     updatedAt: now,
   };
+  const routing = applyEscalationRouting(record, db.users, db.additionalOffices);
   db.inquiries.unshift(record);
   if (db.inquiries.length > 2000) db.inquiries = db.inquiries.slice(0, 2000);
   saveDb();
-  audit('inquiry.escalated', 'inquiry', record.id, { email: record.ownerEmail, role: 'applicant' }, record.topic);
+  audit('inquiry.escalated', 'inquiry', record.id, { email: record.ownerEmail, role: 'applicant' }, routing.queue);
   return {
     success: true,
     inquiryId: record.id,
-    message: 'Your inquiry was saved to the MITCORER staff triage queue. No individual staff member was assigned and no email or SMS notification was sent.',
-    routing: { queue: record.routingQueue, assignedTo: null, notificationSent: false },
+    message: 'Your inquiry was saved for MITCORER staff follow-up.',
+    routing: { ...routing, assignedTo: null, notificationSent: false },
   };
 }
 
@@ -568,15 +567,18 @@ function updateInquiryStatus(id, body, user) {
   requireRole({ user }, ['staff', 'admin']);
   const validStatuses = ['Unassigned', 'Needs reply', 'In progress', 'Resolved'];
   if (!validStatuses.includes(body.status)) throw badRequest('Invalid inquiry status.');
-  const record = getDb().inquiries.find((item) => item.id === id);
+  const db = getDb();
+  const record = db.inquiries.find((item) => item.id === id);
   if (!record) throw notFound('Inquiry not found.');
   const reply = typeof body.reply === 'string' ? body.reply.trim() : '';
   if (reply.length > 1500) throw badRequest('Reply must be 1500 characters or fewer.');
   if (body.status === 'Resolved' && !reply && !(record.messages || []).some((item) => item.authorRole === 'staff' || item.authorRole === 'admin')) {
     throw badRequest('Add a staff reply before resolving the inquiry.');
   }
+  if (body.officeName !== undefined || body.assigneeId !== undefined || body.assignedTo !== undefined) {
+    throw badRequest('MITRA assigns escalations automatically from the inquiry text.');
+  }
   record.status = body.status;
-  if (typeof body.assignedTo === 'string') record.assignedTo = body.assignedTo.trim().slice(0, 120);
   record.messages = record.messages || [];
   if (reply) {
     record.messages.push({ id: generateId('MSG'), text: reply, authorName: user.name, authorRole: user.role, createdAt: nowIso() });
@@ -586,6 +588,51 @@ function updateInquiryStatus(id, body, user) {
   saveDb();
   audit('inquiry.status_updated', 'inquiry', record.id, user, body.status);
   return record;
+}
+
+function changeOffice(method, id, body, user) {
+  requireRole({ user }, ['admin']);
+  const db = getDb();
+  const directory = staffRoutingDirectory(db);
+  const current = directory.offices.find(office => office.id === id);
+  if (method !== 'POST' && !current) throw notFound('Office not found.');
+  const defaultOffice = offices.find(office => office.name === id);
+  const previous = db.additionalOffices.find(office => defaultOffice
+    ? office.originalName === id : (office.id || office.name) === id);
+  if (method === 'DELETE' && current.openRequests) {
+    throw new HttpError(409, 'OFFICE_HAS_OPEN_REQUESTS', 'Resolve this office’s open requests before deleting it.');
+  }
+
+  let replacement;
+  if (method === 'DELETE') {
+    if (defaultOffice) replacement = { originalName: id, deleted: true };
+  } else {
+    const name = requireString(body?.name, 'Office name', 100).replace(/\s+/g, ' ');
+    const owner = requireString(body?.owner, 'Owner', 120);
+    const handles = method === 'POST' ? requireString(body?.handles, 'Handles', 40) : previous?.handles;
+    if (method === 'POST' && !directory.availableCategories.some(category => category.id === handles)) {
+      throw badRequest('Choose an available routing category. A category can go to only one added office.');
+    }
+    const reserved = [sharedQueue, ...directory.offices.filter(office => office.id !== id).map(office => office.name)];
+    if (reserved.some(existing => existing.toLowerCase() === name.toLowerCase())) throw badRequest('An office with that name already exists.');
+    const sameOwner = current?.owner.toLowerCase() === owner.toLowerCase();
+    const matchingStaff = directory.staff.filter(account => account.name.toLowerCase() === owner.toLowerCase());
+    const email = sameOwner && current.email ? current.email
+      : matchingStaff.length === 1 ? matchingStaff[0].email.toLowerCase() : '';
+    const details = { name, owner, email, ...(handles ? { handles } : {}) };
+    replacement = defaultOffice ? { originalName: id, ...details } : { id: id || generateId('OFF'), ...details };
+    if (current && current.name !== name) {
+      for (const inquiry of db.inquiries) {
+        if (inquiry.routingQueue === current.name) inquiry.routingQueue = name;
+      }
+    }
+  }
+  db.additionalOffices = db.additionalOffices.filter(office => office !== previous);
+  if (replacement) db.additionalOffices.push(replacement);
+  routeUnassignedEscalations(db);
+  const action = { POST: 'created', PATCH: 'updated', DELETE: 'deleted' }[method];
+  audit(`office.${action}`, 'office', id || replacement.id, user);
+  return staffRoutingDirectory(db);
 }
 
 const workspaceSections = new Set(['cap', 'programs', 'fees', 'scholarship', 'stay']);
@@ -3239,9 +3286,12 @@ function buildIndexedDocumentResponse(question, suppliedHits = null) {
 
 function buildExactReferencePassage(question, records) {
   const reference = findDocumentReference(question);
-  if (!reference) return null;
-  const record = records.find((item) => usableKnowledge(item)
-    && `${item.title || ''} ${item.text || ''}`.toLocaleLowerCase().includes(reference.toLocaleLowerCase()));
+  const namedRecord = normalizeIntentText(question)
+    .replace(/^(?:what is|what are|tell me about) (?:the )?/, '').replace(/[?!. ]+$/, '');
+  const matched = records.filter(item => usableKnowledge(item) && typeof item.text === 'string' && item.text.trim()
+    && (reference ? `${item.title || ''} ${item.text}`.toLocaleLowerCase().includes(reference.toLocaleLowerCase())
+      : namedRecord && item.title && normalizeIntentText(item.title).replace(/[?!. ]+$/, '') === namedRecord));
+  const record = reference || matched.length === 1 ? matched[0] : null;
   if (!record) return null;
   return {
     managedRecordId: record.id,
@@ -3254,6 +3304,17 @@ function buildExactReferencePassage(question, records) {
 }
 
 function requestedUnverifiedDetail(question) {
+  if (/\b(?:ph\.?d\.?|doctorate|doctoral|aerospace engineering|aeronautical engineering)\b/.test(question)
+    && /\b(?:offer\w*|have|available|degree|programmes?|programs?|courses?|admissions?|study|apply|pursue|is there)\b/.test(question)) {
+    return 'I could not verify that programme in MITCORER’s published records. Check the official programme list or ask the Admissions Cell to confirm.';
+  }
+  if (/\b(?:metro station|airport shuttle|airport transfer)\b/.test(question)) {
+    return 'I could not verify the specific metro or airport transport service you asked about. Check the college’s travel information or contact MITCORER for current options.';
+  }
+  if (/\b(?:hostels?|dorm(?:s|itory|itories)?|student accommodation)\b/.test(question)
+    && /\b(?:air[ -]?condition\w*|a\/?c rooms?)\b/.test(question)) {
+    return 'I could not verify air conditioning in MITCORER hostel rooms. Contact the Hostel Office to check what is available for the room you plan to use.';
+  }
   if (/\b(?:hostels?|dorm(?:s|itory|itories)?|student accommodation)\b/.test(question)
     && /\b(?:wheelchairs?|accessible|accessibility|step[- ]free|ramps?|elevators?|lifts?)\b/.test(question)) {
     return 'I could not verify the hostel accessibility features you asked about. Contact the college to confirm the current facilities for the hostel you plan to use.';
@@ -3392,6 +3453,24 @@ async function answerAdmissionQuestionCore(body, user) {
     return { source: 'No verified record', evidence: [], outcomeStatus: 'UNSUPPORTED_TOPIC', answer: safeAnswer,
       requestedLanguage: language, responseLanguage: language, localizationStatus: language === 'en' ? 'original' : 'template',
       languageReviewStatus: language === 'en' ? 'not-required' : 'speaker-review-pending', model: 'deterministic-rag-fallback' };
+  }
+
+  const asksMedicalDegree = /\b(?:mbbs|bds|m\.b\.b\.s\.?|b\.d\.s\.?|medical degrees?|dentistry degrees?)\b/i.test(originalQuestion)
+    && /\b(?:offer\w*|has|have|available|programmes?|programs?|degrees?|courses?|admissions?|apply|study|pursue|get into|seats?|fees?|eligibility)\b/i.test(originalQuestion);
+  if (asksMedicalDegree) {
+    const records = getDb().knowledge;
+    const programme = records.find(record => record.id === 'KB-10' && usableKnowledge(record));
+    const evidence = programme ? [publicEvidence(sourceRecord(programme), Date.now())] : [];
+    const answer = programme
+      ? 'MITCORER’s published programme list covers engineering and does not list MBBS or BDS. Check the official programme list or ask the Admissions Cell if you need confirmation.'
+      : 'I could not verify MBBS or BDS availability in MITCORER’s published records. Ask the Admissions Cell to confirm the programmes offered.';
+    return localizeResponse({
+      source: 'No verified record', answer, evidence,
+      officialLinks: programme?.sourceUrl ? [{ label: 'MITCORER official programme list', url: programme.sourceUrl }] : [],
+      escalation: { available: true, reason: 'UNVERIFIED_INFORMATION', department: 'admissions',
+        message: 'Ask the Admissions Cell to confirm the programmes offered.', ...maintainedContacts(records) },
+      outcomeStatus: 'INSUFFICIENT_EVIDENCE', model: 'deterministic-rag-fallback',
+    }, language, normalized, evidence, academicFeeSelection, parseLegacyFactText);
   }
 
   const timetableNavigation = isExamTimetableQuery(lowerQuestion)
@@ -3559,16 +3638,23 @@ async function answerAdmissionQuestionCore(body, user) {
     return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
   }
   const asksSpecificBusDetails = /\b(?:bus|transport|vehicle|commute|travel|village|route|fare|stop)\b/i.test(question)
-    && /\b(?:timetable|schedule|timing|fare|route|stop|from my village|my village)\b/i.test(question)
+    && (/\b(?:timetables?|schedules?|timings?|fares?|routes?|stops?|from my village|my village)\b/i.test(question)
+      || /\b(?:bus|shuttle)\b.{0,35}\b(?:from|to|via|near)\b.{0,45}\b(?:station|stand)\b/i.test(question))
     && !/\b(?:address|contact details?|office hours?|office timings?|working hours?|college timings?)\b/i.test(question)
     && !/\b(?:does|is there|provide|provides|have|has)\b.{0,35}\b(?:bus|transport)\s+(?:facility|service)\b/i.test(question);
   if (asksSpecificBusDetails) {
-    const busRecord = getDb().knowledge.find((record) => record.id === 'KB-19' && usableKnowledge(record));
+    const records = getDb().knowledge;
+    const busRecord = records.find((record) => record.id === 'KB-19' && usableKnowledge(record));
+    const asksAboutBarshiStation = /\bbarshi(?: town)?(?: railway| train)? station\b/i.test(question);
     const response = {
       source: 'MITCORER Bus Facility page',
-      answer: busRecord?.text || 'I could not find published transport details. Please confirm with the college.',
+      answer: asksAboutBarshiStation
+        ? 'I couldn’t verify whether a MITCORER bus picks up passengers at Barshi station. The published bus information does not list stops or timings. Submit the question for staff review to confirm the current pickup point and schedule.'
+        : busRecord?.text || 'I could not find published transport details. Please confirm with the college.',
       evidence: busRecord ? [publicEvidence({ ...busRecord, score: 200 }, Date.now())] : [],
       officialLinks: [{ label: 'MITCORER Bus Facility', url: 'https://mitcorer.edu.in/bus-facility.php' }],
+      escalation: { available: true, reason: 'UNVERIFIED_INFORMATION', department: 'transport',
+        message: 'Ask MITCORER staff to confirm the current bus route or timing.', ...maintainedContacts(records) },
       model: 'deterministic-rag-fallback', outcomeStatus: 'INSUFFICIENT_EVIDENCE',
     };
     return localizeResponse(response, language, normalized, [], academicFeeSelection, parseLegacyFactText);
@@ -3683,14 +3769,6 @@ async function answerAdmissionQuestionCore(body, user) {
     'Engineering eligibility and branch allotment guidance': 'KB-5', 'Applicant document workflow': 'KB-1', 'Admission CAP workflow': 'KB-29',
     'Fee planner': 'KB-2', 'Scholarship readiness': 'KB-18', 'Program finder': /polytechnic/.test(normalized) ? 'KB-12' : /direct second|dse|lateral/.test(normalized) ? 'KB-11' : 'KB-10',
     'Career outcome guidance': 'KB-4', 'Hostel and mess planning': 'KB-23' };
-  const vectorScores = (language === 'en' && config.geminiApiKey && config.geminiApiKey !== 'test-unused-key' && process.env.NODE_ENV !== 'test')
-    ? await getSemanticVectorScores(question, records)
-    : new Map();
-  const retrievedEvidence = retrieveKnowledge(question, vectorScores);
-  const rerankedEvidence = slotAwareRerank(retrievedEvidence, queryScope).slice(0, 3);
-  // Do not attach a loosely matched MITCORER record to an unrelated question.
-  let evidence = rerankedEvidence[0]?.score >= 15 ? rerankedEvidence : [];
-
   // FIX #2 — Advisory routing: for open-ended / synthesis questions (e.g. "why should I choose
   // MITCORER?", "explain the learning environment", "what makes MITCORER unique?"), skip the flat
   // deterministic KB record and let a configured provider synthesize a conversational answer
@@ -3698,9 +3776,12 @@ async function answerAdmissionQuestionCore(body, user) {
   // verification or the evidence score is too low.
   const criticalFactQuery = queryScope.topics.some(topic => ['academicFees', 'accommodationFees', 'programmes', 'seatMatrix'].includes(topic));
   const usesMaintainedCollegeProfile = /^(?:tell me about mit ?corer|about mit ?corer|about us|why should i choose mit ?corer|why choose mit ?corer|why mit ?corer)[?.! ]*$/i.test(normalized);
-  if (language === 'en' && !criticalFactQuery && !usesMaintainedCollegeProfile && isAdvisoryQuestion(normalized) && retrievedEvidence.length > 0 && retrievedEvidence[0].score >= 5) {
-    const advisoryEvidence = retrievedEvidence.slice(0, 3).map(sourceRecord);
-    const advisoryDraft = await generateVerifiedDraft(question, null, advisoryEvidence, context);
+  if (language === 'en' && !criticalFactQuery && !usesMaintainedCollegeProfile && isAdvisoryQuestion(normalized)) {
+    const vectorScores = config.geminiApiKey && config.geminiApiKey !== 'test-unused-key' && process.env.NODE_ENV !== 'test'
+      ? await getSemanticVectorScores(question, records) : null;
+    const retrievedEvidence = retrieveKnowledge(question, vectorScores);
+    const advisoryEvidence = retrievedEvidence[0]?.score >= 5 ? retrievedEvidence.slice(0, 3).map(sourceRecord) : [];
+    const advisoryDraft = advisoryEvidence.length ? await generateVerifiedDraft(question, null, advisoryEvidence, context) : null;
     const rawAdvisory = advisoryDraft?.text;
     if (rawAdvisory) {
       const advisoryOfficialLinks = [
@@ -3733,25 +3814,8 @@ async function answerAdmissionQuestionCore(body, user) {
   };
   // Citations must come from the record(s) that authorized this answer. Never
   // attach an unrelated top retrieval just because its score passed a threshold.
-  evidence = Array.isArray(answer.evidence)
-    ? answer.evidence
-    : answer.source === 'No verified record' && rerankedEvidence[0]?.score >= 15
-      ? rerankedEvidence
-      : [];
-  evidence = evidence.map(sourceRecord);
+  const evidence = (Array.isArray(answer.evidence) ? answer.evidence : []).map(sourceRecord);
   const officialLinks = answer.officialLinks || (answer.composed ? answer.officialLinks : answer.clarification ? [] : [...getOfficialAdmissionLinks(question), ...getOfficialScholarshipLinks(question), ...getOfficialUniversityLinks(question), ...getOfficialExperienceLinks(question), ...getContactMapLink(question), ...getOfficialFeeLinks(question)]);
-  // The LLM is deliberately not allowed to replace verified admissions answers.
-  // It is evaluated against evidence tokens and verified before acceptance.
-  let generated = null;
-  let generatedModel = config.geminiModel;
-  if (language === 'en' && !answer.managedRecordId && !answer.composed && !answer.clarification && answer.source === 'No verified record' && evidence.length) {
-    const generationDraft = await generateVerifiedDraft(question, answer, evidence.slice(0, 2), context);
-    const rawGenerated = generationDraft?.text;
-    if (rawGenerated) {
-      generated = rawGenerated;
-      generatedModel = generationDraft.model;
-    }
-  }
   const workflowOnlySources = new Set([
     'Historical cutoff records',
     'Engineering eligibility and branch allotment guidance',
@@ -3764,10 +3828,8 @@ async function answerAdmissionQuestionCore(body, user) {
     'Hostel and mess planning',
     'Institute-level admission notices',
   ]);
-  const deterministicText = answer.composed || answer.clarification || answer.source === evidence[0]?.source
+  const deterministicText = answer.composed || answer.clarification || answer.source === evidence[0]?.source || answer.source === 'No verified record'
     ? answer.answer
-    : answer.source === 'No verified record'
-      ? (evidence[0]?.text || answer.answer)
     : workflowOnlySources.has(answer.source) || answer.source === 'Admission support rules'
       ? `${evidence[0]?.text || answer.answer}${user && answer.next ? `\n\nNext: ${answer.next}` : ''}`
       : answer.answer;
@@ -3777,17 +3839,16 @@ async function answerAdmissionQuestionCore(body, user) {
     return localizeResponse({ source: 'No verified record', answer: 'Source validity changed while answering. Please check with the college for current verified information.', evidence: [], officialLinks: [], model: 'deterministic-rag-fallback', outcomeStatus: 'OUTDATED_EVIDENCE' }, language, normalized, [], academicFeeSelection, parseLegacyFactText);
   }
   const outcomeStatus = classifyAnswerOutcome(answer, evidence, freshnessAt);
-  const effectiveOutcome = answer.source === 'No verified record' && evidence.length ? 'ANSWERED' : outcomeStatus;
   const groundedAnswer = evidence.length
     ? {
         ...answer,
         source: answer.composed ? answer.source : evidence[0].source,
-        answer: (generated || deterministicText).replace(/CampusGuard/gi, 'the assistant'),
+        answer: deterministicText.replace(/CampusGuard/gi, 'the assistant'),
         sourceUrl: answer.composed ? '' : resolveSourceUrl(answer.sourceUrl || evidence[0].sourceUrl),
         evidence: evidence.map(record => publicEvidence(record, freshnessAt)),
         officialLinks,
-        model: generated ? generatedModel : 'deterministic-rag-fallback',
-        outcomeStatus: effectiveOutcome,
+        model: 'deterministic-rag-fallback',
+        outcomeStatus,
       }
     : { ...answer, answer: answer.answer.replace(/CampusGuard/gi, 'the assistant'), evidence: [], officialLinks, model: 'deterministic-rag-fallback', outcomeStatus };
   audit('assistant.asked', 'assistant', generateId('ASK'), user, answer.source);
@@ -3800,7 +3861,7 @@ async function answerAdmissionQuestionCore(body, user) {
     ...officialLinks,
   ]);
   const isUnverified = groundedAnswer.source === 'No verified record'
-    || (!evidence.length && ['UNSUPPORTED_TOPIC', 'OUTDATED_EVIDENCE', 'INSUFFICIENT_EVIDENCE', 'CONFLICTING_EVIDENCE'].includes(effectiveOutcome))
+    || (!evidence.length && ['UNSUPPORTED_TOPIC', 'OUTDATED_EVIDENCE', 'INSUFFICIENT_EVIDENCE', 'CONFLICTING_EVIDENCE'].includes(outcomeStatus))
     || (!evidence.length && !groundedAnswer.anchored && groundedAnswer.source !== 'Verified admission checklist')
     || groundedAnswer.answer.includes('could not find an official answer')
     || groundedAnswer.answer.includes('could not find a published official record');
@@ -3893,10 +3954,12 @@ export async function answerAdmissionQuestion(body, user) {
     }
     const trace = { traceId, agentIterations: 0 };
     const result = normalizeAssistantSourceLinks(await assistantTraceContext.run(trace, () => answerAdmissionQuestionCore(body, user)));
-    recordAssistantEvent(result, performance.now() - startedAt);
+    const category = query ? questionType(query) : 'other';
+    const completedAt = Date.now();
+    recordAssistantEvent(result, performance.now() - startedAt, completedAt, category);
     if (query) {
       try {
-        recordAssistantUsage(query, result?.outcomeStatus);
+        recordAssistantUsage(query, result?.outcomeStatus, completedAt, category);
       } catch (error) {
         console.warn(JSON.stringify({ event: 'assistant_usage_write_failed', traceId, code: error?.code || 'UNKNOWN' }));
       }
@@ -4567,6 +4630,15 @@ async function handleApi(req) {
   const officialSourceFileMatch = url.pathname.match(/^\/api\/official-sources\/([^/]+)\/file$/);
   if (req.method === 'GET' && officialSourceFileMatch) return getOfficialSourceFile(officialSourceFileMatch[1], user);
 
+  if (req.method === 'GET' && url.pathname === '/api/staff-routing') {
+    requireRole(context, ['staff', 'admin']);
+    return staffRoutingDirectory(getDb());
+  }
+  if (req.method === 'POST' && url.pathname === '/api/offices') {
+    return changeOffice('POST', null, body, user);
+  }
+  const officeMatch = url.pathname.match(/^\/api\/offices\/([^/]+)$/);
+  if (officeMatch && ['PATCH', 'DELETE'].includes(req.method)) return changeOffice(req.method, decodeURIComponent(officeMatch[1]), body, user);
   if (req.method === 'GET' && url.pathname === '/api/inquiries') return { items: filterRecordsForUser(getDb().inquiries, user) };
   if (req.method === 'POST' && url.pathname === '/api/inquiries') return createInquiry(body, user);
   const inquiryStatusMatch = url.pathname.match(/^\/api\/inquiries\/([^/]+)\/status$/);

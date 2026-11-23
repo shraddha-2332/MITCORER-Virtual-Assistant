@@ -19,7 +19,13 @@ The local Phase B–D changes add role-protected assistant operations, source/ch
 
 In the admin workspace, **Check official site for changes** crawls monitored MITCORER pages and stages detected changes and conflicts for human review. It does not automatically approve or publish knowledge. The AI Quality Monitor reports short-term operational outcomes and source health; it does not measure retrieval accuracy. The monitor requires the current backend route at `/api/assistant/operations`, so restart an older running backend after updating the code.
 
+Administrators can review evidence gaps by question type, reason, evidence IDs, occurrence count, and latest occurrence in the AI Quality Monitor. This breakdown uses the monitor’s existing in-memory window of up to 500 events over 24 hours and clears on restart. It collects no raw chat text or contact details and does not recover details from historical Analytics counts.
+
 **Analytics** is available to staff and admins. It ranks recognized question types and reports assistant outcomes for the last 30 UTC calendar days. Completed assistant requests increment daily SQLite counters from the time this feature is enabled. These analytics counters contain category and outcome counts only. The Analytics page uses `GET /api/assistant/analytics`.
+
+**Offices** lists owners and open escalations. Administrators enter an office name, owner name, and a **Handles** category when adding an office. The category directs matching escalations to the new office in place of its default destination. It is selected at creation and retained when an office is edited. Existing owner account links are preserved when the owner stays the same. A new owner name links to a provisioned account when there is exactly one matching staff name. Requests with no clear destination stay in shared staff triage. Assigned staff find escalations in **Review Inbox → My requests**. Resolve an office’s open requests before deleting it.
+
+To provision an office owner, back up the database and stop the backend. In `backend`, supply the configured work email and a unique password through the process environment as `STAFF_EMAIL` and `STAFF_PASSWORD`, then run `npm run provision:office-staff -- --backend-stopped`. Repeat for each owner and restart the backend. Existing accounts keep their roles and credentials. Share new credentials through the college's secure onboarding process.
 
 ## Technology Stack
 

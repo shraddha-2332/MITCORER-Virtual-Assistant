@@ -3,10 +3,12 @@ import assert from 'node:assert/strict';
 import { cleanHtml, hashContent, syncMonitoredWebsiteSources, analyzeContentDrift, defaultFetcher, defaultLinkChecker } from '../src/website-sync.js';
 import { createServer } from '../src/server.js';
 import { config } from '../src/config.js';
-import { getDb, resetDbForTests } from '../src/store.js';
+import { closeDb, getDb, resetDbForTests } from '../src/store.js';
 import { createSeedData } from '../src/seed.js';
 
 async function withServer(fn) {
+  const previousDatabase = config.databaseFile;
+  config.databaseFile = ':memory:';
   resetDbForTests();
   const server = createServer();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -16,6 +18,8 @@ async function withServer(fn) {
     await fn(base);
   } finally {
     await new Promise((resolve) => server.close(resolve));
+    closeDb();
+    config.databaseFile = previousDatabase;
   }
 }
 

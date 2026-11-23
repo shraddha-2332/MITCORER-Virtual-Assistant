@@ -922,6 +922,10 @@ test('inquiry lifecycle returns assigned staff replies only to the owning applic
     const applicantToken = await login(base, 'applicant@example.com');
     const staffToken = await login(base, 'staff@example.test');
     const parentToken = await login(base, 'parent@example.com');
+    const directory = await request(base, '/api/staff-routing', { headers: { Authorization: `Bearer ${staffToken}` } });
+    assert.equal(directory.response.status, 200);
+    const staff = directory.payload.data.staff.find(account => account.email === 'staff@example.test');
+    assert.ok(staff);
     const created = await request(base, '/api/inquiries', {
       method: 'POST',
       headers: { Authorization: `Bearer ${applicantToken}` },
@@ -930,14 +934,23 @@ test('inquiry lifecycle returns assigned staff replies only to the owning applic
     assert.equal(created.response.status, 200);
     assert.equal(created.payload.data.status, 'Unassigned');
     assert.equal(created.payload.data.role, 'applicant');
+    const deniedDirectory = await request(base, '/api/staff-routing', { headers: { Authorization: `Bearer ${applicantToken}` } });
+    assert.equal(deniedDirectory.response.status, 403);
+    const invalidAssignment = await request(base, `/api/inquiries/${created.payload.data.id}/status`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${staffToken}` },
+      body: JSON.stringify({ status: 'In progress', assigneeId: created.payload.data.id }),
+    });
+    assert.equal(invalidAssignment.response.status, 400);
+    assert.equal(getDb().inquiries.find(item => item.id === created.payload.data.id).status, 'Unassigned');
     const updated = await request(base, `/api/inquiries/${created.payload.data.id}/status`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${staffToken}` },
-      body: JSON.stringify({ status: 'Resolved', assignedTo: 'Admission Staff', reply: 'Bring the allotment letter with the full reporting checklist.' }),
+      body: JSON.stringify({ status: 'Resolved', reply: 'Bring the allotment letter with the full reporting checklist.' }),
     });
     assert.equal(updated.response.status, 200);
     assert.equal(updated.payload.data.status, 'Resolved');
-    assert.equal(updated.payload.data.assignedTo, 'Admission Staff');
+    assert.equal(updated.payload.data.assignedTo, '');
     assert.equal(updated.payload.data.messages.length, 1);
     const applicantList = await request(base, '/api/inquiries', { headers: { Authorization: `Bearer ${applicantToken}` } });
     const owned = applicantList.payload.data.items.find((item) => item.id === created.payload.data.id);
@@ -1958,11 +1971,24 @@ test('human escalation is triggered when information is unverified and creates h
     });
     assert.equal(askResult.response.status, 200);
     assert.equal(askResult.payload.data.source, 'No verified record');
+    assert.equal(askResult.payload.data.model, 'deterministic-rag-fallback');
+    assert.match(askResult.payload.data.answer, /does not list MBBS or BDS/i);
+    assert.deepEqual(askResult.payload.data.evidence.map(item => item.id), ['KB-10']);
     assert.ok(askResult.payload.data.escalation, 'Escalation object must be attached');
     assert.equal(askResult.payload.data.escalation.available, true);
     assert.equal(askResult.payload.data.escalation.reason, 'UNVERIFIED_INFORMATION');
     assert.ok(Array.isArray(askResult.payload.data.escalation.helplines));
     assert.ok(askResult.payload.data.escalation.helplines.some((h) => h.number.includes('91584 14343')));
+    const rephrased = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Does MITCORER have a B.D.S. programme?' }),
+    });
+    assert.deepEqual(rephrased.payload.data.evidence.map(item => item.id), ['KB-10']);
+    const medicalServices = await request(base, '/api/public-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify({ question: 'Does MITCORER offer campus medical emergency services?' }),
+    });
+    assert.doesNotMatch(medicalServices.payload.data.answer, /does not list MBBS or BDS/i);
     assert.ok(askResult.payload.data.escalation.helplines.some((h) => h.number.includes('91584 14444')));
 
     // 2. Submit escalation inquiry via public escalation endpoint
@@ -1978,7 +2004,7 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalateResult.response.status, 200);
     assert.equal(escalateResult.payload.data.success, true);
     assert.ok(escalateResult.payload.data.inquiryId);
-    assert.equal(escalateResult.payload.data.routing.queue, 'MITCORER Staff Triage');
+    assert.equal(escalateResult.payload.data.routing.queue, 'Admissions Cell');
     assert.equal(escalateResult.payload.data.routing.assignedTo, null);
     assert.equal(escalateResult.payload.data.routing.notificationSent, false);
 
@@ -1995,7 +2021,7 @@ test('human escalation is triggered when information is unverified and creates h
     assert.equal(escalatedInquiry.priority, 'High');
     assert.equal(escalatedInquiry.status, 'Needs reply');
     assert.equal(escalatedInquiry.topic, 'Human Escalation');
-    assert.equal(escalatedInquiry.routingQueue, 'MITCORER Staff Triage');
+    assert.equal(escalatedInquiry.routingQueue, 'Admissions Cell');
     assert.equal(escalatedInquiry.assignedTo, '');
     assert.equal(escalatedInquiry.messages[0].text, 'MITRA recorded a request for staff follow-up.');
 

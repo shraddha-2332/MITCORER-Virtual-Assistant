@@ -1,19 +1,21 @@
 import crypto from 'node:crypto';
 import { availability, sourceReview } from './provenance.js';
 import { badRequest, notFound } from './errors.js';
+import { evidenceGapReason, questionTypeLabel } from './assistant-analytics.js';
 
 const maxEvents = 500;
 const retentionMs = 24 * 60 * 60 * 1000;
 const events = [];
-const outcomes = new Set(['ANSWERED', 'PARTIALLY_ANSWERED', 'NEEDS_CLARIFICATION', 'INSUFFICIENT_EVIDENCE', 'UNSUPPORTED_TOPIC', 'CONFLICTING_EVIDENCE', 'ERROR', 'UNKNOWN']);
+const outcomes = new Set(['ANSWERED', 'PARTIALLY_ANSWERED', 'NEEDS_CLARIFICATION', 'INSUFFICIENT_EVIDENCE', 'UNSUPPORTED_TOPIC', 'CONFLICTING_EVIDENCE', 'OUTDATED_EVIDENCE', 'ERROR', 'UNKNOWN']);
 const safeIds = ids => (ids || []).filter(id => typeof id === 'string' && /^(?:KB|SRC|DOC)-[A-Z0-9-]{1,100}$/i.test(id)).slice(0, 8);
 function prune(now = Date.now()) {
   while (events.length && (events[0].at < now - retentionMs || events.length > maxEvents)) events.shift();
 }
-export function recordAssistantEvent(response, elapsedMs, now = Date.now()) {
+export function recordAssistantEvent(response, elapsedMs, now = Date.now(), category = 'other') {
   const outcome = outcomes.has(response?.outcomeStatus) ? response.outcomeStatus : 'UNKNOWN';
   // No question, answer, account/session, token, URL, IP, provider error or hash.
   const event = { id: crypto.randomUUID(), at: now, outcome,
+    questionType: questionTypeLabel(category),
     language: ['en', 'mr', 'hi', 'mixed'].includes(response?.responseLanguage) ? response.responseLanguage : 'unknown',
     localization: ['original', 'template', 'maintainer-reviewed', 'fallback', 'partial'].includes(response?.localizationStatus) ? response.localizationStatus : 'unknown',
     evidenceIds: safeIds((response?.evidence || []).map(item => item.id)),
@@ -31,6 +33,21 @@ export function reviewAssistantEvent(id, status) {
   if (event.outcome === 'ANSWERED' && !['fallback', 'partial'].includes(event.localization)) throw badRequest('This event has no diagnostic issue to triage.');
   event.status = status;
   return { ...event };
+}
+
+function summarizeEvidenceGaps() {
+  const groups = new Map();
+  for (const event of events) {
+    const reason = evidenceGapReason(event.outcome);
+    if (!reason) continue;
+    const key = `${event.outcome}:${event.questionType}`;
+    const group = groups.get(key) || { questionType: event.questionType, reason, count: 0, lastSeen: 0, evidenceIds: [] };
+    group.count += 1;
+    group.lastSeen = Math.max(group.lastSeen, event.at);
+    group.evidenceIds = [...new Set([...group.evidenceIds, ...event.evidenceIds])].slice(0, 8);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count || b.lastSeen - a.lastSeen);
 }
 export function assistantOperations(db, includeTraces = false, now = Date.now()) {
   prune(now);
@@ -70,7 +87,7 @@ export function assistantOperations(db, includeTraces = false, now = Date.now())
       trends: { intervalHours: 6, windowHours: 24, points: trendPoints },
       unresolved: issues.filter(e => !['Resolved', 'Dismissed'].includes(e.status)).length,
       retention: 'Process memory only; last 500 events, at most 24 hours; cleared on restart.',
-      ...(includeTraces ? { events: issues.slice(-100).reverse().map(e => ({ ...e, evidenceIds: [...e.evidenceIds] })) } : {}) },
+      ...(includeTraces ? { evidenceGaps: summarizeEvidenceGaps(), events: issues.slice(-100).reverse().map(e => ({ ...e, evidenceIds: [...e.evidenceIds] })) } : {}) },
     limitations: ['Recorded review is a maintainer action, not independent certification.', 'Clarifications and refusals are diagnostic categories, not necessarily failures.', 'No raw questions or answers are collected by these diagnostics.'],
   };
 }

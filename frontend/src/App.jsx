@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, Cpu, FileText, LayoutDashboard,
+  ArrowLeft, ArrowRight, CheckCircle2, ClipboardList, Cpu, FileCheck2, FileText, Inbox,
   LockKeyhole, LogOut, Menu, Phone,
-  Send, ShieldCheck, UploadCloud, X,
+  Send, TriangleAlert, UploadCloud, X,
   PanelLeftClose, PanelLeftOpen, Languages, RefreshCw,
   ThumbsDown, ThumbsUp,
 } from 'lucide-react';
@@ -239,7 +239,8 @@ function App() {
           {appError && <div className="errorBanner">{appError}</div>}
           {view === 'overview' && <AdminOverview user={user} token={token} knowledge={knowledge} sources={officialSources} setView={navigateTo} onOpenSources={() => { setKnowledgeInitialTab('sources'); navigateTo('knowledge'); }} onOpenKnowledge={() => { setKnowledgeInitialTab('records'); navigateTo('knowledge'); }} onOpenKnowledgeRecord={(id) => { setKnowledgeInitialTab('records'); navigateTo('knowledge', id); }} onOpenInquiries={() => { setReviewInitialTab('inquiries'); navigateTo('inquiries'); }} onOpenFeedback={() => { setReviewInitialTab('feedback'); navigateTo('inquiries'); }} />}
           {view === 'knowledge' && <KnowledgeManager canDeleteKnowledge={user.role === 'admin'} initialTab={knowledgeInitialTab} initialSearch={knowledgeInitialSearch} items={knowledge} sources={officialSources} onCreate={createKnowledgeItem} onUpdate={updateKnowledgeItem} onDelete={deleteKnowledgeItem} onUploadSource={uploadOfficialSource} onOpenSource={openOfficialSource} onReviewSource={reviewOfficialSource} onPublishSource={publishOfficialSource} onExtractStructuredSource={extractStructuredOfficialSource} />}
-          {view === 'inquiries' && <ReviewInbox token={token} initialTab={reviewInitialTab} />}
+          {view === 'inquiries' && <ReviewInbox token={token} staffId={user.id} initialTab={reviewInitialTab} />}
+          {view === 'offices' && <OfficeDirectory token={token} canAddOffice={user.role === 'admin'} />}
           {view === 'analytics' && <AssistantAnalytics token={token} />}
           {view === 'applicant-workspaces' && <ApplicantWorkspaceReview token={token} />}
         </section>
@@ -856,10 +857,10 @@ function PublicEscalationCard({ message, language }) {
           <CheckCircle2 size={14} />
           <span>
             {language === 'mr'
-    ? `तुमची विनंती ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली आहे. कोणताही विशिष्ट सल्लागार आपोआप नियुक्त झालेला नाही. तातडीसाठी वरील क्रमांकांवर कॉल करा.`
+    ? `तुमची विनंती ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचाऱ्यांच्या पुनरावलोकनासाठी नोंदवली आहे. तातडीसाठी वरील क्रमांकांवर कॉल करा.`
               : language === 'hi'
-      ? `आपका अनुरोध ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचारी समीक्षा कतार में दर्ज किया गया है। कोई विशेष परामर्शदाता अपने आप नियुक्त नहीं हुआ है। तत्काल सहायता के लिए ऊपर दिए गए नंबरों पर कॉल करें।`
-                : `Your inquiry${submissionId ? ` (${submissionId})` : ''} was saved to Admin → Review Inbox → Requests. No individual counselor was assigned automatically, and no email/SMS was sent. For urgent help, please call one of the numbers above.`}
+      ? `आपका अनुरोध ${submissionId ? `(${submissionId}) ` : ''}MITCORER कर्मचारी समीक्षा कतार में दर्ज किया गया है। तत्काल सहायता के लिए ऊपर दिए गए नंबरों पर कॉल करें।`
+                : `Your inquiry${submissionId ? ` (${submissionId})` : ''} was saved for MITCORER staff follow-up. For urgent help, please call one of the numbers above.`}
           </span>
         </div>
       ) : (
@@ -1057,9 +1058,8 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     if (!Number.isFinite(end) || !(start <= now) || end > now + 14 * 86_400_000) return [];
     return [{ item, validUntil, end }];
   }).sort((a, b) => a.end - b.end);
-  const needsReview = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase())).length;
   const pendingSources = sources.filter(item => ['review', 'staged', 'conflict', 'pending'].includes(String(item.status || '').toLowerCase()));
-  const unreachableSources = pendingSources.filter(item => item.syncMeta?.healthStatus === 'unreachable').length;
+  const needsReview = pendingSources.length;
   const scrollToSection = (id) => {
     const target = document.getElementById(id) || document.getElementById('assistant-quality-monitor');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1068,7 +1068,7 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
     <AdminPageHeader title="Overview" description={`Welcome, ${user.name.split(' ')[0]}. Review visitor requests and maintain assistant knowledge.`} />
     <section className="adminMetricGrid" aria-label="Operations summary">
       <article><span>Published knowledge</span><strong>{publishedKnowledge}</strong><small>of {knowledge.length} knowledge records</small></article>
-      <article><span>Sources to review</span><strong>{needsReview}</strong><small>{unreachableSources} unreachable; {Math.max(0, needsReview - unreachableSources)} staged or changed</small></article>
+      <article><span>Sources to review</span><strong>{needsReview}</strong><small>Official sources awaiting review</small></article>
       <article><span>Open visitor requests</span><strong>{loading ? '…' : reviewCounts.pendingInquiries ?? '—'}</strong><small>{reviewCounts.inquiries ?? '—'} total in the inbox</small></article>
     </section>
     <section className="adminDashboardGrid">
@@ -1096,17 +1096,16 @@ function AdminOverview({ user, token, knowledge, sources, setView, onOpenSources
       <article className="adminActionPanel">
         <div className="sectionHead"><span className="eyebrow">Operations</span><h2>Open a workspace</h2><p>Management tools and quality signals stay available here.</p></div>
         <div className="adminOpsGrid">
-          <button type="button" onClick={onOpenKnowledge}><FileText size={18} /><span><strong>Knowledge Base</strong><small>Edit, verify and retire answer records</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={onOpenSources}><RefreshCw size={18} /><span><strong>Source Verification</strong><small>Review official sources and changes</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Phone size={18} /><span><strong>Review inbox</strong><small>Visitor requests and answer feedback</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={() => setView('applicant-workspaces')}><LayoutDashboard size={18} /><span><strong>Applicant Progress</strong><small>{reviewCounts.applicantError ? 'Progress unavailable' : loading ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} /></button>
-          <button type="button" onClick={() => scrollToSection('assistant-query-analytics')}><Cpu size={18} /><span><strong>AI quality and analytics</strong><small>Inspect answer outcomes and unresolved patterns</small></span><ArrowRight size={15} /></button>
-          {user.role === 'admin' && <button type="button" onClick={() => scrollToSection('assistant-unanswered-review')}><ThumbsDown size={18} /><span><strong>Unanswered questions</strong><small>Triage unresolved assistant outcomes</small></span><ArrowRight size={15} /></button>}
+          <button type="button" onClick={onOpenKnowledge}><FileText size={18} aria-hidden="true" /><span><strong>Knowledge Base</strong><small>Edit, verify and retire answer records</small></span><ArrowRight size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={onOpenSources}><FileCheck2 size={18} aria-hidden="true" /><span><strong>Source Verification</strong><small>Review official sources and changes</small></span><ArrowRight size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={onOpenInquiries || (() => setView('inquiries'))}><Inbox size={18} aria-hidden="true" /><span><strong>Review inbox</strong><small>Visitor requests and answer feedback</small></span><ArrowRight size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={() => setView('applicant-workspaces')}><ClipboardList size={18} aria-hidden="true" /><span><strong>Applicant Progress</strong><small>{reviewCounts.applicantError ? 'Progress unavailable' : loading ? 'Loading accounts…' : `${reviewCounts.applicants} saved`}</small></span><ArrowRight size={15} aria-hidden="true" /></button>
+          <button type="button" onClick={() => scrollToSection('assistant-quality-monitor')}><Cpu size={18} aria-hidden="true" /><span><strong>AI Quality Monitor</strong><small>Inspect recent outcomes and source health</small></span><ArrowRight size={15} aria-hidden="true" /></button>
+          {user.role === 'admin' && <button type="button" onClick={() => scrollToSection('assistant-unanswered-review')}><TriangleAlert size={18} aria-hidden="true" /><span><strong>Evidence gaps and triage</strong><small>Review recent evidence gaps by question type</small></span><ArrowRight size={15} aria-hidden="true" /></button>}
         </div>
       </article>
     </section>
     <AssistantOperations token={token} />
-    <footer className="adminWorkspaceNote"><ShieldCheck size={16} /><span>Only published, verified records are used for official answers. Staff assignments and review actions in this workspace do not send automatic email or SMS notifications.</span></footer>
   </div>;
 }
 
@@ -1129,6 +1128,7 @@ function Sidebar({ user, view, setView, navOpen, setNavOpen, collapsed, setColla
           <span>Knowledge Base</span>
         </button>
         <button className={view === 'analytics' ? 'active' : ''} type="button" onClick={() => openView('analytics')}><span>Analytics</span></button>
+        <button className={view === 'offices' ? 'active' : ''} type="button" onClick={() => openView('offices')}><span>Offices</span></button>
         {['staff', 'admin'].includes(user.role) && <button className={view === 'inquiries' ? 'active' : ''} type="button" onClick={() => openView('inquiries')}>
           <span>Review inbox</span>
         </button>}
@@ -1232,15 +1232,139 @@ function ApplicantWorkspaceReview({ token }) {
   </div>;
 }
 
-function ReviewInbox({ token, initialTab = 'inquiries' }) {
+function OfficeDirectory({ token, canAddOffice }) {
+  const [directory, setDirectory] = useState(null);
+  const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [owner, setOwner] = useState('');
+  const [handles, setHandles] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const availableCategories = directory?.availableCategories || [];
+  const currentCategoryOffice = availableCategories.find(category => category.id === handles)?.currentOffice;
+  const officeNameRef = useRef(null);
+  const deleteDialogRef = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useAdminNotice();
+  useEffect(() => {
+    let active = true;
+    api.getStaffRouting(token)
+      .then(result => { if (active) setDirectory(result); })
+      .catch(problem => { if (active) setError(problem.message); });
+    return () => { active = false; };
+  }, [token]);
+  const resetForm = () => {
+    setName(''); setOwner(''); setHandles(''); setEditingId(null);
+  };
+  const editOffice = office => {
+    setName(office.name); setOwner(office.owner); setEditingId(office.id);
+    setError(''); setNotice('');
+    officeNameRef.current?.focus();
+  };
+  const saveOffice = async event => {
+    event.preventDefault();
+    if (saving || !name.trim() || !owner.trim() || (!editingId && !handles)) return;
+    setSaving(true);
+    setError('');
+    setNotice('');
+    try {
+      const values = { name, owner };
+      const result = editingId ? await api.updateOffice(token, editingId, values) : await api.addOffice(token, { ...values, handles });
+      setDirectory(result);
+      resetForm();
+      setNotice(editingId ? 'Office updated.' : 'Office added.');
+    } catch (problem) {
+      setError(problem.message || 'Could not save the office.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  const showDeleteOffice = office => {
+    setDeleteTarget(office);
+    setDeleteError('');
+    deleteDialogRef.current?.showModal();
+  };
+  const deleteOffice = async () => {
+    if (saving || !deleteTarget || deleteTarget.openRequests) return;
+    setSaving(true); setDeleteError(''); setNotice('');
+    try {
+      setDirectory(await api.deleteOffice(token, deleteTarget.id));
+      if (deleteTarget.id === editingId) resetForm();
+      deleteDialogRef.current?.close();
+      setNotice('Office deleted.');
+    } catch (problem) {
+      setDeleteError(problem.message || 'Could not delete the office.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return <div className="pageStack adminPage">
+    <AdminPageHeader title="Offices" description="Staff owners and open questions by office." />
+    {error && <p className="errorBanner" role="alert">{error}</p>}
+    {notice && <AdminStatus>{notice}</AdminStatus>}
+    {!directory && !error && <p role="status">Loading offices…</p>}
+    {directory && <>
+      <div className="panelBlock officeTableWrap">
+        <table className="officeTable" aria-label="Office directory">
+          <thead><tr><th scope="col">Office</th><th scope="col">Owner</th><th scope="col" className="officeCount">Open escalations</th>{canAddOffice && <th scope="col">Actions</th>}</tr></thead>
+          <tbody>{directory.offices.map(office => <tr key={office.id}>
+            <th scope="row">{office.name}</th>
+            <td>{office.owner}{office.email && <small>{office.email}</small>}</td>
+            <td className="officeCount">{office.openRequests}</td>
+            {canAddOffice && <td><div className="officeRowActions">
+              <button className="miniEditBtn" type="button" disabled={saving} onClick={() => editOffice(office)}>Edit</button>
+              <button className="miniEditBtn officeDeleteButton" type="button" disabled={saving} onClick={() => showDeleteOffice(office)}>Delete</button>
+            </div></td>}
+          </tr>)}</tbody>
+        </table>
+      </div>
+      {canAddOffice && <form className="panelBlock officeForm" onSubmit={saveOffice}>
+        <h3>{editingId ? 'Edit office details' : 'Add an office'}</h3>
+        <div className="officeFormFields">
+          <label>Office name<input ref={officeNameRef} value={name} onChange={event => setName(event.target.value)} maxLength={100} required /></label>
+          <label>Owner<input value={owner} onChange={event => setOwner(event.target.value)} maxLength={120} required /></label>
+          {!editingId && <div>
+            <label htmlFor="office-handles">Handles</label>
+            <select id="office-handles" value={handles} onChange={event => setHandles(event.target.value)} required>
+              <option value="">Select a category</option>
+              {availableCategories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}
+            </select>
+            {currentCategoryOffice && <small>
+              This will route matching escalations here instead of {currentCategoryOffice}.
+            </small>}
+            {availableCategories.length === 0 && <small>No categories available to assign.</small>}
+          </div>}
+        </div>
+        <div className="officeFormActions">
+          <button className="inlineAction" type="submit" disabled={saving || !name.trim() || !owner.trim() || (!editingId && !handles)}>{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add office'}</button>
+          {editingId && <button className="miniEditBtn" type="button" disabled={saving} onClick={resetForm}>Cancel</button>}
+        </div>
+      </form>}
+    </>}
+    {canAddOffice && <dialog ref={deleteDialogRef} className="officeDeleteDialog" aria-labelledby="office-delete-title" aria-describedby="office-delete-description" onCancel={event => { if (saving) event.preventDefault(); }}>
+      <h3 id="office-delete-title">{deleteTarget?.openRequests ? 'Office has open escalations' : `Delete ${deleteTarget?.name || 'office'}?`}</h3>
+      <p id="office-delete-description">{deleteTarget?.openRequests
+        ? `Resolve the open requests for ${deleteTarget.name} in the Review Inbox before deleting this office.`
+        : 'This removes the office from the directory and routing. Resolved requests are kept.'}</p>
+      {deleteError && <p className="errorBanner" role="alert">{deleteError}</p>}
+      <div className="officeFormActions">
+        <button className="miniEditBtn" type="button" autoFocus disabled={saving} onClick={() => deleteDialogRef.current?.close()}>{deleteTarget?.openRequests ? 'Close' : 'Cancel'}</button>
+        {!deleteTarget?.openRequests && <button className="officeDeleteConfirm" type="button" disabled={saving} onClick={deleteOffice}>{saving ? 'Deleting…' : 'Delete office'}</button>}
+      </div>
+    </dialog>}
+  </div>;
+}
+
+function ReviewInbox({ token, staffId, initialTab = 'inquiries' }) {
   const [inquiries, setInquiries] = useState([]);
   const [feedback, setFeedback] = useState([]);
   const [selected, setSelected] = useState(null);
   const selectedRef = useRef(null);
   const [tab, setTab] = useState(initialTab);
   const [unresolvedOnly, setUnresolvedOnly] = useState(false);
+  const [mineOnly, setMineOnly] = useState(false);
   const [status, setStatus] = useState('Needs reply');
-  const [assignedTo, setAssignedTo] = useState('');
   const [staffNote, setStaffNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshCount, setRefreshCount] = useState(0);
@@ -1271,7 +1395,6 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
         selectedRef.current = initial;
         if (initial?.type === 'inquiry') {
           setStatus(initial.status || 'Needs reply');
-          setAssignedTo(initial.assignedTo || '');
           setStaffNote('');
         } else if (initial?.type === 'feedback') {
           setStatus(initial.status || (initial.helpful ? 'Appreciated' : 'Needs review'));
@@ -1287,14 +1410,14 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
     ...feedback.map(item => ({ ...item, type: 'feedback', topic: item.helpful ? 'Helpful answer' : 'Unhelpful answer', status: item.status || (item.helpful ? 'Appreciated' : 'Needs review') })),
   ].sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const visibleRows = allRows.filter(item => tab === 'inquiries'
-    ? item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved')
+    ? item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved') && (!mineOnly || item.assigneeId === staffId)
     : item.type === 'feedback');
+  const myOpenRequests = inquiries.filter(item => item.assigneeId === staffId && item.status !== 'Resolved').length;
   const selectedIsVisible = visibleRows.some(item => item.type === selected?.type && item.id === selected?.id);
   const choose = (item) => {
     selectedRef.current = item;
     setSelected(item);
     setStatus(item.status || (item.type === 'feedback' ? (item.helpful ? 'Appreciated' : 'Needs review') : 'Needs reply'));
-    setAssignedTo(item.assignedTo || '');
     setStaffNote(item.resolutionNote || '');
     setError('');
     setNotice('');
@@ -1304,7 +1427,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
     setTab(nextTab);
     const first = allRows.find(item => nextTab === 'feedback'
       ? item.type === 'feedback'
-      : item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved'));
+      : item.type === 'inquiry' && (!unresolvedOnly || item.status !== 'Resolved') && (!mineOnly || item.assigneeId === staffId));
     if (first) choose(first);
     else {
       selectedRef.current = null;
@@ -1312,11 +1435,11 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
       setNotice('');
     }
   };
-  const saveAssignment = async () => {
+  const saveRequest = async () => {
     if (!selected || selected.type !== 'inquiry') return;
     setSaving(true); setError(''); setNotice('');
     try {
-      const updated = await api.updateInquiryStatus(token, selected.id, { status, assignedTo, reply: staffNote });
+      const updated = await api.updateInquiryStatus(token, selected.id, { status, reply: staffNote });
       setInquiries(current => current.map(item => item.id === updated.id ? updated : item));
       const nextSelected = { ...updated, type: 'inquiry' };
       selectedRef.current = nextSelected;
@@ -1354,15 +1477,16 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
         <button type="button" className={tab === 'inquiries' ? 'active' : ''} aria-pressed={tab === 'inquiries'} disabled={loading || saving} onClick={() => openTab('inquiries')}>Requests <span>{inquiries.length}</span></button>
         <button type="button" className={tab === 'feedback' ? 'active' : ''} aria-pressed={tab === 'feedback'} disabled={loading || saving} onClick={() => openTab('feedback')}>Answer feedback <span>{feedback.length}</span></button>
         {tab === 'inquiries' && <button type="button" aria-pressed={unresolvedOnly} className={unresolvedOnly ? 'active' : ''} onClick={() => setUnresolvedOnly(value => !value)}>Unresolved only</button>}
+        {tab === 'inquiries' && <button type="button" aria-pressed={mineOnly} className={mineOnly ? 'active' : ''} onClick={() => setMineOnly(value => !value)}>My requests <span>{myOpenRequests}</span></button>}
     </div>
     {error && <div className="errorBanner">{error}</div>}
     {notice && <AdminStatus>{notice}</AdminStatus>}
     {loading ? <div className="panelBlock">Loading review inbox…</div> : visibleRows.length === 0 ? (
-      <div className="panelBlock">{tab === 'inquiries' && unresolvedOnly ? 'No unresolved visitor requests.' : `No ${tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.`}</div>
+      <div className="panelBlock">{tab === 'inquiries' && mineOnly ? 'No matching requests assigned to you.' : tab === 'inquiries' && unresolvedOnly ? 'No unresolved visitor requests.' : `No ${tab === 'inquiries' ? 'visitor requests' : 'answer feedback'} yet.`}</div>
     ) : <section className={`inquiryWorkspace${selectedIsVisible ? ' hasDetail' : ''}`}>
       <div className="inquiryList" aria-label={tab === 'inquiries' ? 'Visitor requests' : 'Answer feedback'}>
         {visibleRows.map(item => <button key={`${item.type}-${item.id}`} type="button" className={selected?.id === item.id ? 'active' : ''} onClick={() => choose(item)}>
-          <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.topic || (item.model ? `Answer feedback · ${item.model}` : 'General request')}</small></div>
+          <div><span>{item.name || (item.helpful ? 'Helpful rating' : 'Not helpful rating')}</span><small>{item.routingQueue || item.topic || (item.model ? `Answer feedback · ${item.model}` : 'General request')}</small></div>
           <span className={`pill ${item.status === 'Resolved' || item.status === 'Appreciated' || item.status === 'Acknowledged' ? 'published' : item.status === 'Needs review' || item.status === 'Needs reply' || item.status === 'Investigating' ? 'review' : ''}`}>
             {item.status || (item.type === 'feedback' ? (item.helpful ? 'Appreciated' : 'Needs review') : 'Needs reply')}
           </span>
@@ -1373,7 +1497,7 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
         <header><div><span className="eyebrow">{selected.type === 'feedback' ? 'Answer feedback' : selected.routingQueue || 'MITCORER Staff Triage'}</span><h2>{selected.name || (selected.helpful ? 'Helpful answer' : 'Unhelpful answer')}</h2></div><span className={`pill ${selected.status === 'Resolved' || selected.status === 'Appreciated' || selected.status === 'Acknowledged' ? 'published' : selected.status === 'Needs review' || selected.status === 'Needs reply' || selected.status === 'Investigating' ? 'review' : ''}`}>{selected.status || (selected.type === 'feedback' ? (selected.helpful ? 'Appreciated' : 'Needs review') : selected.priority || 'Normal')}</span></header>
         <dl>
           <div><dt>Received</dt><dd>{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : 'Unknown'}</dd></div>
-          {selected.type === 'inquiry' ? <><div><dt>Reference</dt><dd>{selected.id}</dd></div><div><dt>Contact</dt><dd>{contactHref ? <a href={contactHref}>{selected.contact}</a> : selected.contact || 'Not provided'}</dd></div><div><dt>Assigned to</dt><dd>{selected.assignedTo || 'Unassigned'}</dd></div></> : <><div><dt>Model</dt><dd>{selected.model || 'Unknown'}</dd></div><div><dt>Vote</dt><dd>{selected.helpful ? 'Helpful' : 'Not helpful'}</dd></div></>}
+          {selected.type === 'inquiry' ? <><div><dt>Reference</dt><dd>{selected.id}</dd></div><div><dt>Contact</dt><dd>{contactHref ? <a href={contactHref}>{selected.contact}</a> : selected.contact || 'Not provided'}</dd></div><div><dt>{selected.assignedTo ? 'Assigned to' : 'Office owner'}</dt><dd>{selected.assignedTo || selected.routingOwner || '—'}</dd></div></> : <><div><dt>Model</dt><dd>{selected.model || 'Unknown'}</dd></div><div><dt>Vote</dt><dd>{selected.helpful ? 'Helpful' : 'Not helpful'}</dd></div></>}
         </dl>
         <section className="inquiryQuestion"><h3>Visitor’s question</h3><p>{selected.question || 'No question was recorded.'}</p></section>
         {selected.type === 'feedback' ? <>
@@ -1430,10 +1554,9 @@ function ReviewInbox({ token, initialTab = 'inquiries' }) {
               </li>;
             })}</ol>
           </section>}
-          <label className="staffReply">Assign to staff member (name or email)<input type="text" maxLength={120} value={assignedTo} onChange={event => setAssignedTo(event.target.value)} placeholder="Enter a verified MITCORER staff contact" /></label>
           <label className="staffReply">Queue status<select value={status} onChange={event => setStatus(event.target.value)}>{['Unassigned', 'Needs reply', 'In progress', 'Resolved'].map(value => <option key={value}>{value}</option>)}</select></label>
           <label className="staffReply">Internal note<textarea rows={3} maxLength={1500} value={staffNote} onChange={event => setStaffNote(event.target.value)} placeholder="Record an action taken. This note is not sent to the visitor." /></label>
-          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffNote && !staffNote.trim()} onClick={saveAssignment}>{saving ? 'Saving…' : 'Save request'}</button></div>
+          <div className="inquiryActions"><button type="button" disabled={saving || status === 'Resolved' && !hasStaffNote && !staffNote.trim()} onClick={saveRequest}>{saving ? 'Saving…' : 'Save request'}</button></div>
           {status === 'Resolved' && !hasStaffNote && !staffNote.trim() && <small>Add an internal note before resolving this request.</small>}
         </>}
       </article>}

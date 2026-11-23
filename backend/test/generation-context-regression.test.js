@@ -85,7 +85,7 @@ test('unsupported and failed advisory generations retain the deterministic fallb
   assert.equal(answer.model, 'deterministic-rag-fallback');
 });
 
-test('successful non-advisory evidence fallback also reaches generation verification', async () => {
+test('an exact published title answers directly while similar wording cannot promote loosely related records', async () => {
   config.geminiApiKey = 'test-unused-key';
   getDb().knowledge.push({ id: 'KB-ZEPHYR', title: 'Zephyr mentoring protocol', category: 'mentoring', status: 'Published', source: 'Maintained mentoring record', text: 'Zephyr mentoring protocol provides supervised peer mentoring.', tags: ['zephyr', 'mentoring', 'protocol'] });
   let calls = 0;
@@ -94,9 +94,14 @@ test('successful non-advisory evidence fallback also reaches generation verifica
     return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Zephyr mentoring protocol provides supervised peer mentoring.' }] } }] }) };
   };
   const answer = await answerAdmissionQuestion({ question: 'What is the Zephyr mentoring protocol?', language: 'en' }, null);
-  assert.equal(calls, 1);
-  assert.equal(answer.model, config.geminiModel);
+  assert.equal(calls, 0);
+  assert.equal(answer.model, 'deterministic-rag-fallback');
+  assert.equal(answer.outcomeStatus, 'ANSWERED');
   assert.ok(answer.evidence.some(record => record.id === 'KB-ZEPHYR'));
+  const unrelated = await answerAdmissionQuestion({ question: 'What is the Zephyr mentoring grant protocol?', language: 'en' }, null);
+  assert.equal(calls, 0);
+  assert.equal(unrelated.outcomeStatus, 'INSUFFICIENT_EVIDENCE');
+  assert.deepEqual(unrelated.evidence, []);
 });
 
 test('public DSE follow-up uses edited maintained fees and preserves route and academic year', async () => {
