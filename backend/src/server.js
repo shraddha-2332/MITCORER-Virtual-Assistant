@@ -1024,8 +1024,8 @@ function buildAdmissionReadinessAnswer(question, user) {
 
 function buildDeadlineAnswer(question) {
   const normalized = normalizeIntentText(question);
-  if (!/\b(?:deadline|last date|admission date|schedule|reporting date)\b/.test(normalized)
-    || /\bfee\s+schedule\b/.test(normalized) && !/deadline|last date|admission date|reporting date/.test(normalized)) return null;
+  const asksDates = /\b(?:deadlines?|last dates?|admission dates?|reporting dates?)\b/.test(normalized);
+  if (!asksDates && (!/\bschedules?\b/.test(normalized) || /\bfees?\s+schedules?\b/.test(normalized))) return null;
   return {
     source: 'Maharashtra CET Cell 2026-27 admission portals',
     answer: 'Admission dates and reporting deadlines change by academic year, route, and round. Check the current official portal for the applicable route; an exact date needs a current published notice.',
@@ -1837,7 +1837,9 @@ function buildLegacyCollegeProfileAnswer(question) {
       next: '', actionView: 'visit', actionLabel: 'Explore campus transit',
     };
   }
-  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact|where (?:exactly )?(?:is )?mitcorer (?:is )?located|where is the (?:college|campus) located|college location|campus location|how to reach the campus|exact location)\b/.test(normalized) || (/\b(?:contact|phone|telephone|email|address|located|location)\b/.test(normalized) && /\b(?:mitcorer|college|barshi|solapur)\b/.test(normalized))) {
+  const asksCollegeContact = /\b(?:contact|phone|telephone|email|address|located|location)\b/.test(normalized)
+    && /\b(?:mitcorer|college|barshi|solapur)\b|महाविद्यालयाचा|कॉलेजचा/u.test(normalized);
+  if (/\b(?:contact details?|contact number|contact email|phone number|email address|helpline number|contact us|college address|official contact|email and phone|how to contact|where (?:exactly )?(?:is )?mitcorer (?:is )?located|where is the (?:college|campus) located|college location|campus location|how to reach the campus|exact location)\b/.test(normalized) || asksCollegeContact) {
     return {
       recordId: 'KB-17',
       source: 'MITCORER Contact Us page',
@@ -2132,7 +2134,7 @@ function buildAdmissionEnquiryAnswer(question) {
   const normalized = normalizeIntentText(question);
   if (/\b(?:how do i apply|how can i apply|apply for)\b/.test(normalized)
     && /\b(?:first year|b\.?tech|cap|admission process)\b/.test(normalized)) return null;
-  if (!/admission (?:enquiry|inquiry|help)|admission office|admissions office|how do i apply|start my application|campus tour/.test(normalized)) return null;
+  if (!/\b(?:admissions? (?:contact|enquiry|inquiry|help|office)|how do i apply|start my application|campus tour)\b/.test(normalized)) return null;
   return {
     recordId: 'KB-17',
     source: 'MITCORER Contact Us page',

@@ -198,9 +198,9 @@
     {
       "id": "PUB-033", "language": "en", "category": "out_of_scope", "answerability": "unsupported",
       "question": "Does MITCORER offer MBBS or BDS medical degrees?",
-      "expectedStatus": 200, "evidenceGroups": [], "claimGroups": [],
-      "behaviorGroups": [["could not find", "not available", "cannot confirm", "official answer"]],
-      "forbiddenPhrases": [], "expectNoEvidence": true, "expectDevanagari": false
+      "expectedStatus": 200, "evidenceGroups": [["KB-10"]], "claimGroups": [],
+      "behaviorGroups": [["published programme list"], ["does not list mbbs or bds"]],
+      "forbiddenPhrases": ["anti-ragging", "ambulance"], "expectNoEvidence": false, "expectDevanagari": false
     },
     {
       "id": "PUB-034", "language": "en", "category": "outdated_year", "answerability": "unsupported",
